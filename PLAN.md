@@ -4,9 +4,10 @@ This file records the decisions, the current status, and the next steps for Dock
 
 ## Repository
 
-- The repository is local only. Do not push it until the owner asks.
-- Nothing is committed yet.
+- GitHub: https://github.com/yyjim/DockPond (public).
+- `main` has the README, the licence, and `.gitignore`. PR #1 (`feat/dockpond-initial`) adds the code.
 - Licence: MIT. Version: 0.1.0.
+- Bundle IDs use the `io.github.yyjim.DockPondDemo` prefix.
 
 | Path | Contents |
 | --- | --- |
@@ -70,6 +71,7 @@ This file records the decisions, the current status, and the next steps for Dock
 ## Next steps
 
 1. Test the UIKit demo by hand: the Style dock, the live hinge history, and the sections panel.
-2. Add a UI test target for the UIKit demo.
-3. Update the design guide artifact (https://claude.ai/artifact/FBiv7hjUnsnM7NTfqRnShy). It shows the dock before tools existed.
-4. Make the first commit when the owner asks.
+2. Run the UI tests again after the rename to `SwiftUIDemo`, and run the orientation test.
+3. Add a UI test target for the UIKit demo.
+4. Update the design guide artifact (https://claude.ai/artifact/FBiv7hjUnsnM7NTfqRnShy). It shows the dock before tools existed.
+5. Merge PR #1.
