@@ -18,7 +18,7 @@ DockPond has two libraries:
 | **FloatingDock** | A floating button that docks to a screen edge and opens a panel. You supply the panel content and its actions. |
 | **GaugeDock** | A layout gauge. It measures the window size, the screen, the orientation, the size classes, the safe area, the display scale, and the hinge. It can show the values in a floating dock. |
 
-Requirements: iOS 18 or later, Swift 6. The hinge values need iOS 27.1 or later.
+Requirements: iOS 17 or later, Swift 6. The hinge values need iOS 27.1 or later.
 
 <table>
   <tr>

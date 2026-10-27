@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "DockPond",
-    platforms: [.iOS(.v18)],
+    platforms: [.iOS(.v17)],
     products: [
         .library(name: "FloatingDock", targets: ["FloatingDock"]),
         .library(name: "GaugeDock", targets: ["GaugeDock"]),
