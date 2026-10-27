@@ -20,6 +20,17 @@ DockPond has two libraries:
 
 Requirements: iOS 18 or later, Swift 6. The hinge values need iOS 27.1 or later.
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/floating-dock.jpg" alt="The Dev Tools dock panel open with General, Controls, and Appearance tabs" width="260"></td>
+    <td align="center"><img src="docs/screenshots/layout-gauge.jpg" alt="The layout gauge panel with window, screen, size class, safe area, hinge, and posture rows" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>FloatingDock</b>: a panel of tools</td>
+    <td align="center"><b>GaugeDock</b>: layout facts</td>
+  </tr>
+</table>
+
 ## Install
 
 Add the package to `Package.swift`:
