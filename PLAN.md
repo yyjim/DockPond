@@ -24,7 +24,7 @@ This file records the decisions, the current status, and the next steps for Dock
 
 ### Platform
 
-- The package and the demos support iOS 18 and later.
+- The package and the demos support iOS 17 and later.
 - Put `#available(iOS 27.1, *)` around the hinge APIs (`DeviceHinge`, `UIHingeInteraction`).
 - The package is not only for iPhone Duo. On a device without a hinge, do not show hinge or fold information.
 - Support all orientations on iPhone. Face ID iPhones do not rotate upside down.
