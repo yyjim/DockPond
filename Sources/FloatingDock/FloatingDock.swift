@@ -154,5 +154,6 @@ struct DockContent {
 @Observable
 final class DockModel {
     var content = DockContent()
+    var presentationCount = 0
     @ObservationIgnored weak var scene: UIWindowScene?
 }

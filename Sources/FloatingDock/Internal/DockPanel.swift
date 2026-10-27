@@ -64,6 +64,7 @@ struct DockPanel: View {
         .background(.regularMaterial, in: .rect(cornerRadius: 22))
         .shadow(color: .black.opacity(0.25), radius: 16, y: 4)
         .environment(\.floatingDockScene, model.scene)
+        .environment(\.dockPresentationCount, model.presentationCount)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("FloatingDock.\(id).panel")
     }

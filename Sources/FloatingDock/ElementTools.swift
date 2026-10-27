@@ -30,7 +30,7 @@ extension DockTool {
             DockTool(elementsTitle, systemImage: "slider.horizontal.3", id: elementsID) {
                 ElementRows(elements: elements)
             },
-            at: tools[..<first].count
+            at: first
         )
         return grouped
     }
@@ -185,6 +185,7 @@ extension DockTool {
 struct ElementRows: View {
     let elements: [DockTool.Element]
     @State private var revision = 0
+    @Environment(\.dockPresentationCount) private var presentationCount
 
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
@@ -205,19 +206,20 @@ struct ElementRows: View {
         }
         .controlSize(.small)
         .font(.caption)
-        .environment(\.elementRevision, revision)
+        .environment(\.elementRevision, revision &+ presentationCount)
         .environment(\.elementDidChange, ElementChange { revision += 1 })
     }
 }
 
 /// Closure-backed values do not notify SwiftUI, so every element reads its value
-/// again after any element changes the app.
+/// again after any element changes the app, and each time the panel opens.
 struct ElementChange {
     let action: @MainActor () -> Void
 }
 
 extension EnvironmentValues {
     @Entry var elementRevision = 0
+    @Entry var dockPresentationCount = 0
     @Entry var elementDidChange = ElementChange {}
 }
 

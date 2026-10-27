@@ -5,6 +5,7 @@ extension DockTool {
     /// A tool that switches the scene between the system, light, and dark
     /// appearance. It sets `traitOverrides` on the window scene, so it changes
     /// every window in the scene, SwiftUI and UIKit alike.
+    @MainActor
     public static func appearance() -> DockTool {
         DockTool("Appearance", systemImage: "circle.lefthalf.filled", id: "appearance") {
             AppearanceToolView()

@@ -54,22 +54,12 @@ final class DockWindowController {
     }
 
     func attach(to scene: UIWindowScene?) {
-        guard let scene, window?.windowScene !== scene else { return }
+        guard let scene, model.scene !== scene else { return }
         detach()
-
         model.scene = scene
-        let viewController = DockViewController(model: model, configuration: configuration)
-        viewController.updateButton(title: content.title, systemImage: content.systemImage)
-        let window = DockWindow(windowScene: scene)
-        window.windowLevel = configuration.windowLevel
-        window.backgroundColor = .clear
-        window.rootViewController = viewController
-        if configuration.closesOnOutsideTap {
-            window.onOutsideTouch = { [weak viewController] in viewController?.setExpanded(false) }
+        if content.isPresented {
+            makeWindow(in: scene)
         }
-        window.isHidden = !content.isPresented
-        self.window = window
-        self.viewController = viewController
     }
 
     func update(_ newContent: DockContent) {
@@ -78,10 +68,15 @@ final class DockWindowController {
         model.content = newContent
 
         if newContent.isPresented != previous.isPresented {
-            if !newContent.isPresented {
+            if newContent.isPresented {
+                if window == nil, let scene = model.scene {
+                    makeWindow(in: scene)
+                }
+                window?.isHidden = false
+            } else {
                 viewController?.setExpanded(false, animated: false)
+                window?.isHidden = true
             }
-            window?.isHidden = !newContent.isPresented
         }
         if newContent.title != previous.title || newContent.systemImage != previous.systemImage {
             viewController?.updateButton(title: newContent.title, systemImage: newContent.systemImage)
@@ -92,6 +87,25 @@ final class DockWindowController {
         window?.isHidden = true
         window = nil
         viewController = nil
+        model.scene = nil
+    }
+
+    private func makeWindow(in scene: UIWindowScene) {
+        let viewController = DockViewController(model: model, configuration: configuration)
+        viewController.updateButton(title: content.title, systemImage: content.systemImage)
+        let window = DockWindow(windowScene: scene)
+        window.windowLevel = configuration.windowLevel
+        window.backgroundColor = .clear
+        window.rootViewController = viewController
+        if configuration.closesOnOutsideTap {
+            window.onOutsideTouch = { [weak viewController] in
+                guard let viewController, viewController.isExpanded else { return }
+                Task { @MainActor in viewController.setExpanded(false) }
+            }
+        }
+        window.isHidden = false
+        self.window = window
+        self.viewController = viewController
     }
 }
 
@@ -104,8 +118,8 @@ final class DockWindow: UIWindow {
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let hit = super.hitTest(point, with: event)
         guard hit == nil || hit === rootViewController?.view else { return hit }
-        if event?.type == .touches, let onOutsideTouch {
-            Task { @MainActor in onOutsideTouch() }
+        if event?.type == .touches {
+            onOutsideTouch?()
         }
         return nil
     }

@@ -10,7 +10,7 @@ final class DockViewController: UIViewController {
         rootView: DockPanel(model: model, id: configuration.id) { [weak self] in self?.setExpanded(false) }
     )
     private var position: DockPosition
-    private var isExpanded = false
+    private(set) var isExpanded = false
     private var isDragging = false
     private var dragStartCenter = CGPoint.zero
     private var idleTask: Task<Void, Never>?
@@ -90,6 +90,7 @@ final class DockViewController: UIViewController {
 
         if expanded {
             OpenDocks.closeOthers(than: self)
+            model.presentationCount += 1
             panel.transform = .identity
             layoutPanel()
             panel.isHidden = false

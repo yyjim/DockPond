@@ -111,6 +111,7 @@ private final class WindowProbeView: UIView {
 extension DockTool {
     /// A dock tool with the gauge rows. Attach the gauge to the app window first,
     /// with `.layoutGauge(_:)` in SwiftUI or `attach(to:)` in UIKit.
+    @MainActor
     public static func layoutGauge(_ gauge: LayoutGauge, sections: LayoutGauge.Sections = .all) -> DockTool {
         DockTool("Layout", systemImage: "ruler", id: "layout-gauge") {
             LayoutGaugeView(gauge, sections: sections)

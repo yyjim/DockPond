@@ -6,6 +6,7 @@ public final class LayoutGaugeUIView: UIView {
     private let sections: LayoutGauge.Sections
     private let stack = UIStackView()
     private var observations: [GaugeObservation] = []
+    private var rows: [GaugeRow] = []
 
     public init(gauge: LayoutGauge, sections: LayoutGauge.Sections = .all) {
         self.sections = sections
@@ -33,13 +34,16 @@ public final class LayoutGaugeUIView: UIView {
     }
 
     private func render(_ snapshot: LayoutGauge.Snapshot) {
-        let rows = snapshot.rows(for: sections)
+        let newRows = snapshot.rows(for: sections)
+        guard newRows != rows else { return }
+        rows = newRows
         for view in stack.arrangedSubviews {
             view.removeFromSuperview()
         }
         for row in rows {
             stack.addArrangedSubview(GaugeRowView(row: row))
         }
+        invalidateIntrinsicContentSize()
     }
 }
 
