@@ -1,6 +1,10 @@
-# DockPond
+<p align="center">
+  <img src="docs/logo.png" alt="DockPond logo: a duck in a round pool float" width="200">
+</p>
 
-DockPond: floating docks for iOS layout work.
+<h1 align="center">DockPond</h1>
+
+<p align="center">Floating docks for iOS layout work.</p>
 
 DockPond has two libraries:
 
