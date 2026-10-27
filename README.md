@@ -2,7 +2,12 @@
   <img src="docs/logo.png" alt="DockPond logo: a duck in a round pool float" width="200">
 </p>
 
-<h1 align="center">DockPond</h1>
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/wordmark-dark.svg">
+    <img src="docs/wordmark-light.svg" alt="DockPond" width="280">
+  </picture>
+</h1>
 
 <p align="center">Floating docks for iOS layout work.</p>
 
