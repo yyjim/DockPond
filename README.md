@@ -5,7 +5,7 @@
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/wordmark-dark.svg">
-    <img src="docs/wordmark-light.svg" alt="DockPond" width="280">
+    <img src="docs/wordmark-light.svg" alt="DockPond" width="284" height="47">
   </picture>
 </h1>
 
