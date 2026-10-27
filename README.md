@@ -1,6 +1,15 @@
-# DockPond
+<p align="center">
+  <img src="docs/logo.png" alt="DockPond logo: a duck in a round pool float" width="200">
+</p>
 
-DockPond: floating docks for iOS layout work.
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/wordmark-dark.svg">
+    <img src="docs/wordmark-light.svg" alt="DockPond" width="284" height="47">
+  </picture>
+</h1>
+
+<p align="center">Floating docks for iOS layout work.</p>
 
 DockPond has two libraries:
 
@@ -10,6 +19,17 @@ DockPond has two libraries:
 | **GaugeDock** | A layout gauge. It measures the window size, the screen, the orientation, the size classes, the safe area, the display scale, and the hinge. It can show the values in a floating dock. |
 
 Requirements: iOS 18 or later, Swift 6. The hinge values need iOS 27.1 or later.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/floating-dock.gif" alt="The dock button moves to an edge, opens the Dev Tools panel, switches tabs, and changes the appearance" width="260"></td>
+    <td align="center"><img src="docs/screenshots/layout-gauge.gif" alt="The gauge dock opens and shows window, screen, size class, safe area, hinge, and posture rows" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>FloatingDock</b>: a panel of tools</td>
+    <td align="center"><b>GaugeDock</b>: layout facts</td>
+  </tr>
+</table>
 
 ## Install
 
@@ -86,9 +106,58 @@ Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, 
 | `closesOnOutsideTap` | `true` | Closes the panel when a tap occurs outside it. |
 | `windowLevel` | `.alert + 1` | The level of the dock window. |
 
+### Tools
+
+A panel can hold more than one tool. Each `DockTool` has a title, an icon, a view, and optional actions.
+
+```swift
+.floatingDock(title: "Dev Tools", systemImage: "wrench.and.screwdriver", panelStyle: .tabs) {
+    DockTool("Controls", systemImage: "slider.horizontal.3") {
+        ControlsView(model: model)
+    } actions: {
+        Button("Reset", systemImage: "arrow.counterclockwise") { model.reset() }
+    }
+    DockTool.layoutGauge(gauge)
+    DockTool.appearance()
+} actions: {
+    Button("About", systemImage: "info.circle") { showsAbout = true }
+}
+```
+
+`panelStyle` sets how the panel shows more than one tool:
+
+| Style | Result |
+|---|---|
+| `.tabs` (default) | One tool at a time, with a tab for each tool. The actions of the tool show in the panel header. |
+| `.sections` | All tools in one panel. Each tool has a header that collapses it. The actions of the tool show in its header. |
+
+A panel with one tool shows no tabs and no section header.
+
+Actions close the panel when you tap them. This applies to the actions of the dock and to the actions of a tool. Controls in a tool view do not close the panel.
+
+Ready-made tools:
+
+| Tool | Use |
+|---|---|
+| `DockTool.appearance()` | Sets the window scene to the system, light, or dark appearance. It changes all SwiftUI and UIKit windows in the scene. |
+| `DockTool.layoutGauge(_:sections:)` | Shows the GaugeDock rows. It is in the GaugeDock library. Refer to [GaugeDock](#gaugedock). |
+
+In UIKit, make a tool from a view that calculates its size with Auto Layout:
+
+```swift
+let dock = FloatingDockController(title: "Dev Tools", panelStyle: .sections, tools: [
+    .layoutGauge(gauge),
+    DockTool(title: "Controls", systemImage: "slider.horizontal.3", contentView: controlsView,
+             actions: [FloatingDockAction(title: "Reset", systemImage: "arrow.counterclockwise") { reset() }]),
+    .appearance(),
+])
+```
+
+A tool that must change the window scene can read it from the `floatingDockScene` environment value.
+
 ### Element tools
 
-Element tools change one value of the app. You do not write a view for them. The panel puts all element tools of a dock into one "General" tool.
+Element tools change one value of the app. You do not write a view for them. The panel puts all element tools of a dock into one "General" tool. You can use element tools together with other tools in one dock.
 
 ```swift
 .floatingDock(title: "Dev Tools", systemImage: "wrench.and.screwdriver") {
