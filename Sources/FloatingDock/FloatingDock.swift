@@ -20,6 +20,9 @@ public struct FloatingDockConfiguration {
     /// Closes the panel when a touch lands outside it. The touch still reaches the app.
     public var closesOnOutsideTap: Bool
     public var windowLevel: UIWindow.Level
+    /// The tint of the panel: its actions, its element controls, and the tool
+    /// content. A view keeps its own tint if it sets one.
+    public var tint: Color
 
     public init(
         id: String = "default",
@@ -29,7 +32,8 @@ public struct FloatingDockConfiguration {
         idleDelay: Duration = .seconds(3),
         idleOpacity: CGFloat = 0.45,
         closesOnOutsideTap: Bool = true,
-        windowLevel: UIWindow.Level = .alert + 1
+        windowLevel: UIWindow.Level = .alert + 1,
+        tint: Color = .primary
     ) {
         self.id = id
         self.initialEdge = initialEdge
@@ -39,6 +43,7 @@ public struct FloatingDockConfiguration {
         self.idleOpacity = idleOpacity
         self.closesOnOutsideTap = closesOnOutsideTap
         self.windowLevel = windowLevel
+        self.tint = tint
     }
 }
 
