@@ -7,7 +7,7 @@ final class DockViewController: UIViewController {
     private let configuration: FloatingDockConfiguration
     private let button: DockButton
     private lazy var panelHost = UIHostingController(
-        rootView: DockPanel(model: model, id: configuration.id) { [weak self] in self?.setExpanded(false) }
+        rootView: DockPanel(model: model, id: configuration.id, actionTint: configuration.actionTint) { [weak self] in self?.setExpanded(false) }
     )
     private var position: DockPosition
     private(set) var isExpanded = false
