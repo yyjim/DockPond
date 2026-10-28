@@ -105,7 +105,7 @@ Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, 
 | `idleDelay`, `idleOpacity` | 3 seconds, `0.45` | When the button fades, and how much. |
 | `closesOnOutsideTap` | `true` | Closes the panel when a tap occurs outside it. |
 | `windowLevel` | `.alert + 1` | The level of the dock window. |
-| `actionTint` | `.primary` | The color of the actions in the panel header and the tool section headers. An action keeps its own tint if it sets one. |
+| `tint` | `.primary` | The tint of the panel: its actions, its element controls, and the tool content. A view keeps its own tint if it sets one. |
 
 ### Tools
 

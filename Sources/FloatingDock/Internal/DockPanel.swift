@@ -3,15 +3,15 @@ import SwiftUI
 struct DockPanel: View {
     let model: DockModel
     let id: String
-    let actionTint: Color
+    let tint: Color
     let onClose: () -> Void
     @AppStorage private var selectedToolID: String
     @State private var collapsedToolIDs: Set<String> = []
 
-    init(model: DockModel, id: String, actionTint: Color, onClose: @escaping () -> Void) {
+    init(model: DockModel, id: String, tint: Color, onClose: @escaping () -> Void) {
         self.model = model
         self.id = id
-        self.actionTint = actionTint
+        self.tint = tint
         self.onClose = onClose
         _selectedToolID = AppStorage(wrappedValue: "", "FloatingDock.\(id).tool")
     }
@@ -40,7 +40,6 @@ struct DockPanel: View {
             }
             .labelStyle(.iconOnly)
             .font(.title3)
-            .tint(actionTint)
 
             if showsTabs {
                 Picker("Tool", selection: Binding(
@@ -64,6 +63,7 @@ struct DockPanel: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .tint(tint)
         .background(.regularMaterial, in: .rect(cornerRadius: 22))
         .shadow(color: .black.opacity(0.25), radius: 16, y: 4)
         .environment(\.floatingDockScene, model.scene)
@@ -118,7 +118,6 @@ struct DockPanel: View {
                 Spacer(minLength: 8)
                 tool.actions
                     .labelStyle(.iconOnly)
-                    .tint(actionTint)
                     .simultaneousGesture(TapGesture().onEnded(onClose))
             }
             if !isCollapsed {
