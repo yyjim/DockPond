@@ -36,7 +36,7 @@ Requirements: iOS 17 or later, Swift 6. The hinge values need iOS 27.1 or later.
 Add the package to `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/yyjim/DockPond", from: "0.1.0")
+.package(url: "https://github.com/yyjim/DockPond", from: "0.2.0")
 ```
 
 Then add the products that you need to your target:
