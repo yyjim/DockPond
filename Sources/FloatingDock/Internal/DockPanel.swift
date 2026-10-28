@@ -38,6 +38,7 @@ struct DockPanel: View {
             }
             .labelStyle(.iconOnly)
             .font(.title3)
+            .tint(.primary)
 
             if showsTabs {
                 Picker("Tool", selection: Binding(
@@ -115,6 +116,7 @@ struct DockPanel: View {
                 Spacer(minLength: 8)
                 tool.actions
                     .labelStyle(.iconOnly)
+                    .tint(.primary)
                     .simultaneousGesture(TapGesture().onEnded(onClose))
             }
             if !isCollapsed {
