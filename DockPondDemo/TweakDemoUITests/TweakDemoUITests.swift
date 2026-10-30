@@ -1,7 +1,7 @@
 import XCTest
 
 @MainActor
-final class TweakDockDemoUITests: XCTestCase {
+final class TweakDemoUITests: XCTestCase {
     private var app: XCUIApplication!
 
     override func setUp() async throws {
