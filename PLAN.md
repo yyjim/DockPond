@@ -12,8 +12,10 @@ This file records the decisions, the current status, and the next steps for Dock
 | Path | Contents |
 | --- | --- |
 | `Sources/FloatingDock` | The floating dock: button, panel, tools, element tools, and the appearance tool. |
+| `Sources/TweakDock`, `Sources/TweakDockMacros` | TweakDock: the `@Tweak` and `@Tweaks` macros, `TweakStore`, `TweaksView`, and `TweaksWindow`. |
 | `Sources/GaugeDock` | `LayoutGauge`: window, screen, orientation, size class, safe area, scale, hinge, and fold facts. |
-| `Tests` | Unit tests for both products. |
+| `Tests` | Unit tests for the three products, and the TweakDock macro tests. |
+| `TweakDockDemo/TweakDockDemo.xcodeproj` | The TweakDock demo app and its UI tests. It uses the package at `..`. |
 | `DockPondDemo/DockPondDemo.xcodeproj` | The demo project. It uses the package at `..`. |
 | `DockPondDemo/SwiftUIDemo` | The SwiftUI demo app. |
 | `DockPondDemo/UIKitDemo` | The UIKit demo app ("DockPond UIKit"). |
@@ -61,7 +63,10 @@ This file records the decisions, the current status, and the next steps for Dock
 - Use the Xcode MCP tools (`BuildProject`, `RunSomeTests`) when possible.
 - Run the UI tests on the "iPhone Duo" simulator (iOS 27.1). Tests that need a hinge skip on other devices.
 - Run only the tests that a change affects.
-- Package unit tests: `xcodebuild test -scheme DockPond-Package -destination 'platform=iOS Simulator,name=iPhone Duo'`.
+- Package unit tests: `xcodebuild test -scheme DockPond -destination 'platform=iOS Simulator,name=iPhone Duo' -skipMacroValidation`.
+- Do not use the `DockPond-Package` scheme. It includes the macro tests, which cannot load on iOS.
+- Macro tests: `xcodebuild test -scheme TweakDockMacros -destination 'platform=macOS' -skipMacroValidation`.
+- The shared `DockPond` and `TweakDockMacros` schemes are in `.swiftpm/xcode/xcshareddata/xcschemes`.
 
 ## Status
 
