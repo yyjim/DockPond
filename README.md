@@ -254,7 +254,7 @@ iOS gives the hinge state and angle, but not the position of the fold on the scr
 
 ## TweakDock
 
-<img src="docs/tweakdock-logo.png" alt="TweakDock logo: a duck in a flat cap at a fader console" width="120" align="right">
+<img src="docs/tweakdock-logo.png" alt="TweakDock logo: a duck at a fader console" width="120" align="right">
 
 TweakDock lets you change values at runtime from an in-app debug screen.
 It combines the ideas of [SwiftTweaks](https://github.com/bryanjclark/SwiftTweaks) and
