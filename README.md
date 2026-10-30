@@ -11,12 +11,13 @@
 
 <p align="center">Floating docks for iOS layout work.</p>
 
-DockPond has two libraries:
+DockPond has three libraries:
 
 | Library | Use |
 |---|---|
 | **FloatingDock** | A floating button that docks to a screen edge and opens a panel. You supply the panel content and its actions. |
 | **GaugeDock** | A layout gauge. It measures the window size, the screen, the orientation, the size classes, the safe area, the display scale, and the hinge. It can show the values in a floating dock. |
+| **TweakDock** | Runtime tweaks. Declare values with macros, and change them in a debug screen while the app runs. |
 
 Requirements: iOS 17 or later, Swift 6. The hinge values need iOS 27.1 or later.
 
@@ -44,6 +45,7 @@ Then add the products that you need to your target:
 ```swift
 .product(name: "FloatingDock", package: "DockPond"),
 .product(name: "GaugeDock", package: "DockPond"),
+.product(name: "TweakDock", package: "DockPond"),
 ```
 
 In Xcode, select **File > Add Package Dependencies**, and enter the repository URL.
@@ -250,6 +252,102 @@ In UIKit, call `gauge.observe { snapshot in … }` and keep the returned observa
 
 iOS gives the hinge state and angle, but not the position of the fold on the screen. GaugeDock estimates the fold: it crosses the longer edge of the screen at its middle. The Fold row always says "estimated". Compare it with a real device before you use it for layout.
 
+## TweakDock
+
+<img src="docs/tweakdock-logo.png" alt="TweakDock logo: a duck in a flat cap at a fader console" width="120" align="right">
+
+TweakDock lets you change values at runtime from an in-app debug screen.
+It combines the ideas of [SwiftTweaks](https://github.com/bryanjclark/SwiftTweaks) and
+[TweaksMacros](https://github.com/cardinalblue/TweaksMacros).
+
+### Declare tweaks
+
+```swift
+import TweakDock
+
+@Tweaks
+enum AppTweaks {
+    enum Size: String, CaseIterable, TweakValue { case small, medium, large }
+
+    @Tweak(collection: "UI", group: "Theme", name: "Dark Mode", defaultValue: true)
+    static var isDarkMode: Bool
+
+    @Tweak(collection: "UI", group: "Font", name: "Font Size", min: 10, max: 40, defaultValue: 14)
+    static var fontSize: CGFloat
+
+    @Tweak(collection: "UI", group: "Appearance", name: "Theme", options: ["light", "dark"], defaultValue: "light")
+    static var theme: String
+
+    @Tweak(collection: "UI", group: "Appearance", name: "Size", defaultValue: Size.small)
+    static var size: Size
+
+    @Tweak(collection: "Debug", group: "Session", name: "Clear Cache")
+    static func clearCache() { /* runs when you tap it */ }
+}
+```
+
+The attribute labels are the same as in TweaksMacros' `@TweakSpec`.
+
+### Read and write tweaks
+
+```swift
+let size = AppTweaks.fontSize
+AppTweaks.fontSize = 20
+
+AppTweaks.fontSizeTweak.publisher          // Publishes the current value, then each change.
+    .sink { size in /* ... */ }
+    .store(in: &cancellables)
+
+AppTweaks.fontSizeTweak.reset()
+AppTweaks.tweakStore.resetAll()
+```
+
+Each `@Tweak` adds a `<name>Tweak` peer. `@Tweaks` adds `allTweaks`, which the UI uses.
+
+### Show the UI
+
+```swift
+// SwiftUI
+.sheet(isPresented: $showsTweaks) { TweaksView(AppTweaks.allTweaks) }
+
+// UIKit: shake the device to show the tweaks.
+window = TweaksWindow(windowScene: scene, tweaks: AppTweaks.allTweaks, store: AppTweaks.tweakStore)
+```
+
+### Storage and app groups
+
+`TweakStore` saves the changed values to `Application Support/TweakDock/<name>.json`.
+To share tweaks with app extensions, make a store in an app group container, and give it to `@Tweaks`:
+
+```swift
+extension TweakStore {
+    static let appGroup = TweakStore(appGroup: "group.com.example.app")
+}
+
+@Tweaks(store: .appGroup)
+enum AppTweaks { ... }
+```
+
+Declare the store one time. Two stores that use the same file overwrite each other's changes.
+
+Each process reads the file when it makes the store.
+An extension does not see the changes that the app makes after the extension starts.
+
+### Disable in release builds
+
+```swift
+#if !DEBUG
+AppTweaks.tweakStore.isEnabled = false   // Each tweak returns its default value.
+#endif
+```
+
+### Supported types
+
+`Bool`, `Int`, `Double`, `CGFloat`, `String`, and `String`-backed `CaseIterable` enums.
+To add a type, conform it to `TweakValue`.
+
+When you open a project that uses TweakDock for the first time, Xcode asks you to trust the TweakDock macros.
+
 ## Demo
 
 `DockPondDemo/DockPondDemo.xcodeproj` has two apps that use this package:
@@ -258,6 +356,22 @@ iOS gives the hinge state and angle, but not the position of the fold on the scr
 - **UIKitDemo** (UIKit): a Dev Tools dock with sections, and a Style dock with element tools.
 
 Both apps adapt their layout to the iPhone Duo hinge. Run them on the "iPhone Duo" simulator to see the hinge tools.
+
+`TweakDockDemo/TweakDockDemo.xcodeproj` is a TweakDock app. It shows each control type and `TweaksWindow`. Its UI tests edit tweaks, check that the app updates, and check that the values stay after a relaunch.
+
+## Development
+
+Run the unit tests of the three libraries on iOS:
+
+```sh
+xcodebuild test -scheme DockPond -destination 'platform=iOS Simulator,name=iPhone Duo' -skipMacroValidation
+```
+
+The TweakDock macro tests run only on macOS:
+
+```sh
+xcodebuild test -scheme TweakDockMacros -destination 'platform=macOS' -skipMacroValidation
+```
 
 ## Licence
 
