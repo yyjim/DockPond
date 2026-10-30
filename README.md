@@ -350,14 +350,13 @@ When you open a project that uses TweakDock for the first time, Xcode asks you t
 
 ## Demo
 
-`DockPondDemo/DockPondDemo.xcodeproj` has two apps that use this package:
+`DockPondDemo/DockPondDemo.xcodeproj` has three apps that use this package:
 
 - **SwiftUIDemo** (SwiftUI): a Dev Tools dock with tabs, a Style dock with element tools, and the gauge dock.
 - **UIKitDemo** (UIKit): a Dev Tools dock with sections, and a Style dock with element tools.
+- **TweakDemo**: TweakDock tweaks of each control type, and `TweaksWindow`. Its UI tests edit tweaks, check that the app updates, and check that the values stay after a relaunch.
 
-Both apps adapt their layout to the iPhone Duo hinge. Run them on the "iPhone Duo" simulator to see the hinge tools.
-
-`TweakDockDemo/TweakDockDemo.xcodeproj` is a TweakDock app. It shows each control type and `TweaksWindow`. Its UI tests edit tweaks, check that the app updates, and check that the values stay after a relaunch.
+SwiftUIDemo and UIKitDemo adapt their layout to the iPhone Duo hinge. Run them on the "iPhone Duo" simulator to see the hinge tools.
 
 ## Development
 

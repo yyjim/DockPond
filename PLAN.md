@@ -15,10 +15,11 @@ This file records the decisions, the current status, and the next steps for Dock
 | `Sources/TweakDock`, `Sources/TweakDockMacros` | TweakDock: the `@Tweak` and `@Tweaks` macros, `TweakStore`, `TweaksView`, and `TweaksWindow`. |
 | `Sources/GaugeDock` | `LayoutGauge`: window, screen, orientation, size class, safe area, scale, hinge, and fold facts. |
 | `Tests` | Unit tests for the three products, and the TweakDock macro tests. |
-| `TweakDockDemo/TweakDockDemo.xcodeproj` | The TweakDock demo app and its UI tests. It uses the package at `..`. |
 | `DockPondDemo/DockPondDemo.xcodeproj` | The demo project. It uses the package at `..`. |
 | `DockPondDemo/SwiftUIDemo` | The SwiftUI demo app. |
 | `DockPondDemo/UIKitDemo` | The UIKit demo app ("DockPond UIKit"). |
+| `DockPondDemo/TweakDemo` | The TweakDock demo app ("DockPond Tweaks"). |
+| `DockPondDemo/TweakDemoUITests` | UI tests for the TweakDock demo. |
 | `DockPondDemo/Shared` | Types that both demo apps compile: `HingeState`, `FoldAxis`, `Posture`. |
 | `DockPondDemo/SwiftUIDemoUITests` | UI tests for the SwiftUI demo. |
 

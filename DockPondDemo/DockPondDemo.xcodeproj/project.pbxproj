@@ -11,6 +11,7 @@
 		D10000000000000000000044 /* FloatingDock in Frameworks */ = {isa = PBXBuildFile; productRef = D10000000000000000000042 /* FloatingDock */; };
 		D10000000000000000000047 /* GaugeDock in Frameworks */ = {isa = PBXBuildFile; productRef = D10000000000000000000045 /* GaugeDock */; };
 		D10000000000000000000048 /* GaugeDock in Frameworks */ = {isa = PBXBuildFile; productRef = D10000000000000000000046 /* GaugeDock */; };
+		D1000000000000000000008A /* TweakDock in Frameworks */ = {isa = PBXBuildFile; productRef = D10000000000000000000089 /* TweakDock */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -21,12 +22,21 @@
 			remoteGlobalIDString = D10000000000000000000006;
 			remoteInfo = SwiftUIDemo;
 		};
+		D1000000000000000000009A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D10000000000000000000009 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D10000000000000000000085;
+			remoteInfo = TweakDemo;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		D10000000000000000000001 /* SwiftUIDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftUIDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D10000000000000000000021 /* SwiftUIDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftUIDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D10000000000000000000051 /* UIKitDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UIKitDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D10000000000000000000080 /* TweakDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TweakDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D10000000000000000000090 /* TweakDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TweakDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -48,6 +58,16 @@
 		D10000000000000000000072 /* Shared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000081 /* TweakDemo */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TweakDemo;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000091 /* TweakDemoUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TweakDemoUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -78,6 +98,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D10000000000000000000082 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1000000000000000000008A /* TweakDock in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000092 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -88,6 +123,8 @@
 				D10000000000000000000022 /* SwiftUIDemoUITests */,
 				D10000000000000000000052 /* UIKitDemo */,
 				D10000000000000000000072 /* Shared */,
+				D10000000000000000000081 /* TweakDemo */,
+				D10000000000000000000091 /* TweakDemoUITests */,
 				D10000000000000000000005 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -98,6 +135,8 @@
 				D10000000000000000000001 /* SwiftUIDemo.app */,
 				D10000000000000000000021 /* SwiftUIDemoUITests.xctest */,
 				D10000000000000000000051 /* UIKitDemo.app */,
+				D10000000000000000000080 /* TweakDemo.app */,
+				D10000000000000000000090 /* TweakDemoUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -178,6 +217,52 @@
 			productReference = D10000000000000000000051 /* UIKitDemo.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D10000000000000000000085 /* TweakDemo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D10000000000000000000086 /* Build configuration list for PBXNativeTarget "TweakDemo" */;
+			buildPhases = (
+				D10000000000000000000083 /* Sources */,
+				D10000000000000000000082 /* Frameworks */,
+				D10000000000000000000084 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D10000000000000000000081 /* TweakDemo */,
+			);
+			name = TweakDemo;
+			packageProductDependencies = (
+				D10000000000000000000089 /* TweakDock */,
+			);
+			productName = TweakDemo;
+			productReference = D10000000000000000000080 /* TweakDemo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D10000000000000000000095 /* TweakDemoUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D10000000000000000000096 /* Build configuration list for PBXNativeTarget "TweakDemoUITests" */;
+			buildPhases = (
+				D10000000000000000000093 /* Sources */,
+				D10000000000000000000092 /* Frameworks */,
+				D10000000000000000000094 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D10000000000000000000099 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D10000000000000000000091 /* TweakDemoUITests */,
+			);
+			name = TweakDemoUITests;
+			packageProductDependencies = (
+			);
+			productName = TweakDemoUITests;
+			productReference = D10000000000000000000090 /* TweakDemoUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -197,6 +282,13 @@
 					};
 					D10000000000000000000050 = {
 						CreatedOnToolsVersion = 27.1;
+					};
+					D10000000000000000000085 = {
+						CreatedOnToolsVersion = 27.1;
+					};
+					D10000000000000000000095 = {
+						CreatedOnToolsVersion = 27.1;
+						TestTargetID = D10000000000000000000085;
 					};
 				};
 			};
@@ -220,6 +312,8 @@
 				D10000000000000000000006 /* SwiftUIDemo */,
 				D10000000000000000000026 /* SwiftUIDemoUITests */,
 				D10000000000000000000050 /* UIKitDemo */,
+				D10000000000000000000085 /* TweakDemo */,
+				D10000000000000000000095 /* TweakDemoUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -240,6 +334,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D10000000000000000000055 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000084 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000094 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -270,6 +378,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D10000000000000000000083 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000093 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -277,6 +399,11 @@
 			isa = PBXTargetDependency;
 			target = D10000000000000000000006 /* SwiftUIDemo */;
 			targetProxy = D10000000000000000000029 /* PBXContainerItemProxy */;
+		};
+		D10000000000000000000099 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D10000000000000000000085 /* TweakDemo */;
+			targetProxy = D1000000000000000000009A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -467,6 +594,94 @@
 			};
 			name = Release;
 		};
+		D10000000000000000000087 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "DockPond Tweaks";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.yyjim.DockPondDemo.TweakDemo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D10000000000000000000088 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "DockPond Tweaks";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.yyjim.DockPondDemo.TweakDemo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D10000000000000000000097 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.yyjim.DockPondDemo.TweakDemoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TweakDemo;
+			};
+			name = Debug;
+		};
+		D10000000000000000000098 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.yyjim.DockPondDemo.TweakDemoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TweakDemo;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -506,6 +721,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		D10000000000000000000086 /* Build configuration list for PBXNativeTarget "TweakDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D10000000000000000000087 /* Debug */,
+				D10000000000000000000088 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D10000000000000000000096 /* Build configuration list for PBXNativeTarget "TweakDemoUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D10000000000000000000097 /* Debug */,
+				D10000000000000000000098 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -531,6 +764,10 @@
 		D10000000000000000000046 /* GaugeDock */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GaugeDock;
+		};
+		D10000000000000000000089 /* TweakDock */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TweakDock;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
