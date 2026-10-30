@@ -1,7 +1,10 @@
+import Combine
 import SwiftUI
 
 /// Lists tweaks by collection and group, and lets you edit them. The layout follows SwiftTweaks.
 public struct TweaksView: View {
+    @MainActor static var shownCount = 0
+
     private let tweaks: [any AnyTweak]
     private let onDismiss: (() -> Void)?
     @State private var confirmsReset = false
@@ -37,6 +40,8 @@ public struct TweaksView: View {
                 DoneBar(onDismiss: onDismiss)
             }
         }
+        .onAppear { Self.shownCount += 1 }
+        .onDisappear { Self.shownCount -= 1 }
     }
 }
 
@@ -67,14 +72,16 @@ private struct TweakCollectionView: View {
 private struct TweakRow: View {
     let tweak: any PrimitiveTweak
     @State private var value: TweakPrimitive
+    @State private var changes: AnyPublisher<TweakPrimitive, Never>
 
     init(tweak: any PrimitiveTweak) {
         self.tweak = tweak
         _value = State(initialValue: tweak.primitiveValue)
+        _changes = State(initialValue: tweak.primitivePublisher.receive(on: DispatchQueue.main).eraseToAnyPublisher())
     }
 
     var body: some View {
-        content.onReceive(tweak.primitivePublisher) { value = $0 }
+        content.onReceive(changes) { value = $0 }
     }
 
     @ViewBuilder private var content: some View {
@@ -104,7 +111,13 @@ private struct TweakRow: View {
     private func numberRow(range: ClosedRange<Double>?) -> some View {
         let number = Binding(
             get: { value.doubleValue ?? 0 },
-            set: { update(isInteger ? .int(Int($0.rounded())) : .double($0)) }
+            set: { number in
+                if !isInteger {
+                    update(.double(number))
+                } else if let integer = Int(exactly: number.rounded()) {
+                    update(.int(integer))
+                }
+            }
         )
         let step = stepSize(range: range)
         return HStack {
@@ -142,8 +155,8 @@ private struct TweakRow: View {
     }
 
     private func update(_ primitive: TweakPrimitive) {
-        value = primitive
         tweak.primitiveValue = primitive
+        value = tweak.primitiveValue
     }
 }
 

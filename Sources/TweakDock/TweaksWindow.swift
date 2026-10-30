@@ -30,7 +30,7 @@ open class TweaksWindow: UIWindow {
         while let presented = presenter?.presentedViewController {
             presenter = presented
         }
-        guard let presenter, !(presenter is UIHostingController<TweaksView>) else { return }
+        guard let presenter, TweaksView.shownCount == 0 else { return }
         let controller = UIHostingController(rootView: TweaksView(tweaks) { [weak presenter] in
             presenter?.dismiss(animated: true)
         })

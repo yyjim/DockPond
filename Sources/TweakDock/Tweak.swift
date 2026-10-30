@@ -79,6 +79,7 @@ public extension Tweak where Value: Comparable & Numeric {
         defaultValue: Value,
         store: TweakStore = .shared
     ) {
+        precondition(min <= max, "Tweak \"\(name)\": min must not be greater than max.")
         assert((min ... max).contains(defaultValue), "Tweak \"\(name)\": defaultValue must be in min...max.")
         let range = min.primitive.doubleValue.flatMap { lower in
             max.primitive.doubleValue.map { lower ... $0 }

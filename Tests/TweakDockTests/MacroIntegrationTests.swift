@@ -22,6 +22,11 @@ private enum SampleTweaks {
     @Tweak(collection: "UI", group: "Appearance", name: "Integration Size", defaultValue: Size.small)
     static var size: Size
 
+    #if DEBUG
+    @Tweak(collection: "Debug", group: "Flags", name: "Integration Debug Flag", defaultValue: false)
+    static var debugFlag: Bool
+    #endif
+
     @MainActor static var cacheClearCount = 0
 
     @Tweak(collection: "Debug", group: "Session", name: "Integration Clear Cache")
@@ -33,7 +38,8 @@ private enum SampleTweaks {
 @Suite(.serialized) struct MacroIntegrationTests {
     @Test func listsTweaksInDeclarationOrder() {
         #expect(SampleTweaks.allTweaks.map(\.name) == [
-            "Integration Dark Mode", "Integration Font Size", "Integration Size", "Integration Clear Cache",
+            "Integration Dark Mode", "Integration Font Size", "Integration Size", "Integration Debug Flag",
+            "Integration Clear Cache",
         ])
     }
 

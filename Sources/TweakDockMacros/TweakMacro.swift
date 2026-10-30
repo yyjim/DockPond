@@ -43,7 +43,7 @@ public struct TweakMacro: AccessorMacro, PeerMacro {
         return ["\(raw: property.modifiers)let \(raw: property.name)Tweak = Tweak<\(property.type)>(\(arguments), store: tweakStore)"]
     }
 
-    private static func validateAction(_ function: FunctionDeclSyntax) throws {
+    static func validateAction(_ function: FunctionDeclSyntax) throws {
         let name = function.name.text
         guard function.modifiers.isStatic else {
             throw MacroError("@Tweak method '\(name)' must be static.")
@@ -64,23 +64,64 @@ public struct TweaksMacro: MemberMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        let names = declaration.memberBlock.members.compactMap { member -> String? in
-            if let variable = member.decl.as(VariableDeclSyntax.self), variable.attributes.hasTweak {
-                return variable.bindings.first?.pattern.as(IdentifierPatternSyntax.self)?.identifier.text
-            }
-            if let function = member.decl.as(FunctionDeclSyntax.self), function.attributes.hasTweak {
-                return function.name.text
-            }
-            return nil
-        }
+        let entries = TweakEntry.entries(in: declaration.memberBlock.members)
         let access = declaration.modifiers.contains { $0.name.tokenKind == .keyword(.public) } ? "public " : ""
-        let list = names.map { "\($0)Tweak" }.joined(separator: ", ")
         let store = node.arguments?.as(LabeledExprListSyntax.self)?
             .first { $0.label?.text == "store" }?.expression.trimmedDescription ?? ".shared"
         return [
             "\(raw: access)static let tweakStore: TweakStore = \(raw: store)",
-            "\(raw: access)static let allTweaks: [any AnyTweak] = [\(raw: list)]",
+            "\(raw: access)static let allTweaks: [any AnyTweak] = \(raw: TweakEntry.listExpression(entries))",
         ]
+    }
+}
+
+private enum TweakEntry {
+    case tweak(String)
+    case conditional([(header: String, entries: [TweakEntry])])
+
+    static func entries(in members: MemberBlockItemListSyntax) -> [TweakEntry] {
+        members.compactMap { member in
+            if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
+                let clauses = ifConfig.clauses.map { clause in
+                    let header = [clause.poundKeyword.text, clause.condition?.trimmedDescription]
+                        .compactMap { $0 }.joined(separator: " ")
+                    guard case let .decls(members) = clause.elements else { return (header, [TweakEntry]()) }
+                    return (header, entries(in: members))
+                }
+                return clauses.allSatisfy(\.1.isEmpty) ? nil : .conditional(clauses)
+            }
+            return tweakName(member.decl).map { .tweak("\($0)Tweak") }
+        }
+    }
+
+    /// Returns only declarations that the peer role expands, so `allTweaks` never names a missing peer.
+    private static func tweakName(_ declaration: DeclSyntax) -> String? {
+        if let variable = declaration.as(VariableDeclSyntax.self), variable.attributes.hasTweak {
+            return (try? TweakProperty(variable))?.name
+        }
+        if let function = declaration.as(FunctionDeclSyntax.self), function.attributes.hasTweak,
+           (try? TweakMacro.validateAction(function)) != nil {
+            return function.name.text
+        }
+        return nil
+    }
+
+    static func listExpression(_ entries: [TweakEntry]) -> String {
+        let names = entries.compactMap { if case let .tweak(name) = $0 { name } else { nil } }
+        guard names.count < entries.count else {
+            return "[\(names.joined(separator: ", "))]"
+        }
+        let lines = ["var tweaks: [any AnyTweak] = []"] + entries.flatMap(appendLines) + ["return tweaks"]
+        return "{\n\(lines.joined(separator: "\n"))\n}()"
+    }
+
+    private static func appendLines(_ entry: TweakEntry) -> [String] {
+        switch entry {
+        case let .tweak(name):
+            ["tweaks.append(\(name))"]
+        case let .conditional(clauses):
+            clauses.flatMap { [$0.header] + $0.entries.flatMap(appendLines) } + ["#endif"]
+        }
     }
 }
 
@@ -108,12 +149,15 @@ private struct TweakProperty {
         }
         self.name = name
         self.type = type
-        modifiers = variable.modifiers.prefixDescription
+        modifiers = variable.modifiers.filter { $0.detail == nil }.prefixDescription
     }
 }
 
 private extension DeclModifierListSyntax {
     var isStatic: Bool { contains { $0.name.tokenKind == .keyword(.static) } }
+}
+
+private extension Sequence<DeclModifierSyntax> {
     var prefixDescription: String { map { "\($0.trimmedDescription) " }.joined() }
 }
 

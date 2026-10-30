@@ -77,6 +77,108 @@ final class TweakMacroTests: XCTestCase {
         )
     }
 
+    func testDropsSetterAccessFromPeer() {
+        assertMacroExpansion(
+            """
+            @Tweak(collection: "C", group: "G", name: "N", defaultValue: true)
+            public private(set) static var flag: Bool
+            """,
+            expandedSource: """
+            public private(set) static var flag: Bool {
+                get {
+                    flagTweak.value
+                }
+                set {
+                    flagTweak.value = newValue
+                }
+            }
+
+            public static let flagTweak = Tweak<Bool>(collection: "C", group: "G", name: "N", defaultValue: true, store: tweakStore)
+            """,
+            macros: macros
+        )
+    }
+
+    func testListsTweaksInConditionalBlocks() {
+        assertMacroExpansion(
+            """
+            @Tweaks
+            enum AppTweaks {
+                @Tweak(collection: "C", group: "G", name: "A", defaultValue: true)
+                static var a: Bool
+                #if DEBUG
+                @Tweak(collection: "C", group: "G", name: "B", defaultValue: true)
+                static var b: Bool
+                #else
+                static var unrelated = 1
+                #endif
+            }
+            """,
+            expandedSource: """
+            enum AppTweaks {
+                static var a: Bool {
+                    get {
+                        aTweak.value
+                    }
+                    set {
+                        aTweak.value = newValue
+                    }
+                }
+
+                static let aTweak = Tweak<Bool>(collection: "C", group: "G", name: "A", defaultValue: true, store: tweakStore)
+                #if DEBUG
+                static var b: Bool {
+                    get {
+                        bTweak.value
+                    }
+                    set {
+                        bTweak.value = newValue
+                    }
+                }
+                #else
+                static var unrelated = 1
+                #endif
+
+                static let tweakStore: TweakStore = .shared
+
+                static let allTweaks: [any AnyTweak] = {
+                    var tweaks: [any AnyTweak] = []
+                    tweaks.append(aTweak)
+                    #if DEBUG
+                    tweaks.append(bTweak)
+                    #else
+                    #endif
+                    return tweaks
+                }()
+            }
+            """,
+            macros: macros
+        )
+    }
+
+    func testListsOnlyValidTweaks() {
+        assertMacroExpansion(
+            """
+            @Tweaks
+            enum AppTweaks {
+                @Tweak(collection: "C", group: "G", name: "N", defaultValue: true)
+                var flag: Bool
+            }
+            """,
+            expandedSource: """
+            enum AppTweaks {
+                var flag: Bool
+
+                static let tweakStore: TweakStore = .shared
+
+                static let allTweaks: [any AnyTweak] = []
+            }
+            """,
+            diagnostics: [DiagnosticSpec(message: "@Tweak property 'flag' must be static.", line: 3, column: 5)],
+            macros: macros
+        )
+    }
+
     func testRejectsInstanceProperty() {
         assertMacroExpansion(
             """

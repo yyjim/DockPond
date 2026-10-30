@@ -325,10 +325,11 @@ extension TweakStore {
 enum AppTweaks { ... }
 ```
 
-Declare the store one time. Two stores that use the same file overwrite each other's changes.
+Declare the store one time.
 
-Each process reads the file when it makes the store.
-An extension does not see the changes that the app makes after the extension starts.
+Each process reads the file when it makes the store, and again before each change.
+A change keeps the changes that other processes saved.
+An extension sees the changes of the app only when it makes a store or changes a tweak.
 
 ### Disable in release builds
 

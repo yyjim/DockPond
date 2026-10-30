@@ -13,7 +13,8 @@ public final class TweakStore: @unchecked Sendable {
     private let changes = PassthroughSubject<String?, Never>()
 
     /// Saves to `<name>.json` in Application Support, or in the app group container when you give `appGroup`.
-    /// Use an app group to share tweaks with app extensions. Each process reads the file when it makes the store.
+    /// Use an app group to share tweaks with app extensions. Each process reads the file when it makes the store,
+    /// and reads it again before each change, so processes keep the changes of the others.
     public convenience init(name: String = "Tweaks", appGroup: String? = nil, isEnabled: Bool = true) {
         self.init(fileURL: Self.fileURL(name: name, appGroup: appGroup), isEnabled: isEnabled)
     }
@@ -21,8 +22,7 @@ public final class TweakStore: @unchecked Sendable {
     public init(fileURL: URL, isEnabled: Bool = true) {
         self.fileURL = fileURL
         enabled = isEnabled
-        overrides = (try? Data(contentsOf: fileURL))
-            .flatMap { try? JSONDecoder().decode([String: TweakPrimitive].self, from: $0) } ?? [:]
+        overrides = Self.load(from: fileURL)
     }
 
     /// When `false`, each tweak returns its default value. Set it to `false` in release builds.
@@ -60,22 +60,33 @@ public final class TweakStore: @unchecked Sendable {
         changes
             .filter { $0 == nil || $0 == tweak.id }
             .map { _ in }
-            .prepend(())
+            .merge(with: Just(()))
             .map { [self] in value(for: tweak) }
             .removeDuplicates()
             .eraseToAnyPublisher()
     }
 
     private func setOverride(_ primitive: TweakPrimitive?, id: String) {
-        let changed = lock.withLock {
-            guard overrides[id] != primitive else { return false }
+        let changedIDs = lock.withLock {
+            let previous = overrides
+            let saved = Self.load(from: fileURL)
+            overrides = saved
             overrides[id] = primitive
-            save()
-            return true
+            if overrides != saved {
+                save()
+            }
+            return Set(previous.keys).union(overrides.keys).filter { previous[$0] != overrides[$0] }
         }
-        if changed {
+        if changedIDs == [id] {
             changes.send(id)
+        } else if !changedIDs.isEmpty {
+            changes.send(nil)
         }
+    }
+
+    private static func load(from fileURL: URL) -> [String: TweakPrimitive] {
+        (try? Data(contentsOf: fileURL))
+            .flatMap { try? JSONDecoder().decode([String: TweakPrimitive].self, from: $0) } ?? [:]
     }
 
     private func save() {
