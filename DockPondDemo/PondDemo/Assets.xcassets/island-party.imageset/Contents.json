@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "island-party.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
