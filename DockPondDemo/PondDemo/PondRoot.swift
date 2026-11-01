@@ -80,6 +80,8 @@ struct PondRoot: View {
             DockTool.button("Open Duck Studio tweaks", systemImage: "slider.horizontal.3") {
                 tweaksWindow.presentTweaks()
             }
+        } label: { state in
+            LifebuoyLabel(state: state)
         }
     }
 

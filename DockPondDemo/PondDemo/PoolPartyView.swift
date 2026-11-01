@@ -53,7 +53,7 @@ struct PoolPartyView: View {
             title: "Pool Toys",
             systemImage: "figure.pool.swim",
             panelStyle: .tabs,
-            configuration: FloatingDockConfiguration(id: "pool-toys", initialEdge: .trailing, initialPosition: 0.4, tint: .bill)
+            configuration: FloatingDockConfiguration(id: "pool-toys", initialEdge: .trailing, initialPosition: 0.4, buttonSize: 64, tint: .bill)
         ) {
             DockTool("Toys", systemImage: "bird.fill") {
                 ToysPanel(model: model)
@@ -63,6 +63,8 @@ struct PoolPartyView: View {
             }
             DockTool.selector("Duck size", selection: $model.duckScale, options: ["S": 0.75, "M": 1.0, "L": 1.3])
             DockTool.toggle("Night swim", isOn: $model.isNightSwim)
+        } label: { state in
+            DuckFloatLabel(state: state)
         }
     }
 
