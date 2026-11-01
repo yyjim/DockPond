@@ -174,6 +174,8 @@ Element tools change one value of the app. You do not write a view for them. The
 
 A selector with four options or fewer shows segments. A selector with more options shows a menu.
 
+A switch uses the panel `tint` by default. Give `tint` to set its own color, for example `DockTool.toggle("Grid", isOn: $settings.showsGrid, tint: .green)`. A `FloatingDockAction` also takes a `tint`.
+
 In UIKit, give closures that read and write the value:
 
 ```swift

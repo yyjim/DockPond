@@ -5,11 +5,19 @@ import UIKit
 public struct FloatingDockAction {
     public var title: String
     public var systemImage: String
+    /// The color of the action. If it is `nil`, the action uses the panel tint.
+    public var tint: Color?
     public var handler: @MainActor () -> Void
 
-    public init(title: String, systemImage: String, handler: @escaping @MainActor () -> Void) {
+    public init(
+        title: String,
+        systemImage: String,
+        tint: Color? = nil,
+        handler: @escaping @MainActor () -> Void
+    ) {
         self.title = title
         self.systemImage = systemImage
+        self.tint = tint
         self.handler = handler
     }
 }

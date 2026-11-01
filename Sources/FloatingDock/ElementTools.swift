@@ -37,11 +37,16 @@ extension DockTool {
 
     // MARK: SwiftUI
 
-    /// A switch that changes a Boolean value of the app.
-    public static func toggle(_ title: String, isOn: Binding<Bool>, id: String? = nil) -> DockTool {
+    /// A switch that changes a Boolean value of the app. `tint` sets the color of
+    /// the switch. If it is `nil`, the switch uses the panel tint.
+    public static func toggle(
+        _ title: String,
+        isOn: Binding<Bool>,
+        tint: Color? = nil,
+        id: String? = nil
+    ) -> DockTool {
         DockTool(element: .labeled(title, AnyView(
-            Toggle(title, isOn: isOn)
-                .labelsHidden()
+            ElementToggle(title: title, isOn: isOn, tint: tint)
         )), title: title, id: id)
     }
 
@@ -110,14 +115,17 @@ extension DockTool {
     // MARK: UIKit
 
     /// A switch that reads and writes a Boolean value of the app through closures.
+    /// `tint` sets the color of the switch. If it is `nil`, the switch uses the
+    /// panel tint.
     public static func toggle(
         _ title: String,
+        tint: Color? = nil,
         id: String? = nil,
         get: @escaping @MainActor () -> Bool,
         set: @escaping @MainActor (Bool) -> Void
     ) -> DockTool {
         DockTool(element: .labeled(title, AnyView(
-            ClosureBound(get: get, set: set) { Toggle(title, isOn: $0).labelsHidden() }
+            ClosureBound(get: get, set: set) { ElementToggle(title: title, isOn: $0, tint: tint) }
         )), title: title, id: id)
     }
 
@@ -221,6 +229,19 @@ extension EnvironmentValues {
     @Entry var elementRevision = 0
     @Entry var dockPresentationCount = 0
     @Entry var elementDidChange = ElementChange {}
+}
+
+private struct ElementToggle: View {
+    let title: String
+    @Binding var isOn: Bool
+    let tint: Color?
+
+    var body: some View {
+        Toggle(title, isOn: $isOn)
+            .labelsHidden()
+            .tint(ifSet: tint)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+    }
 }
 
 private struct SelectorControl<Value: Hashable>: View {
