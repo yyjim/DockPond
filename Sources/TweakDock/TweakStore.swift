@@ -36,8 +36,10 @@ public final class TweakStore: @unchecked Sendable {
 
     public func resetAll() {
         lock.withLock {
-            overrides.removeAll()
-            save()
+            withFileLock {
+                overrides.removeAll()
+                save()
+            }
         }
         changes.send(nil)
     }
@@ -68,20 +70,35 @@ public final class TweakStore: @unchecked Sendable {
 
     private func setOverride(_ primitive: TweakPrimitive?, id: String) {
         let changedIDs = lock.withLock {
-            let previous = overrides
-            let saved = Self.load(from: fileURL)
-            overrides = saved
-            overrides[id] = primitive
-            if overrides != saved {
-                save()
+            withFileLock {
+                let previous = overrides
+                let saved = Self.load(from: fileURL)
+                overrides = saved
+                overrides[id] = primitive
+                if overrides != saved {
+                    save()
+                }
+                return Set(previous.keys).union(overrides.keys).filter { previous[$0] != overrides[$0] }
             }
-            return Set(previous.keys).union(overrides.keys).filter { previous[$0] != overrides[$0] }
         }
         if changedIDs == [id] {
             changes.send(id)
         } else if !changedIDs.isEmpty {
             changes.send(nil)
         }
+    }
+
+    /// `lock` guards only this instance. Another process, or another store of the same
+    /// file, can save between this read and this write, so an advisory file lock
+    /// guards the whole change.
+    private func withFileLock<T>(_ body: () -> T) -> T {
+        try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let descriptor = open(fileURL.path + ".lock", O_CREAT | O_RDWR, 0o644)
+        guard descriptor >= 0 else { return body() }
+        defer { close(descriptor) }
+        flock(descriptor, LOCK_EX)
+        defer { flock(descriptor, LOCK_UN) }
+        return body()
     }
 
     private static func load(from fileURL: URL) -> [String: TweakPrimitive] {

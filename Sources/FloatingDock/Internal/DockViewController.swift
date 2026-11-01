@@ -182,12 +182,10 @@ final class DockViewController: UIViewController {
         case .changed:
             let translation = gesture.translation(in: view)
             button.center = clamped(CGPoint(x: dragStartCenter.x + translation.x, y: dragStartCenter.y + translation.y))
-            let edge = DockPosition.nearest(to: button.center, in: dockingArea, itemSize: buttonSize).edge
+            let edge = releasePosition(for: gesture).edge
             updateLabelState { $0.edge = edge }
         case .ended, .cancelled, .failed:
-            let velocity = gesture.velocity(in: view)
-            let projected = CGPoint(x: button.center.x + velocity.x * 0.12, y: button.center.y + velocity.y * 0.12)
-            position = DockPosition.nearest(to: clamped(projected), in: dockingArea, itemSize: buttonSize)
+            position = releasePosition(for: gesture)
             position.save(id: configuration.id)
             isDragging = false
             updateLabelState { $0.isDragging = false; $0.edge = position.edge }
@@ -198,6 +196,12 @@ final class DockViewController: UIViewController {
         default:
             break
         }
+    }
+
+    private func releasePosition(for gesture: UIPanGestureRecognizer) -> DockPosition {
+        let velocity = gesture.velocity(in: view)
+        let projected = CGPoint(x: button.center.x + velocity.x * 0.12, y: button.center.y + velocity.y * 0.12)
+        return DockPosition.nearest(to: clamped(projected), in: dockingArea, itemSize: buttonSize)
     }
 
     private func updateLabelState(_ change: (inout FloatingDockButtonState) -> Void) {

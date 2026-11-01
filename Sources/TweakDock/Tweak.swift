@@ -9,7 +9,11 @@ public protocol AnyTweak: Sendable {
 }
 
 public extension AnyTweak {
-    var id: String { "\(collection)|\(group)|\(name)" }
+    var id: String {
+        [collection, group, name]
+            .map { $0.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "|", with: "\\|") }
+            .joined(separator: "|")
+    }
 }
 
 /// The UI edits value tweaks through their primitive form.

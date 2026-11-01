@@ -19,6 +19,7 @@ This file records the decisions, the current status, and the next steps for Dock
 | `DockPondDemo/SwiftUIDemo` | The SwiftUI demo app. |
 | `DockPondDemo/UIKitDemo` | The UIKit demo app ("DockPond UIKit"). |
 | `DockPondDemo/TweakDemo` | The TweakDock demo app ("DockPond Tweaks"). |
+| `DockPondDemo/PondDemo` | One demo app for all three libraries ("DockPond"). |
 | `DockPondDemo/TweakDemoUITests` | UI tests for the TweakDock demo. |
 | `DockPondDemo/Shared` | Types that both demo apps compile: `HingeState`, `FoldAxis`, `Posture`. |
 | `DockPondDemo/SwiftUIDemoUITests` | UI tests for the SwiftUI demo. |

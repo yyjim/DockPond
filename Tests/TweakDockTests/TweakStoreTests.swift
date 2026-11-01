@@ -30,6 +30,24 @@ import Testing
         #expect(Tweak(collection: "C", group: "G", name: "Count", defaultValue: 1, store: reloaded).value == 5)
     }
 
+    @Test func keepsTweaksApartWhenLabelsHoldTheSeparator() {
+        let first = Tweak(collection: "A|B", group: "C", name: "D", defaultValue: 0, store: store)
+        let second = Tweak(collection: "A", group: "B|C", name: "D", defaultValue: 0, store: store)
+        #expect(first.id != second.id)
+        first.value = 7
+        #expect(second.value == 0)
+    }
+
+    @Test func keepsConcurrentChangesFromOtherStoresOfTheSameFile() {
+        let stores = (0 ..< 16).map { _ in TweakStore(fileURL: fileURL) }
+        DispatchQueue.concurrentPerform(iterations: stores.count) { index in
+            Tweak(collection: "C", group: "G", name: "\(index)", defaultValue: 0, store: stores[index]).value = index + 1
+        }
+        let reloaded = TweakStore(fileURL: fileURL)
+        let values = (0 ..< 16).map { Tweak(collection: "C", group: "G", name: "\($0)", defaultValue: 0, store: reloaded).value }
+        #expect(values == Array(1 ... 16))
+    }
+
     @Test func clampsValuesToRange() {
         let tweak = Tweak(collection: "C", group: "G", name: "Size", min: 10.0, max: 20.0, defaultValue: 12.0, store: store)
         tweak.value = 15

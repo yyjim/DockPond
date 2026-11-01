@@ -4,12 +4,12 @@ import TweakDock
 
 @MainActor
 final class StudioModel: ObservableObject {
-    @Published var mood = StudioTweaks.Mood.chill
-    @Published var size = 1.0
-    @Published var wobble = 1.0
-    @Published var ducklings = 0
-    @Published var bubbleText = ""
-    @Published var partyLights = false
+    @Published var mood = StudioTweaks.mood
+    @Published var size = StudioTweaks.size
+    @Published var wobble = StudioTweaks.wobble
+    @Published var ducklings = StudioTweaks.ducklings
+    @Published var bubbleText = StudioTweaks.bubbleText
+    @Published var partyLights = StudioTweaks.partyLights
 
     init() {
         StudioTweaks.moodTweak.publisher.receive(on: DispatchQueue.main).assign(to: &$mood)

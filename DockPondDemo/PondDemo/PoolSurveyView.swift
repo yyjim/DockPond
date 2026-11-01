@@ -48,7 +48,7 @@ private struct PoolMap: View {
     var body: some View {
         GeometryReader { proxy in
             let window = snapshot.windowSize
-            let room = CGSize(width: proxy.size.width - 52, height: proxy.size.height - 52)
+            let room = CGSize(width: max(0, proxy.size.width - 52), height: max(0, proxy.size.height - 52))
             let scale = window.width > 0 && window.height > 0 ? min(room.width / window.width, room.height / window.height) : 0
             let size = CGSize(width: window.width * scale, height: window.height * scale)
             let insets = snapshot.safeAreaInsets
@@ -148,7 +148,7 @@ private struct PoolMap: View {
             sizeClassTag("\(name(snapshot.horizontalSizeClass)) width")
                 .offset(x: 10 + insets.left * scale, y: insets.top * scale + 10)
             sizeClassTag("\(name(snapshot.verticalSizeClass)) height")
-                .frame(width: size.width - 10 - insets.right * scale, alignment: .trailing)
+                .frame(width: max(0, size.width - 10 - insets.right * scale), alignment: .trailing)
                 .offset(y: size.height - insets.bottom * scale - 38)
         }
     }

@@ -77,7 +77,8 @@ struct PondRoot: View {
         ) {
             DockTool.layoutGauge(gauge, sections: [.window, .sizeClasses, .safeArea, .fold])
             DockTool.appearance()
-            DockTool.button("Open Duck Studio tweaks", systemImage: "slider.horizontal.3") {
+        } actions: {
+            Button("Open Duck Studio tweaks", systemImage: "slider.horizontal.3") {
                 tweaksWindow.presentTweaks()
             }
         } label: { state in

@@ -3,8 +3,6 @@ import SwiftUI
 
 /// Lists tweaks by collection and group, and lets you edit them. The layout follows SwiftTweaks.
 public struct TweaksView: View {
-    @MainActor static var shownCount = 0
-
     private let tweaks: [any AnyTweak]
     private let onDismiss: (() -> Void)?
     @State private var confirmsReset = false
@@ -40,8 +38,6 @@ public struct TweaksView: View {
                 DoneBar(onDismiss: onDismiss)
             }
         }
-        .onAppear { Self.shownCount += 1 }
-        .onDisappear { Self.shownCount -= 1 }
     }
 }
 
@@ -119,7 +115,7 @@ private struct TweakRow: View {
                 }
             }
         )
-        let step = stepSize(range: range)
+        let step = TweakStepper.stepSize(defaultValue: tweak.defaultPrimitive.doubleValue ?? 0, isInteger: isInteger, range: range)
         return HStack {
             Text(tweak.name)
             Spacer()
@@ -140,12 +136,6 @@ private struct TweakRow: View {
         if case .int = tweak.defaultPrimitive { true } else { false }
     }
 
-    /// Uses the SwiftTweaks rule: 0.01 for fractions between 0 and 1, else 1.
-    private func stepSize(range: ClosedRange<Double>?) -> Double {
-        let defaultValue = tweak.defaultPrimitive.doubleValue ?? 0
-        let isSmall = (0 ..< 1).contains(defaultValue) && (range?.upperBound ?? 0) <= 1
-        return !isInteger && isSmall ? 0.01 : 1
-    }
 
     private func binding<Value: TweakValue>(_: Value.Type) -> Binding<Value> {
         Binding(
@@ -242,5 +232,17 @@ private extension Array where Element == any AnyTweak {
             }
         }
         return groups
+    }
+}
+
+enum TweakStepper {
+    /// Uses the SwiftTweaks rule: 0.01 for fractions between 0 and 1, else 1. A
+    /// fractional range gets a smaller step when the rule gives fewer than 5 steps.
+    static func stepSize(defaultValue: Double, isInteger: Bool, range: ClosedRange<Double>?) -> Double {
+        let isSmall = (0 ..< 1).contains(defaultValue) && (range?.upperBound ?? 0) <= 1
+        let step = !isInteger && isSmall ? 0.01 : 1
+        guard !isInteger, let range else { return step }
+        let span = range.upperBound - range.lowerBound
+        return [step, 0.1, 0.01].first { $0 <= step && span / $0 >= 5 } ?? 0.01
     }
 }

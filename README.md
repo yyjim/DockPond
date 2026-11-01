@@ -376,7 +376,9 @@ When you open a project that uses TweakDock for the first time, Xcode asks you t
 
 ## Demo
 
-`DockPondDemo/DockPondDemo.xcodeproj` has three apps that use this package:
+`DockPondDemo/DockPondDemo.xcodeproj` has four apps that use this package:
+
+- **PondDemo** ("DockPond"): one app for all three libraries. Pool Party shows a FloatingDock with a custom duck button. Pool Survey shows GaugeDock, and Duck Studio shows TweakDock. A Lifeguard dock with a lifebuoy button shows on every screen.
 
 - **SwiftUIDemo** (SwiftUI): a Dev Tools dock with tabs, a Style dock with element tools, and the gauge dock.
 - **UIKitDemo** (UIKit): a Dev Tools dock with sections, and a Style dock with element tools.

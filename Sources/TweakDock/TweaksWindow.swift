@@ -28,13 +28,16 @@ open class TweaksWindow: UIWindow {
     public func presentTweaks() {
         var presenter = rootViewController
         while let presented = presenter?.presentedViewController {
+            if presented is TweaksHostingController { return }
             presenter = presented
         }
-        guard let presenter, TweaksView.shownCount == 0 else { return }
-        let controller = UIHostingController(rootView: TweaksView(tweaks) { [weak presenter] in
+        guard let presenter else { return }
+        let controller = TweaksHostingController(rootView: TweaksView(tweaks) { [weak presenter] in
             presenter?.dismiss(animated: true)
         })
         presenter.present(controller, animated: true)
     }
 }
+
+private final class TweaksHostingController: UIHostingController<TweaksView> {}
 #endif
