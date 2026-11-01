@@ -236,6 +236,11 @@ To show the dock in debug builds only, set `isEnabled` (SwiftUI) or `isEnabled` 
 
 ## GaugeDock
 
+<img src="docs/gaugedock-logo.png" alt="GaugeDock logo: a duck that leans on a dial" width="120" align="right">
+
+GaugeDock measures the layout of a window, and shows the values in a floating dock.
+You can also read the values in your code.
+
 ### One line
 
 ```swift
@@ -264,6 +269,27 @@ Fold         Vertical at x 476 pt (estimated)      ┘
 ```
 
 Use `sections:` to show fewer rows, for example `.gaugeDock(sections: [.window, .sizeClasses])`.
+
+### Icon
+
+The icon of the dock follows the orientation of the window. Give `systemImage` to set your own icon:
+
+```swift
+RootView().gaugeDock(systemImage: "ruler")                         // SwiftUI
+
+let dock = FloatingDockController.gaugeDock(gauge, systemImage: "ruler")   // UIKit
+```
+
+To show your own view in place of the default button, add a `label` closure. It works as in [Custom button](#custom-button). When you use a label, `systemImage` shows in the panel header.
+
+```swift
+RootView().gaugeDock { state in
+    Image("gauge")
+        .rotationEffect(.degrees(state.isDragging ? 15 : 0))
+}
+```
+
+In UIKit, call `setButtonLabel(_:)` on the controller.
 
 ### Read the values in your code
 
@@ -343,6 +369,8 @@ Each `@Tweak` adds a `<name>Tweak` peer. `@Tweaks` adds `allTweaks`, which the U
 window = TweaksWindow(windowScene: scene, tweaks: AppTweaks.allTweaks, store: AppTweaks.tweakStore)
 ```
 
+To show the tweaks without a shake, for example from a dock action, call `presentTweaks()` on the window. Give `onDismiss` to `TweaksView` to show a close button.
+
 ### Storage and app groups
 
 `TweakStore` saves the changed values to `Application Support/TweakDock/<name>.json`.
@@ -382,8 +410,7 @@ When you open a project that uses TweakDock for the first time, Xcode asks you t
 
 `DockPondDemo/DockPondDemo.xcodeproj` has four apps that use this package:
 
-- **PondDemo** ("DockPond"): one app for all three libraries. Pool Party shows a FloatingDock with a custom duck button. Pool Survey shows GaugeDock, and Duck Studio shows TweakDock. A Lifeguard dock with a lifebuoy button shows on every screen.
-
+- **PondDemo** ("DockPond"): one app for all three libraries. Pool Party shows a FloatingDock with a custom duck button. Pool Survey shows a GaugeDock with a custom gauge button. Duck Studio shows TweakDock. A Lifeguard dock with a lifebuoy button shows on every screen.
 - **SwiftUIDemo** (SwiftUI): a Dev Tools dock with tabs, a Style dock with element tools, and the gauge dock.
 - **UIKitDemo** (UIKit): a Dev Tools dock with sections, and a Style dock with element tools.
 - **TweakDemo**: TweakDock tweaks of each control type, and `TweaksWindow`. Its UI tests edit tweaks, check that the app updates, and check that the values stay after a relaunch.
