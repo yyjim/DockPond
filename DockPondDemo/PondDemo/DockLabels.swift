@@ -1,15 +1,15 @@
 import FloatingDock
 import SwiftUI
 
-/// The Pool Toys button: a rubber duck that floats on a puddle. It faces away
-/// from its edge, paddles when you lift it out of the water, dives when the panel
-/// opens, and naps when the button fades.
+/// The Pool Toys button: a rubber duck in a round sticker with a strip of pond
+/// water. It faces away from its edge, paddles when you lift it out of the water,
+/// dives when the panel opens, and naps when the button fades.
 struct DuckFloatLabel: View {
     let state: FloatingDockButtonState
 
     var body: some View {
         ZStack {
-            puddle
+            disc
             duck
         }
         .frame(width: 76, height: 76)
@@ -26,27 +26,31 @@ struct DuckFloatLabel: View {
     // The art faces right, so a duck on the trailing edge turns to face the screen.
     private var facesLeft: Bool { state.edge == .trailing }
 
-    private var puddle: some View {
-        ZStack {
-            Ellipse()
-                .fill(Color.float)
-            Ellipse()
-                .strokeBorder(Color.ink, lineWidth: 3)
-            RippleRings(color: .foam)
-                .padding(5)
+    private var disc: some View {
+        TimelineView(.animation) { timeline in
+            Circle()
+                .fill(Color.card)
+                .overlay(alignment: .bottom) {
+                    WaveShape(phase: timeline.date.timeIntervalSinceReferenceDate * 2, amplitude: 3, wavelength: 40)
+                        .fill(Color.ripple)
+                        .frame(height: 24)
+                }
+                .clipShape(Circle())
         }
-        .frame(width: 66, height: 22)
-        .offset(y: 24)
-        .scaleEffect(state.isDragging ? 0.4 : 1, anchor: .bottom)
-        .opacity(state.isDragging ? 0 : 1)
+        .overlay(Circle().strokeBorder(Color.ink, lineWidth: 3))
+        .background(Circle().fill(Color.ink).offset(x: 3, y: 3))
+        .frame(width: 62, height: 62)
+        .scaleEffect(state.isDragging ? 0.9 : 1)
     }
 
     private var duck: some View {
         StickerArt(name: art, isMirrored: facesLeft)
-            .frame(width: 58, height: 58)
-            .bobbing(height: 4, tilt: 4, speed: 1.6)
-            .scaleEffect(state.isDragging ? 1.18 : 1)
-            .offset(y: state.isDragging ? -6 : 0)
+            .frame(width: 50, height: 50)
+            // The dock fades the whole button, and faded yellow over the purple pond looks brown.
+            .saturation(state.isIdle ? 0 : 1)
+            .bobbing(height: 2, tilt: 4, speed: 1.6)
+            .scaleEffect(state.isDragging ? 1.2 : 1)
+            .offset(y: state.isDragging ? -16 : -2)
     }
 }
 
