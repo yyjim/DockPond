@@ -110,14 +110,17 @@ private struct TweakRow: View {
             get: { value.doubleValue ?? 0 },
             set: { number in
                 if !isInteger {
-                    // Stepper adds the step in binary floating point, so 0.1 steps give values such as 0.7000000000000001.
-                    update(.double((number * 1e9).rounded() / 1e9))
+                    update(.double(number))
                 } else if let integer = Int(exactly: number.rounded()) {
                     update(.int(integer))
                 }
             }
         )
         let step = TweakStepper.stepSize(defaultValue: tweak.defaultPrimitive.doubleValue ?? 0, isInteger: isInteger, range: range)
+        let stepped = Binding(
+            get: { number.wrappedValue },
+            set: { number.wrappedValue = TweakStepper.trimmed($0, step: step) }
+        )
         return HStack {
             Text(tweak.name)
             Spacer()
@@ -127,9 +130,9 @@ private struct TweakRow: View {
                 .frame(maxWidth: 80)
                 .numberKeyboard(isInteger: isInteger)
             if let range {
-                Stepper(tweak.name, value: number, in: range, step: step).labelsHidden()
+                Stepper(tweak.name, value: stepped, in: range, step: step).labelsHidden()
             } else {
-                Stepper(tweak.name, value: number, step: step).labelsHidden()
+                Stepper(tweak.name, value: stepped, step: step).labelsHidden()
             }
         }
     }
@@ -205,7 +208,7 @@ private extension View {
     }
 
     @ViewBuilder func marksTweaksPresence() -> some View {
-        #if os(iOS)
+        #if canImport(UIKit) && !os(watchOS)
         background(TweaksPresenceMarker())
         #else
         self
@@ -253,5 +256,13 @@ enum TweakStepper {
         guard !isInteger, let range else { return step }
         let span = range.upperBound - range.lowerBound
         return [step, 0.1, 0.01].first { $0 <= step && span / $0 >= 5 } ?? 0.01
+    }
+
+    /// Stepper adds the step in binary floating point, so 0.1 steps give values such
+    /// as 0.7000000000000001. Six decimal places more than the step remove that error
+    /// and keep the digits of a typed value.
+    static func trimmed(_ value: Double, step: Double) -> Double {
+        let stepDecimals = max(0, Int(-log10(step).rounded()))
+        return Double(String(format: "%.*f", Int32(stepDecimals + 6), value)) ?? value
     }
 }

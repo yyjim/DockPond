@@ -7,6 +7,7 @@ public final class TweakStore: @unchecked Sendable {
 
     public let fileURL: URL
     private let lock = NSLock()
+    private let writeLock = NSLock()
     private var overrides: [String: TweakPrimitive]
     private var enabled: Bool
     /// Sends the changed tweak ID, or `nil` when every tweak can have changed.
@@ -87,13 +88,19 @@ public final class TweakStore: @unchecked Sendable {
         }
     }
 
-    /// `lock` guards only this instance. Another process, or another store of the same
-    /// file, can save between a read and a write, so an advisory file lock guards the
-    /// whole change. `lock` is not held while this waits, so reads do not wait for
+    /// `writeLock` guards only this instance. Another process, or another store of the
+    /// same file, can save between a read and a write, so an advisory file lock guards
+    /// the whole change. `lock` is not held while this waits, so reads do not wait for
     /// another process.
     private func withFileLock<T>(_ body: () -> T) -> T {
-        try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let descriptor = open(fileURL.path + ".lock", O_CREAT | O_RDWR, 0o644)
+        writeLock.lock()
+        defer { writeLock.unlock() }
+        let lockPath = fileURL.path + ".lock"
+        var descriptor = open(lockPath, O_CREAT | O_RDWR, 0o644)
+        if descriptor < 0, errno == ENOENT {
+            try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            descriptor = open(lockPath, O_CREAT | O_RDWR, 0o644)
+        }
         guard descriptor >= 0 else { return body() }
         defer { close(descriptor) }
         while flock(descriptor, LOCK_EX) != 0, errno == EINTR {}

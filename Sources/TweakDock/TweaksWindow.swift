@@ -6,6 +6,7 @@ import UIKit
 open class TweaksWindow: UIWindow {
     private let tweaks: [any AnyTweak]
     private let store: TweakStore
+    private weak var presentedTweaks: UIViewController?
 
     public init(windowScene: UIWindowScene, tweaks: [any AnyTweak], store: TweakStore = .shared) {
         self.tweaks = tweaks
@@ -26,21 +27,23 @@ open class TweaksWindow: UIWindow {
     }
 
     public func presentTweaks() {
-        var presenter = rootViewController
-        while let presented = presenter?.presentedViewController {
-            if presented.view.containsTweaksPresence { return }
+        guard presentedTweaks?.presentingViewController == nil, var presenter = rootViewController else { return }
+        while true {
+            if presenter.view.containsTweaksPresence { return }
+            guard let presented = presenter.presentedViewController else { break }
             presenter = presented
         }
-        guard let presenter else { return }
         let controller = UIHostingController(rootView: TweaksView(tweaks) { [weak presenter] in
             presenter?.dismiss(animated: true)
         })
         presenter.present(controller, animated: true)
+        presentedTweaks = controller
     }
 }
 
-/// Lets `TweaksWindow` find a `TweaksView` in a presented controller, also when
-/// SwiftUI presents it, for example with `.sheet`.
+/// Lets `TweaksWindow` find a `TweaksView` that the app shows itself, for example
+/// with `.sheet`. `presentedTweaks` covers the controller that this window presents,
+/// because SwiftUI adds the marker only after its first render.
 struct TweaksPresenceMarker: UIViewRepresentable {
     func makeUIView(context: Context) -> TweaksPresenceView {
         TweaksPresenceView()
