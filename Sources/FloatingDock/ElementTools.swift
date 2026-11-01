@@ -38,15 +38,17 @@ extension DockTool {
     // MARK: SwiftUI
 
     /// A switch that changes a Boolean value of the app. `tint` sets the color of
-    /// the switch. If it is `nil`, the switch uses the panel tint.
+    /// the switch. If it is `nil`, the switch uses the panel tint. `alignment` sets
+    /// the position of the switch in its row.
     public static func toggle(
         _ title: String,
         isOn: Binding<Bool>,
         tint: Color? = nil,
+        alignment: HorizontalAlignment = .trailing,
         id: String? = nil
     ) -> DockTool {
         DockTool(element: .labeled(title, AnyView(
-            ElementToggle(title: title, isOn: isOn, tint: tint)
+            ElementToggle(title: title, isOn: isOn, tint: tint, alignment: alignment)
         )), title: title, id: id)
     }
 
@@ -116,16 +118,17 @@ extension DockTool {
 
     /// A switch that reads and writes a Boolean value of the app through closures.
     /// `tint` sets the color of the switch. If it is `nil`, the switch uses the
-    /// panel tint.
+    /// panel tint. `alignment` sets the position of the switch in its row.
     public static func toggle(
         _ title: String,
         tint: Color? = nil,
+        alignment: HorizontalAlignment = .trailing,
         id: String? = nil,
         get: @escaping @MainActor () -> Bool,
         set: @escaping @MainActor (Bool) -> Void
     ) -> DockTool {
         DockTool(element: .labeled(title, AnyView(
-            ClosureBound(get: get, set: set) { ElementToggle(title: title, isOn: $0, tint: tint) }
+            ClosureBound(get: get, set: set) { ElementToggle(title: title, isOn: $0, tint: tint, alignment: alignment) }
         )), title: title, id: id)
     }
 
@@ -235,12 +238,13 @@ private struct ElementToggle: View {
     let title: String
     @Binding var isOn: Bool
     let tint: Color?
+    let alignment: HorizontalAlignment
 
     var body: some View {
         Toggle(title, isOn: $isOn)
             .labelsHidden()
             .tint(ifSet: tint)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(maxWidth: .infinity, alignment: Alignment(horizontal: alignment, vertical: .center))
     }
 }
 
