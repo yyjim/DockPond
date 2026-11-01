@@ -85,6 +85,19 @@ struct ActionButtons: View {
         ForEach(actions.indices, id: \.self) { index in
             let action = actions[index]
             Button(action.title, systemImage: action.systemImage) { action.handler() }
+                .tint(ifSet: action.tint)
+        }
+    }
+}
+
+extension View {
+    /// Keeps the inherited tint when `tint` is `nil`.
+    @ViewBuilder
+    func tint(ifSet tint: Color?) -> some View {
+        if let tint {
+            self.tint(tint)
+        } else {
+            self
         }
     }
 }
