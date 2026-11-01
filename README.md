@@ -236,7 +236,7 @@ To show the dock in debug builds only, set `isEnabled` (SwiftUI) or `isEnabled` 
 
 ## GaugeDock
 
-<img src="docs/gaugedock-logo.png" alt="GaugeDock logo: a duck that leans on a dial" width="120" align="right">
+<img src="docs/gaugedock-logo.png" alt="GaugeDock logo: a duck that measures a folding phone with a ruler" width="120" align="right">
 
 GaugeDock measures the layout of a window, and shows the values in a floating dock.
 You can also read the values in your code.
