@@ -28,16 +28,32 @@ open class TweaksWindow: UIWindow {
     public func presentTweaks() {
         var presenter = rootViewController
         while let presented = presenter?.presentedViewController {
-            if presented is TweaksHostingController { return }
+            if presented.view.containsTweaksPresence { return }
             presenter = presented
         }
         guard let presenter else { return }
-        let controller = TweaksHostingController(rootView: TweaksView(tweaks) { [weak presenter] in
+        let controller = UIHostingController(rootView: TweaksView(tweaks) { [weak presenter] in
             presenter?.dismiss(animated: true)
         })
         presenter.present(controller, animated: true)
     }
 }
 
-private final class TweaksHostingController: UIHostingController<TweaksView> {}
+/// Lets `TweaksWindow` find a `TweaksView` in a presented controller, also when
+/// SwiftUI presents it, for example with `.sheet`.
+struct TweaksPresenceMarker: UIViewRepresentable {
+    func makeUIView(context: Context) -> TweaksPresenceView {
+        TweaksPresenceView()
+    }
+
+    func updateUIView(_ view: TweaksPresenceView, context: Context) {}
+}
+
+final class TweaksPresenceView: UIView {}
+
+private extension UIView {
+    var containsTweaksPresence: Bool {
+        self is TweaksPresenceView || subviews.contains { $0.containsTweaksPresence }
+    }
+}
 #endif

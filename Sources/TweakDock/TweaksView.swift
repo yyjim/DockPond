@@ -38,6 +38,7 @@ public struct TweaksView: View {
                 DoneBar(onDismiss: onDismiss)
             }
         }
+        .marksTweaksPresence()
     }
 }
 
@@ -109,7 +110,8 @@ private struct TweakRow: View {
             get: { value.doubleValue ?? 0 },
             set: { number in
                 if !isInteger {
-                    update(.double(number))
+                    // Stepper adds the step in binary floating point, so 0.1 steps give values such as 0.7000000000000001.
+                    update(.double((number * 1e9).rounded() / 1e9))
                 } else if let integer = Int(exactly: number.rounded()) {
                     update(.int(integer))
                 }
@@ -135,7 +137,6 @@ private struct TweakRow: View {
     private var isInteger: Bool {
         if case .int = tweak.defaultPrimitive { true } else { false }
     }
-
 
     private func binding<Value: TweakValue>(_: Value.Type) -> Binding<Value> {
         Binding(
@@ -198,6 +199,14 @@ private extension View {
     @ViewBuilder func groupedListStyle() -> some View {
         #if os(iOS)
         listStyle(.grouped)
+        #else
+        self
+        #endif
+    }
+
+    @ViewBuilder func marksTweaksPresence() -> some View {
+        #if os(iOS)
+        background(TweaksPresenceMarker())
         #else
         self
         #endif

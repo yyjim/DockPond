@@ -35,11 +35,9 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     public func resetAll() {
-        lock.withLock {
-            withFileLock {
-                overrides.removeAll()
-                save()
-            }
+        withFileLock {
+            save([:])
+            lock.withLock { overrides.removeAll() }
         }
         changes.send(nil)
     }
@@ -69,16 +67,17 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     private func setOverride(_ primitive: TweakPrimitive?, id: String) {
-        let changedIDs = lock.withLock {
-            withFileLock {
+        let changedIDs = withFileLock {
+            let saved = Self.load(from: fileURL)
+            var updated = saved
+            updated[id] = primitive
+            if updated != saved {
+                save(updated)
+            }
+            return lock.withLock {
                 let previous = overrides
-                let saved = Self.load(from: fileURL)
-                overrides = saved
-                overrides[id] = primitive
-                if overrides != saved {
-                    save()
-                }
-                return Set(previous.keys).union(overrides.keys).filter { previous[$0] != overrides[$0] }
+                overrides = updated
+                return Set(previous.keys).union(updated.keys).filter { previous[$0] != updated[$0] }
             }
         }
         if changedIDs == [id] {
@@ -89,14 +88,15 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     /// `lock` guards only this instance. Another process, or another store of the same
-    /// file, can save between this read and this write, so an advisory file lock
-    /// guards the whole change.
+    /// file, can save between a read and a write, so an advisory file lock guards the
+    /// whole change. `lock` is not held while this waits, so reads do not wait for
+    /// another process.
     private func withFileLock<T>(_ body: () -> T) -> T {
         try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let descriptor = open(fileURL.path + ".lock", O_CREAT | O_RDWR, 0o644)
         guard descriptor >= 0 else { return body() }
         defer { close(descriptor) }
-        flock(descriptor, LOCK_EX)
+        while flock(descriptor, LOCK_EX) != 0, errno == EINTR {}
         defer { flock(descriptor, LOCK_UN) }
         return body()
     }
@@ -106,12 +106,8 @@ public final class TweakStore: @unchecked Sendable {
             .flatMap { try? JSONDecoder().decode([String: TweakPrimitive].self, from: $0) } ?? [:]
     }
 
-    private func save() {
+    private func save(_ overrides: [String: TweakPrimitive]) {
         do {
-            try FileManager.default.createDirectory(
-                at: fileURL.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
             try JSONEncoder().encode(overrides).write(to: fileURL, options: .atomic)
         } catch {
             assertionFailure("TweakDock could not save to \(fileURL.path): \(error)")
