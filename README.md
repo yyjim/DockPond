@@ -186,6 +186,34 @@ dock.tools = [
 ]
 ```
 
+### Custom button
+
+Add a `label` closure to show your own view in place of the default button. The closure receives a `FloatingDockButtonState` with the live state of the button:
+
+| Property | Value |
+|---|---|
+| `edge` | The edge of the button. During a drag, it is the edge that the button moves to when the user releases it. |
+| `isDragging` | `true` while the user drags the button. |
+| `isExpanded` | `true` while the panel is open. The button fades out and becomes smaller while the panel shows. |
+| `isIdle` | `true` after the button fades because nobody used it. |
+
+```swift
+.floatingDock(title: "Pool Toys", systemImage: "bird.fill") {
+    DockTool("Toys", systemImage: "bird.fill") { ToysPanel() }
+} label: { state in
+    Image("duck")
+        .resizable()
+        .frame(width: 56, height: 56)
+        .scaleEffect(x: state.edge == .trailing ? -1 : 1)
+        .rotationEffect(.degrees(state.isDragging ? 15 : 0))
+        .animation(.spring, value: state)
+}
+```
+
+In UIKit, call `setButtonLabel(_:)` on the controller. Call `removeButtonLabel()` to show the default button again.
+
+The dock keeps the drag, the edge snapping, and the tap. The label does not receive touches, and it can draw outside the button. The touch area is `buttonSize`, and it is never smaller than 44 points. VoiceOver reads the `title`. The label gets the `tint` of the configuration.
+
 ### More than one dock
 
 You can show more than one dock at the same time. Give each dock its own `id` and its own start position, so the buttons do not start on top of each other:
