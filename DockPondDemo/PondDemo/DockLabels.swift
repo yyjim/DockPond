@@ -69,6 +69,25 @@ struct LifebuoyLabel: View {
     }
 }
 
+/// The Pool Survey button: a gauge in a round sticker. The needle swings up while
+/// you drag it.
+struct SurveyGaugeLabel: View {
+    let state: FloatingDockButtonState
+
+    var body: some View {
+        Image(systemName: state.isDragging ? "gauge.with.dots.needle.100percent" : "gauge.with.dots.needle.33percent")
+            .font(.system(size: 30, weight: .bold))
+            .foregroundStyle(Color.navy)
+            .frame(width: 56, height: 56)
+            .background(Color.float, in: Circle())
+            .overlay(Circle().strokeBorder(Color.ink, lineWidth: 3))
+            .background(Circle().fill(Color.ink).offset(x: 3, y: 3))
+            .saturation(state.isIdle ? 0 : 1)
+            .scaleEffect(state.isDragging ? 1.15 : 1)
+            .animation(.spring(response: 0.35, dampingFraction: 0.5), value: state)
+    }
+}
+
 /// Asset art with the hard ink shadow of the sticker look.
 private struct StickerArt: View {
     let name: String

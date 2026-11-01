@@ -49,22 +49,24 @@ public final class LayoutGaugeUIView: UIView {
 
 extension FloatingDockController {
     /// Creates a floating dock whose panel shows the layout gauge. The dock title
-    /// and icon follow the gauge. Call `install(in:)` on the result.
+    /// follows the gauge. `systemImage` sets the icon. If it is `nil`, the icon
+    /// follows the orientation of the window. Call `install(in:)` on the result.
     public static func gaugeDock(
         _ gauge: LayoutGauge,
         sections: LayoutGauge.Sections = .all,
+        systemImage: String? = nil,
         configuration: FloatingDockConfiguration = FloatingDockConfiguration(id: "gauge")
     ) -> FloatingDockController {
         let contentView = LayoutGaugeUIView(gauge: gauge, sections: sections)
         let dock = FloatingDockController(
             title: gauge.snapshot.title,
-            systemImage: gauge.snapshot.symbol,
+            systemImage: systemImage ?? gauge.snapshot.symbol,
             configuration: configuration,
             contentView: contentView
         )
         contentView.retain(gauge.observe { [weak dock] snapshot in
             dock?.title = snapshot.title
-            dock?.systemImage = snapshot.symbol
+            dock?.systemImage = systemImage ?? snapshot.symbol
         })
         return dock
     }

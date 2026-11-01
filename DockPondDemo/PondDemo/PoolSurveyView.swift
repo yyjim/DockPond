@@ -1,3 +1,4 @@
+import FloatingDock
 import GaugeDock
 import SwiftUI
 
@@ -27,6 +28,13 @@ struct PoolSurveyView: View {
         .background(Color.sand.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .animation(.smooth, value: snapshot)
+        .gaugeDock(
+            sections: [.window, .orientation, .sizeClasses, .hinge],
+            systemImage: "gauge.with.dots.needle.33percent",
+            configuration: FloatingDockConfiguration(id: "pool-survey", initialEdge: .leading, initialPosition: 0.4, tint: .bill)
+        ) { state in
+            SurveyGaugeLabel(state: state)
+        }
     }
 
     private var poolName: String {
