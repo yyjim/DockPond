@@ -6,6 +6,10 @@ final class DockViewController: UIViewController {
     private let model: DockModel
     private let configuration: FloatingDockConfiguration
     private let button: DockButton
+    private let labelModel: DockButtonLabelModel
+    private lazy var labelHost = UIHostingController(
+        rootView: DockButtonLabelView(model: labelModel, tint: configuration.tint)
+    )
     private lazy var panelHost = UIHostingController(
         rootView: DockPanel(model: model, id: configuration.id, tint: configuration.tint) { [weak self] in self?.setExpanded(false) }
     )
@@ -27,6 +31,7 @@ final class DockViewController: UIViewController {
             id: configuration.id,
             default: DockPosition(edge: configuration.initialEdge, fraction: configuration.initialPosition)
         )
+        self.labelModel = DockButtonLabelModel(state: FloatingDockButtonState(edge: position.edge))
         super.init(nibName: nil, bundle: nil)
         OpenDocks.register(self)
     }
@@ -54,6 +59,12 @@ final class DockViewController: UIViewController {
         button.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
         button.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(handlePan)))
         view.addSubview(button)
+
+        addChild(labelHost)
+        labelHost.view.backgroundColor = .clear
+        labelHost.safeAreaRegions = []
+        button.setLabelView(labelHost.view)
+        labelHost.didMove(toParent: self)
         scheduleIdleFade()
     }
 
@@ -82,9 +93,15 @@ final class DockViewController: UIViewController {
         button.accessibilityLabel = title
     }
 
+    func updateLabel(_ label: DockButtonLabel?) {
+        labelModel.label = label
+        button.showsCustomLabel = label != nil
+    }
+
     func setExpanded(_ expanded: Bool, animated: Bool = true) {
         guard isViewLoaded, expanded != isExpanded else { return }
         isExpanded = expanded
+        updateLabelState { $0.isExpanded = expanded; $0.isIdle = false }
         idleTask?.cancel()
         let panel = panelHost.view!
 
@@ -160,22 +177,38 @@ final class DockViewController: UIViewController {
         case .began:
             isDragging = true
             dragStartCenter = button.center
+            updateLabelState { $0.isDragging = true }
             wake()
         case .changed:
             let translation = gesture.translation(in: view)
             button.center = clamped(CGPoint(x: dragStartCenter.x + translation.x, y: dragStartCenter.y + translation.y))
+            let edge = releasePosition(for: gesture).edge
+            updateLabelState { $0.edge = edge }
         case .ended, .cancelled, .failed:
-            let velocity = gesture.velocity(in: view)
-            let projected = CGPoint(x: button.center.x + velocity.x * 0.12, y: button.center.y + velocity.y * 0.12)
-            position = DockPosition.nearest(to: clamped(projected), in: dockingArea, itemSize: buttonSize)
+            position = releasePosition(for: gesture)
             position.save(id: configuration.id)
             isDragging = false
+            updateLabelState { $0.isDragging = false; $0.edge = position.edge }
             UIView.animate(springDuration: 0.45, bounce: 0.25, options: .allowUserInteraction) {
                 self.button.center = self.position.center(in: self.dockingArea, itemSize: self.buttonSize)
             }
             scheduleIdleFade()
         default:
             break
+        }
+    }
+
+    private func releasePosition(for gesture: UIPanGestureRecognizer) -> DockPosition {
+        let velocity = gesture.velocity(in: view)
+        let projected = CGPoint(x: button.center.x + velocity.x * 0.12, y: button.center.y + velocity.y * 0.12)
+        return DockPosition.nearest(to: clamped(projected), in: dockingArea, itemSize: buttonSize)
+    }
+
+    private func updateLabelState(_ change: (inout FloatingDockButtonState) -> Void) {
+        var state = labelModel.state
+        change(&state)
+        if state != labelModel.state {
+            labelModel.state = state
         }
     }
 
@@ -191,6 +224,7 @@ final class DockViewController: UIViewController {
     // passes .allowUserInteraction, so a tap during a fade would be lost.
     private func wake() {
         idleTask?.cancel()
+        updateLabelState { $0.isIdle = false }
         UIView.animate(withDuration: 0.15, delay: 0, options: .allowUserInteraction) { self.button.alpha = 1 }
     }
 
@@ -201,6 +235,7 @@ final class DockViewController: UIViewController {
         idleTask = Task { [weak self] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled, let self, !self.isExpanded, !self.isDragging else { return }
+            self.updateLabelState { $0.isIdle = true }
             UIView.animate(withDuration: 0.4, delay: 0, options: .allowUserInteraction) { self.button.alpha = opacity }
         }
     }
@@ -302,6 +337,18 @@ final class DockButton: UIView {
     private let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
     private let ring = UIView()
     private let imageView = UIImageView()
+    private var labelView: UIView?
+    private let minimumHitSide: CGFloat = 44
+
+    var showsCustomLabel = false {
+        didSet {
+            blur.isHidden = showsCustomLabel
+            ring.isHidden = showsCustomLabel
+            imageView.isHidden = showsCustomLabel
+            labelView?.isHidden = !showsCustomLabel
+            layer.shadowOpacity = showsCustomLabel ? 0 : 0.25
+        }
+    }
 
     init(id: String) {
         super.init(frame: .zero)
@@ -347,9 +394,50 @@ final class DockButton: UIView {
         ring.center = CGPoint(x: bounds.midX, y: bounds.midY)
         ring.layer.cornerRadius = ringSide / 2
         imageView.frame = ring.frame.insetBy(dx: 8, dy: 8)
+        labelView?.frame = bounds
+    }
+
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        let dx = min(0, (bounds.width - minimumHitSide) / 2)
+        let dy = min(0, (bounds.height - minimumHitSide) / 2)
+        return bounds.insetBy(dx: dx, dy: dy).contains(point)
+    }
+
+    func setLabelView(_ view: UIView) {
+        labelView?.removeFromSuperview()
+        view.isUserInteractionEnabled = false
+        view.accessibilityElementsHidden = true
+        view.isHidden = !showsCustomLabel
+        addSubview(view)
+        labelView = view
+        setNeedsLayout()
     }
 
     func setSymbol(_ name: String) {
         imageView.image = UIImage(systemName: name)
+    }
+}
+
+@MainActor
+@Observable
+final class DockButtonLabelModel {
+    var state: FloatingDockButtonState
+    var label: DockButtonLabel?
+
+    init(state: FloatingDockButtonState) {
+        self.state = state
+    }
+}
+
+struct DockButtonLabelView: View {
+    let model: DockButtonLabelModel
+    let tint: Color
+
+    var body: some View {
+        if let label = model.label {
+            label.body(model.state)
+                .tint(tint)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }

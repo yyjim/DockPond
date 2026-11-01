@@ -81,6 +81,7 @@ final class DockWindowController {
         if newContent.title != previous.title || newContent.systemImage != previous.systemImage {
             viewController?.updateButton(title: newContent.title, systemImage: newContent.systemImage)
         }
+        viewController?.updateLabel(newContent.label)
     }
 
     func detach() {
@@ -93,6 +94,7 @@ final class DockWindowController {
     private func makeWindow(in scene: UIWindowScene) {
         let viewController = DockViewController(model: model, configuration: configuration)
         viewController.updateButton(title: content.title, systemImage: content.systemImage)
+        viewController.updateLabel(content.label)
         let window = DockWindow(windowScene: scene)
         window.windowLevel = configuration.windowLevel
         window.backgroundColor = .clear

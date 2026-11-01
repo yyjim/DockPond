@@ -44,6 +44,7 @@ public final class FloatingDockController {
     /// Buttons that always appear in the panel header.
     public var actions: [FloatingDockAction] = [] { didSet { apply() } }
 
+    private var buttonLabel: DockButtonLabel?
     private let windowController: DockWindowController
 
     public init(
@@ -91,6 +92,27 @@ public final class FloatingDockController {
         )
     }
 
+    /// Replaces the default button look with a SwiftUI view. The view receives the
+    /// live button state. VoiceOver still reads `title`. The view does not receive
+    /// touches.
+    ///
+    ///     dock.setButtonLabel { state in
+    ///         Image("mascot")
+    ///             .rotationEffect(.degrees(state.isDragging ? 15 : 0))
+    ///     }
+    public func setButtonLabel<Label: View>(
+        @ViewBuilder _ label: @escaping @MainActor (FloatingDockButtonState) -> Label
+    ) {
+        buttonLabel = DockButtonLabel(label)
+        apply()
+    }
+
+    /// Restores the default button look.
+    public func removeButtonLabel() {
+        buttonLabel = nil
+        apply()
+    }
+
     public func install(in scene: UIWindowScene) {
         apply()
         windowController.attach(to: scene)
@@ -107,7 +129,8 @@ public final class FloatingDockController {
             systemImage: systemImage,
             panelStyle: panelStyle,
             tools: tools,
-            actions: AnyView(ActionButtons(actions: actions))
+            actions: AnyView(ActionButtons(actions: actions)),
+            label: buttonLabel
         ))
     }
 }
