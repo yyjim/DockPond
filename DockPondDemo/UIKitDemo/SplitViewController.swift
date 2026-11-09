@@ -14,6 +14,7 @@ final class SplitViewController: UISplitViewController {
         setViewController(UINavigationController(rootViewController: detail), for: .secondary)
         delegate = self
         detail.swatch = selection
+        list.selection = selection
         list.onSelect = { [weak self] swatch in
             onSelect(swatch)
             self?.show(.secondary)
@@ -27,6 +28,7 @@ final class SplitViewController: UISplitViewController {
 
     func show(_ swatch: Swatch) {
         detail.swatch = swatch
+        list.selection = swatch
     }
 }
 
@@ -41,13 +43,25 @@ extension SplitViewController: UISplitViewControllerDelegate {
 
 final class ColorListViewController: UITableViewController {
     var onSelect: ((Swatch) -> Void)?
+    var selection: Swatch? {
+        didSet { highlightSelection(scrolls: true) }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Colors"
+        clearsSelectionOnViewWillAppear = false
         navigationController?.navigationBar.prefersLargeTitles = true
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         NotificationCenter.default.addObserver(self, selector: #selector(swatchStyleDidChange), name: SwatchStyle.didChange, object: nil)
+        highlightSelection(scrolls: false)
+    }
+
+    private func highlightSelection(scrolls: Bool) {
+        guard isViewLoaded, let selection, let row = Swatch.all.firstIndex(of: selection) else { return }
+        let indexPath = IndexPath(row: row, section: 0)
+        guard tableView.indexPathForSelectedRow != indexPath else { return }
+        tableView.selectRow(at: indexPath, animated: scrolls, scrollPosition: scrolls ? .middle : .none)
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -71,6 +85,7 @@ final class ColorListViewController: UITableViewController {
 
     @objc private func swatchStyleDidChange() {
         tableView.reloadData()
+        highlightSelection(scrolls: false)
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
