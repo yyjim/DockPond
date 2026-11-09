@@ -66,6 +66,8 @@ public struct TweaksMacro: MemberMacro {
     ) throws -> [DeclSyntax] {
         let entries = TweakEntry.entries(in: declaration.memberBlock.members)
         let access = declaration.modifiers.memberAccessPrefix
+            ?? context.lexicalContext.first?.as(ExtensionDeclSyntax.self)?.modifiers.memberAccessPrefix
+            ?? ""
         let store = node.arguments?.as(LabeledExprListSyntax.self)?
             .first { $0.label?.text == "store" }?.expression.trimmedDescription ?? ".shared"
         return [
@@ -156,16 +158,17 @@ private struct TweakProperty {
 private extension DeclModifierListSyntax {
     var isStatic: Bool { contains { $0.name.tokenKind == .keyword(.static) } }
 
-    /// The access of members generated for this type. An `open` type gets `public` members.
-    var memberAccessPrefix: String {
+    /// `nil` when no access modifier is written. Static stored members cannot be `open`.
+    var memberAccessPrefix: String? {
         for modifier in self {
             switch modifier.name.tokenKind {
             case .keyword(.public), .keyword(.open): return "public "
             case .keyword(.package): return "package "
+            case .keyword(.internal), .keyword(.fileprivate), .keyword(.private): return ""
             default: continue
             }
         }
-        return ""
+        return nil
     }
 }
 

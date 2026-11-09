@@ -115,6 +115,29 @@ final class TweakMacroTests: XCTestCase {
         )
     }
 
+    func testUsesTheAccessOfAnEnclosingExtension() {
+        assertMacroExpansion(
+            """
+            public extension Namespace {
+                @Tweaks
+                enum AppTweaks {
+                }
+            }
+            """,
+            expandedSource: """
+            public extension Namespace {
+                enum AppTweaks {
+
+                    public static let tweakStore: TweakStore = .shared
+
+                    public static let allTweaks: [any AnyTweak] = []
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
     func testDropsSetterAccessFromPeer() {
         assertMacroExpansion(
             """
