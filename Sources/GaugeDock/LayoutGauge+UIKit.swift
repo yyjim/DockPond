@@ -1,4 +1,5 @@
 import FloatingDock
+import SwiftUI
 import UIKit
 
 /// The gauge rows as a UIKit view, for use inside a floating dock or any other view.
@@ -57,18 +58,32 @@ extension FloatingDockController {
         systemImage: String? = nil,
         configuration: FloatingDockConfiguration = FloatingDockConfiguration(id: "gauge")
     ) -> FloatingDockController {
-        let contentView = LayoutGaugeUIView(gauge: gauge, sections: sections)
         let dock = FloatingDockController(
             title: gauge.snapshot.title,
             systemImage: systemImage ?? gauge.snapshot.symbol,
-            configuration: configuration,
-            contentView: contentView
+            configuration: configuration
         )
-        contentView.retain(gauge.observe { [weak dock] snapshot in
+        let observation = gauge.observe { [weak dock] snapshot in
             dock?.title = snapshot.title
             dock?.systemImage = systemImage ?? snapshot.symbol
-        })
+        }
+        dock.tools = [
+            DockTool(dock.title, systemImage: dock.systemImage) {
+                GaugeDockContent(gauge: gauge, sections: sections, observation: observation)
+            },
+        ]
         return dock
+    }
+}
+
+/// Owns the observation that keeps the dock title and icon in sync with the gauge.
+private struct GaugeDockContent: View {
+    let gauge: LayoutGauge
+    let sections: LayoutGauge.Sections
+    let observation: GaugeObservation
+
+    var body: some View {
+        LayoutGaugeView(gauge, sections: sections)
     }
 }
 
