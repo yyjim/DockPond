@@ -77,6 +77,44 @@ final class TweakMacroTests: XCTestCase {
         )
     }
 
+    func testCopiesPackageAccessToMembers() {
+        assertMacroExpansion(
+            """
+            @Tweaks
+            package enum AppTweaks {
+            }
+            """,
+            expandedSource: """
+            package enum AppTweaks {
+
+                package static let tweakStore: TweakStore = .shared
+
+                package static let allTweaks: [any AnyTweak] = []
+            }
+            """,
+            macros: macros
+        )
+    }
+
+    func testGivesOpenTypesPublicMembers() {
+        assertMacroExpansion(
+            """
+            @Tweaks
+            open class AppTweaks {
+            }
+            """,
+            expandedSource: """
+            open class AppTweaks {
+
+                public static let tweakStore: TweakStore = .shared
+
+                public static let allTweaks: [any AnyTweak] = []
+            }
+            """,
+            macros: macros
+        )
+    }
+
     func testDropsSetterAccessFromPeer() {
         assertMacroExpansion(
             """

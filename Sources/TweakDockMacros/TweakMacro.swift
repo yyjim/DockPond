@@ -65,13 +65,24 @@ public struct TweaksMacro: MemberMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         let entries = TweakEntry.entries(in: declaration.memberBlock.members)
-        let access = declaration.modifiers.contains { $0.name.tokenKind == .keyword(.public) } ? "public " : ""
+        let access = Self.memberAccess(of: declaration)
         let store = node.arguments?.as(LabeledExprListSyntax.self)?
             .first { $0.label?.text == "store" }?.expression.trimmedDescription ?? ".shared"
         return [
             "\(raw: access)static let tweakStore: TweakStore = \(raw: store)",
             "\(raw: access)static let allTweaks: [any AnyTweak] = \(raw: TweakEntry.listExpression(entries))",
         ]
+    }
+
+    private static func memberAccess(of declaration: some DeclGroupSyntax) -> String {
+        for modifier in declaration.modifiers {
+            switch modifier.name.tokenKind {
+            case .keyword(.public), .keyword(.open): return "public "
+            case .keyword(.package): return "package "
+            default: continue
+            }
+        }
+        return ""
     }
 }
 

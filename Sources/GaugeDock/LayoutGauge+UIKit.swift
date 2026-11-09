@@ -6,7 +6,7 @@ import UIKit
 public final class LayoutGaugeUIView: UIView {
     private let sections: LayoutGauge.Sections
     private let stack = UIStackView()
-    private var observations: [GaugeObservation] = []
+    private var observation: GaugeObservation?
     private var rows: [GaugeRow] = []
 
     public init(gauge: LayoutGauge, sections: LayoutGauge.Sections = .all) {
@@ -22,16 +22,12 @@ public final class LayoutGaugeUIView: UIView {
             stack.leadingAnchor.constraint(equalTo: leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
-        observations.append(gauge.observe { [weak self] in self?.render($0) })
+        observation = gauge.observe { [weak self] in self?.render($0) }
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    func retain(_ observation: GaugeObservation) {
-        observations.append(observation)
     }
 
     private func render(_ snapshot: LayoutGauge.Snapshot) {
