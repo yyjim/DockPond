@@ -110,7 +110,11 @@ struct HostedContentView: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) {}
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIView, context: Context) -> CGSize? {
-        let width = proposal.width ?? 320
+        let proposedWidth = proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? 320
+        // SwiftUI probes with widths as small as 0. A required width below the
+        // content's minimum breaks its constraints.
+        let minimumWidth = uiView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).width
+        let width = max(proposedWidth, minimumWidth)
         let fitting = uiView.systemLayoutSizeFitting(
             CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
             withHorizontalFittingPriority: .required,
