@@ -119,7 +119,7 @@ struct HostedContentView: UIViewRepresentable {
         // content's own minimum width wins without an unsatisfiable constraint log.
         let fitting = view.systemLayoutSizeFitting(
             CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
-            withHorizontalFittingPriority: UILayoutPriority(UILayoutPriority.required.rawValue - 1),
+            withHorizontalFittingPriority: .required - 1,
             verticalFittingPriority: .fittingSizeLevel
         )
         return CGSize(width: max(width, fitting.width), height: fitting.height)

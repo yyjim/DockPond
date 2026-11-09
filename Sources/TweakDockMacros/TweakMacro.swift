@@ -65,24 +65,13 @@ public struct TweaksMacro: MemberMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         let entries = TweakEntry.entries(in: declaration.memberBlock.members)
-        let access = Self.memberAccess(of: declaration)
+        let access = declaration.modifiers.memberAccessPrefix
         let store = node.arguments?.as(LabeledExprListSyntax.self)?
             .first { $0.label?.text == "store" }?.expression.trimmedDescription ?? ".shared"
         return [
             "\(raw: access)static let tweakStore: TweakStore = \(raw: store)",
             "\(raw: access)static let allTweaks: [any AnyTweak] = \(raw: TweakEntry.listExpression(entries))",
         ]
-    }
-
-    private static func memberAccess(of declaration: some DeclGroupSyntax) -> String {
-        for modifier in declaration.modifiers {
-            switch modifier.name.tokenKind {
-            case .keyword(.public), .keyword(.open): return "public "
-            case .keyword(.package): return "package "
-            default: continue
-            }
-        }
-        return ""
     }
 }
 
@@ -166,6 +155,18 @@ private struct TweakProperty {
 
 private extension DeclModifierListSyntax {
     var isStatic: Bool { contains { $0.name.tokenKind == .keyword(.static) } }
+
+    /// The access of members generated for this type. An `open` type gets `public` members.
+    var memberAccessPrefix: String {
+        for modifier in self {
+            switch modifier.name.tokenKind {
+            case .keyword(.public), .keyword(.open): return "public "
+            case .keyword(.package): return "package "
+            default: continue
+            }
+        }
+        return ""
+    }
 }
 
 private extension Sequence<DeclModifierSyntax> {
