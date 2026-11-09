@@ -6,6 +6,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     private var dock: FloatingDockController?
     private var styleDock: FloatingDockController?
+    private var gaugeDock: FloatingDockController?
     private let gauge = LayoutGauge()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
@@ -100,6 +101,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         )
         self.styleDock = styleDock
 
+        let gaugeDock = FloatingDockController.gaugeDock(
+            gauge,
+            configuration: FloatingDockConfiguration(id: "gauge-uikit", initialEdge: .leading)
+        )
+        self.gaugeDock = gaugeDock
+
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = root
         window.makeKeyAndVisible()
@@ -107,5 +114,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         gauge.attach(to: window)
         dock.install(in: windowScene)
         styleDock.install(in: windowScene)
+        gaugeDock.install(in: windowScene)
     }
 }
