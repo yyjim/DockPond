@@ -128,7 +128,7 @@ private struct TweakRow: View {
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
-                .numberKeyboard(isInteger: isInteger)
+                .numberKeyboard(isInteger: isInteger, isSigned: range.map { $0.lowerBound < 0 } ?? true)
             if let range {
                 Stepper(tweak.name, value: stepped, in: range, step: step).labelsHidden()
             } else {
@@ -223,9 +223,10 @@ private extension View {
         #endif
     }
 
-    @ViewBuilder func numberKeyboard(isInteger: Bool) -> some View {
+    @ViewBuilder func numberKeyboard(isInteger: Bool, isSigned: Bool) -> some View {
         #if os(iOS)
-        keyboardType(isInteger ? .numberPad : .decimalPad)
+        // The number and decimal pads have no minus key.
+        keyboardType(isSigned ? .numbersAndPunctuation : isInteger ? .numberPad : .decimalPad)
         #else
         self
         #endif

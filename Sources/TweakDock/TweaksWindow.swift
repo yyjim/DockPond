@@ -23,13 +23,17 @@ open class TweaksWindow: UIWindow {
         guard motion == .motionShake, store.isEnabled else {
             return super.motionEnded(motion, with: event)
         }
-        presentTweaks()
+        if !presentTweaks() {
+            super.motionEnded(motion, with: event)
+        }
     }
 
-    public func presentTweaks() {
-        guard presentedTweaks?.presentingViewController == nil, var presenter = rootViewController else { return }
+    /// Returns `false` when the tweaks are already on screen.
+    @discardableResult
+    public func presentTweaks() -> Bool {
+        guard presentedTweaks?.presentingViewController == nil, var presenter = rootViewController else { return false }
         while true {
-            if presenter.view.containsTweaksPresence { return }
+            if presenter.view.containsTweaksPresence { return false }
             guard let presented = presenter.presentedViewController else { break }
             presenter = presented
         }
@@ -38,6 +42,7 @@ open class TweaksWindow: UIWindow {
         })
         presenter.present(controller, animated: true)
         presentedTweaks = controller
+        return true
     }
 }
 

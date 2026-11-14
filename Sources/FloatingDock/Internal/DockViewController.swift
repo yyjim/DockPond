@@ -7,9 +7,7 @@ final class DockViewController: UIViewController {
     private let configuration: FloatingDockConfiguration
     private let button: DockButton
     private let labelModel: DockButtonLabelModel
-    private lazy var labelHost = UIHostingController(
-        rootView: DockButtonLabelView(model: labelModel, tint: configuration.tint)
-    )
+    private var labelHost: UIHostingController<DockButtonLabelView>?
     private lazy var panelHost = UIHostingController(
         rootView: DockPanel(model: model, id: configuration.id, tint: configuration.tint) { [weak self] in self?.setExpanded(false) }
     )
@@ -59,12 +57,6 @@ final class DockViewController: UIViewController {
         button.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
         button.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(handlePan)))
         view.addSubview(button)
-
-        addChild(labelHost)
-        labelHost.view.backgroundColor = .clear
-        labelHost.safeAreaRegions = []
-        button.setLabelView(labelHost.view)
-        labelHost.didMove(toParent: self)
         scheduleIdleFade()
     }
 
@@ -95,7 +87,20 @@ final class DockViewController: UIViewController {
 
     func updateLabel(_ label: DockButtonLabel?) {
         labelModel.label = label
+        if label != nil, labelHost == nil {
+            installLabelHost()
+        }
         button.showsCustomLabel = label != nil
+    }
+
+    private func installLabelHost() {
+        let host = UIHostingController(rootView: DockButtonLabelView(model: labelModel, tint: configuration.tint))
+        addChild(host)
+        host.view.backgroundColor = .clear
+        host.safeAreaRegions = []
+        button.setLabelView(host.view)
+        host.didMove(toParent: self)
+        labelHost = host
     }
 
     func setExpanded(_ expanded: Bool, animated: Bool = true) {

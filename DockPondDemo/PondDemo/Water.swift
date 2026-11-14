@@ -52,15 +52,15 @@ struct PondWater: View {
     }
 }
 
-/// Moves a view up and down, as if it floats.
 struct Bobbing: ViewModifier {
     var height: CGFloat = 6
     var tilt: Double = 3
     var speed: Double = 1.6
     var offset: Double = 0
+    var isPaused = false
 
     func body(content: Content) -> some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(paused: isPaused)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate * speed + offset
             content
                 .offset(y: sin(t) * height)
@@ -70,8 +70,8 @@ struct Bobbing: ViewModifier {
 }
 
 extension View {
-    func bobbing(height: CGFloat = 6, tilt: Double = 3, speed: Double = 1.6, offset: Double = 0) -> some View {
-        modifier(Bobbing(height: height, tilt: tilt, speed: speed, offset: offset))
+    func bobbing(height: CGFloat = 6, tilt: Double = 3, speed: Double = 1.6, offset: Double = 0, isPaused: Bool = false) -> some View {
+        modifier(Bobbing(height: height, tilt: tilt, speed: speed, offset: offset, isPaused: isPaused))
     }
 }
 

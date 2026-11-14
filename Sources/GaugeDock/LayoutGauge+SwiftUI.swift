@@ -112,30 +112,17 @@ private struct GaugeDockModifier<Actions: View, Label: View>: ViewModifier {
     let label: (@MainActor (FloatingDockButtonState) -> Label)?
     @State private var gauge = LayoutGauge()
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         let measured = content.layoutGauge(gauge)
-        let image = systemImage ?? gauge.snapshot.symbol
-        if let label {
-            measured.floatingDock(
-                isEnabled: isEnabled,
-                title: gauge.snapshot.title,
-                systemImage: image,
-                configuration: configuration,
-                content: { LayoutGaugeView(gauge, sections: sections) },
-                actions: { actions },
-                label: label
-            )
-        } else {
-            measured.floatingDock(
-                isEnabled: isEnabled,
-                title: gauge.snapshot.title,
-                systemImage: image,
-                configuration: configuration,
-                content: { LayoutGaugeView(gauge, sections: sections) },
-                actions: { actions }
-            )
-        }
+        measured.floatingDock(
+            isEnabled: isEnabled,
+            title: gauge.snapshot.title,
+            systemImage: systemImage ?? gauge.snapshot.symbol,
+            configuration: configuration,
+            content: { LayoutGaugeView(gauge, sections: sections) },
+            actions: { actions },
+            optionalLabel: label
+        )
     }
 }
 

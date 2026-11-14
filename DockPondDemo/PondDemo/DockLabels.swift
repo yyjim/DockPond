@@ -27,7 +27,7 @@ struct DuckFloatLabel: View {
     private var facesLeft: Bool { state.edge == .trailing }
 
     private var disc: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(paused: state.isExpanded)) { timeline in
             Circle()
                 .fill(Color.card)
                 .overlay(alignment: .bottom) {
@@ -48,7 +48,7 @@ struct DuckFloatLabel: View {
             .frame(width: 50, height: 50)
             // The dock fades the whole button, and faded yellow over the purple pond looks brown.
             .saturation(state.isIdle ? 0 : 1)
-            .bobbing(height: 2, tilt: 4, speed: 1.6)
+            .bobbing(height: 2, tilt: 4, speed: 1.6, isPaused: state.isExpanded)
             .scaleEffect(state.isDragging ? 1.2 : 1)
             .offset(y: state.isDragging ? -16 : -2)
     }
@@ -62,7 +62,7 @@ struct LifebuoyLabel: View {
     var body: some View {
         StickerArt(name: "lifebuoy")
             .frame(width: 56, height: 56)
-            .bobbing(height: 3, tilt: 5, speed: 1.3)
+            .bobbing(height: 3, tilt: 5, speed: 1.3, isPaused: state.isExpanded)
             .scaleEffect(state.isDragging ? 1.15 : 1)
             .offset(y: state.isDragging ? -6 : 0)
             .animation(.spring(response: 0.35, dampingFraction: 0.5), value: state.isDragging)
@@ -88,7 +88,6 @@ struct SurveyGaugeLabel: View {
     }
 }
 
-/// Asset art with the hard ink shadow of the sticker look.
 private struct StickerArt: View {
     let name: String
     var isMirrored = false

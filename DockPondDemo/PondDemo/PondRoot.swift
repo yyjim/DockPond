@@ -52,7 +52,7 @@ enum Island: String, CaseIterable, Identifiable {
 }
 
 struct PondRoot: View {
-    let tweaksWindow: TweaksWindow
+    let presentTweaks: () -> Void
     @State private var gauge = LayoutGauge()
     @State private var path = Self.launchPath
 
@@ -63,7 +63,7 @@ struct PondRoot: View {
                     switch island {
                     case .party: PoolPartyView()
                     case .survey: PoolSurveyView(gauge: gauge)
-                    case .studio: DuckStudioView { tweaksWindow.presentTweaks() }
+                    case .studio: DuckStudioView(openTweaks: presentTweaks)
                     }
                 }
         }
@@ -79,7 +79,7 @@ struct PondRoot: View {
             DockTool.appearance()
         } actions: {
             Button("Open Duck Studio tweaks", systemImage: "slider.horizontal.3") {
-                tweaksWindow.presentTweaks()
+                presentTweaks()
             }
         } label: { state in
             LifebuoyLabel(state: state)

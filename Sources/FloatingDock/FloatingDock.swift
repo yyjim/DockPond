@@ -262,6 +262,27 @@ extension View {
         )
     }
 
+    package func floatingDock<Content: View, Actions: View, Label: View>(
+        isEnabled: Bool,
+        title: String,
+        systemImage: String,
+        configuration: FloatingDockConfiguration,
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder actions: () -> Actions,
+        optionalLabel label: (@MainActor (FloatingDockButtonState) -> Label)?
+    ) -> some View {
+        installDock(
+            isEnabled: isEnabled,
+            title: title,
+            systemImage: systemImage,
+            panelStyle: .tabs,
+            configuration: configuration,
+            tools: [DockTool(title, systemImage: systemImage, content: content)],
+            actions: AnyView(actions()),
+            label: label.map { DockButtonLabel($0) }
+        )
+    }
+
     private func installDock(
         isEnabled: Bool,
         title: String,
