@@ -1,0 +1,12 @@
+base_branch: main
+include:
+  - Package.swift
+  - Sources
+  - Tests
+  - DockPondDemo
+exclude:
+  - .build
+  - build
+  - DerivedData
+swiftformat:
+  swiftversion: "6.0"

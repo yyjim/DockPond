@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bundle exec swift-style agent-hook",
+            "if": "Edit(*.swift)",
+            "timeout": 60,
+            "statusMessage": "Formatting Swift..."
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && bundle exec swift-style agent-hook",
+            "if": "Write(*.swift)",
+            "timeout": 60,
+            "statusMessage": "Formatting Swift..."
+          }
+        ]
+      }
+    ]
+  }
+}
