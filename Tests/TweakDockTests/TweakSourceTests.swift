@@ -71,9 +71,24 @@ import UIKit
         let tweak = experiment()
         tweak.value = .A
         #expect(tweak.currentValue == .override(.A))
-        #expect(store.reading(for: tweak) == TweakReading(current: .override(.A), sourceValue: .B, sourceName: "Remote"))
+        #expect(store.reading(for: tweak) == TweakReading(current: .override(.A), source: .init(name: "Remote", value: .B)))
         tweak.reset()
         #expect(tweak.currentValue == .source("Remote", .B))
+    }
+
+    @Test func writeOfShownValueMakesNoOverride() {
+        remote.setValue(.string("B"), forKey: "exp_paywall")
+        let tweak = experiment()
+        tweak.value = .B
+        remote.setValue(.string("C"), forKey: "exp_paywall")
+        #expect(tweak.currentValue == .source("Remote", .C))
+    }
+
+    @Test func combinedSourceSkipsValueThatIsNotValid() {
+        let launch = LaunchArgumentTweakSource(arguments: ["app", "-tweak.exp_paywall", "Z"])
+        store.source = CombinedTweakSource([launch, remote])
+        remote.setValue(.string("B"), forKey: "exp_paywall")
+        #expect(experiment().currentValue == .source("Remote", .B))
     }
 
     @Test func disabledStoreIgnoresOverridesButKeepsSource() {
@@ -107,12 +122,16 @@ import UIKit
     }
 
     @Test func parsesLaunchArgumentsByKind() {
-        let source = LaunchArgumentTweakSource(arguments: ["app", "-tweak.flag", "YES", "-tweak.count", "7", "-tweak.bad", "x"])
+        let source = LaunchArgumentTweakSource(arguments: [
+            "app", "-tweak.flag", "YES", "-tweak.count", "7", "-tweak.bad", "x", "-tweak.empty", "-tweak.last", "L",
+        ])
         #expect(source.primitive(forKey: "flag", as: .bool) == .bool(true))
         #expect(source.primitive(forKey: "count", as: .int) == .int(7))
         #expect(source.primitive(forKey: "count", as: .double) == .double(7))
         #expect(source.primitive(forKey: "bad", as: .int) == nil)
         #expect(source.primitive(forKey: "missing", as: .string) == nil)
+        #expect(source.primitive(forKey: "empty", as: .string) == nil)
+        #expect(source.primitive(forKey: "last", as: .string) == .string("L"))
     }
 
     @Test func localSplitKeepsAssignmentAndGrowsRollout() throws {
@@ -129,6 +148,10 @@ import UIKit
         #expect(large.primitive(forKey: "rollout", as: .bool) == .bool(true))
         #expect(small.primitive(forKey: "exp", as: .string) == .string("B"))
         #expect(small.primitive(forKey: "other", as: .string) == nil)
+
+        defaults.set(0.9, forKey: "TweakDock.split.limit")
+        let numbers = LocalSplitTweakSource(splits: ["limit": .variants(["3": 1, "5": 1])], defaults: defaults)
+        #expect(numbers.primitive(forKey: "limit", as: .int) == .int(5))
     }
 
     @Test func localSplitAssignsOnFirstReadAndKeepsIt() throws {

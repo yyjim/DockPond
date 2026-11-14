@@ -75,7 +75,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
     }
 
     /// The current value, and where it comes from: `.default`, `.source`, or `.override`.
-    public var currentValue: TweakCurrentValue<Value> { store.reading(for: self).current }
+    public var currentValue: TweakCurrentValue<Value> { store.currentValue(for: self) }
 
     /// Publishes the current value, then each change.
     public var publisher: AnyPublisher<Value, Never> { store.publisher(for: self) }

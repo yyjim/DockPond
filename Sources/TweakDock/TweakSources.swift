@@ -4,7 +4,7 @@ import Foundation
 import UIKit
 #endif
 
-/// Asks each source in order, and uses the first value.
+/// Asks each source in order, and uses the first value that the tweak can hold.
 ///
 /// `TweakCurrentValue.source` gives the name of the inner source that gives the value.
 public final class CombinedTweakSource: TweakSource, NamedTweakSource {
@@ -17,12 +17,14 @@ public final class CombinedTweakSource: TweakSource, NamedTweakSource {
     }
 
     public func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
-        namedPrimitive(forKey: key, as: kind)?.primitive
+        namedPrimitive(forKey: key, as: kind, accepts: { _ in true })?.primitive
     }
 
-    func namedPrimitive(forKey key: String, as kind: TweakPrimitive.Kind) -> (primitive: TweakPrimitive, sourceName: String)? {
+    func namedPrimitive(
+        forKey key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool
+    ) -> (primitive: TweakPrimitive, sourceName: String)? {
         for source in sources {
-            if let value = source.lookup(key, as: kind) { return value }
+            if let value = source.lookup(key, as: kind, accepts: accepts) { return value }
         }
         return nil
     }
@@ -57,11 +59,7 @@ public final class InMemoryTweakSource: TweakSource, @unchecked Sendable {
     }
 
     public func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
-        guard let value = lock.withLock({ values[key] }) else { return nil }
-        if case let .string(text) = value, kind != .string {
-            return TweakPrimitive(string: text, as: kind)
-        }
-        return value
+        lock.withLock { values[key] }?.converted(to: kind)
     }
 
     public var changes: AnyPublisher<Void, Never> { subject.eraseToAnyPublisher() }
@@ -75,7 +73,8 @@ public final class LaunchArgumentTweakSource: TweakSource {
     public init(name: String = "Launch Argument", prefix: String = "-tweak.", arguments: [String] = ProcessInfo.processInfo.arguments) {
         self.name = name
         var values: [String: String] = [:]
-        for (argument, value) in zip(arguments, arguments.dropFirst()) where argument.hasPrefix(prefix) {
+        for (argument, value) in zip(arguments, arguments.dropFirst())
+            where argument.hasPrefix(prefix) && !value.hasPrefix(prefix) {
             values[String(argument.dropFirst(prefix.count))] = value
         }
         self.values = values
@@ -100,7 +99,8 @@ public final class LocalSplitTweakSource: TweakSource, @unchecked Sendable {
             self.weights = weights
         }
 
-        /// Gives string variants, such as the raw values of an enum, in proportion to their weights.
+        /// Gives variants in proportion to their weights. A variant is the raw value of an enum case, or the
+        /// text of a number or a Boolean value.
         public static func variants(_ weights: KeyValuePairs<String, Double>) -> Split {
             Split(weights.map { (TweakPrimitive.string($0.key), $0.value) })
         }
@@ -144,7 +144,7 @@ public final class LocalSplitTweakSource: TweakSource, @unchecked Sendable {
 
     public func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
         guard let split = splits[key] else { return nil }
-        return split.value(at: bucket(forKey: key))
+        return split.value(at: bucket(forKey: key)).converted(to: kind)
     }
 
     /// Puts this device in new random buckets. The next read gives the new values.
@@ -193,12 +193,14 @@ public final class DeviceTweakSource: TweakSource, NamedTweakSource {
     public var name: String { base.name }
 
     public func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
-        namedPrimitive(forKey: key, as: kind)?.primitive
+        namedPrimitive(forKey: key, as: kind, accepts: { _ in true })?.primitive
     }
 
-    func namedPrimitive(forKey key: String, as kind: TweakPrimitive.Kind) -> (primitive: TweakPrimitive, sourceName: String)? {
+    func namedPrimitive(
+        forKey key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool
+    ) -> (primitive: TweakPrimitive, sourceName: String)? {
         guard devices[key].map({ $0.contains(idiom) }) ?? true else { return nil }
-        return base.lookup(key, as: kind)
+        return base.lookup(key, as: kind, accepts: accepts)
     }
 
     public var changes: AnyPublisher<Void, Never> { base.changes }

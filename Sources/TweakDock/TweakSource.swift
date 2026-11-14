@@ -49,29 +49,38 @@ public enum TweakCurrentValue<Value: Sendable & Equatable>: Sendable, Equatable 
 
 /// The current value, and the source value that an override hides. The tweaks UI shows both.
 struct TweakReading<Value: Sendable & Equatable>: Sendable, Equatable {
+    struct Sourced: Sendable, Equatable {
+        let name: String
+        let value: Value
+    }
+
     let current: TweakCurrentValue<Value>
-    let sourceValue: Value?
-    let sourceName: String?
+    let source: Sourced?
 
     var isOverride: Bool {
         if case .override = current { true } else { false }
     }
 
     func map<T>(_ transform: (Value) -> T) -> TweakReading<T> {
-        TweakReading<T>(current: current.map(transform), sourceValue: sourceValue.map(transform), sourceName: sourceName)
+        TweakReading<T>(current: current.map(transform), source: source.map { .init(name: $0.name, value: transform($0.value)) })
     }
 }
 
 /// A source that keeps the name of the inner source that gives each value.
 protocol NamedTweakSource {
-    func namedPrimitive(forKey key: String, as kind: TweakPrimitive.Kind) -> (primitive: TweakPrimitive, sourceName: String)?
+    func namedPrimitive(
+        forKey key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool
+    ) -> (primitive: TweakPrimitive, sourceName: String)?
 }
 
 extension TweakSource {
-    func lookup(_ key: String, as kind: TweakPrimitive.Kind) -> (primitive: TweakPrimitive, sourceName: String)? {
+    /// Returns the first value that `accepts` allows, so that a combined source can skip a value that is not valid.
+    func lookup(
+        _ key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool = { _ in true }
+    ) -> (primitive: TweakPrimitive, sourceName: String)? {
         if let named = self as? NamedTweakSource {
-            return named.namedPrimitive(forKey: key, as: kind)
+            return named.namedPrimitive(forKey: key, as: kind, accepts: accepts)
         }
-        return primitive(forKey: key, as: kind).map { ($0, name) }
+        return primitive(forKey: key, as: kind).flatMap { accepts($0) ? ($0, name) : nil }
     }
 }

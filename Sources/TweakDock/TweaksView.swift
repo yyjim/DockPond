@@ -27,7 +27,7 @@ public struct TweaksView: View {
                     Button("Reset All") { confirmsReset = true }
                 }
             }
-            .confirmationDialog("Reset all tweaks to their default values?", isPresented: $confirmsReset, titleVisibility: .visible) {
+            .confirmationDialog("Reset all tweaks? Each tweak goes back to its source value or its default value.", isPresented: $confirmsReset, titleVisibility: .visible) {
                 Button("Reset All Tweaks", role: .destructive) {
                     tweaks.forEach { ($0 as? any PrimitiveTweak)?.reset() }
                 }
@@ -203,8 +203,8 @@ private struct OptionsView: View {
     }
 
     private func followTitle(_ reading: TweakReading<TweakPrimitive>) -> String {
-        if let sourceName = reading.sourceName, let value = reading.sourceValue {
-            return "Use \(sourceName) (\(value.displayText))"
+        if let source = reading.source {
+            return "Use \(source.name) (\(source.value.displayText))"
         }
         return "Use Default (\(tweak.defaultPrimitive.displayText))"
     }
@@ -235,8 +235,8 @@ enum TweakCaption {
         case .default:
             return "Default · \(sourceKey)"
         case .override:
-            if let name = reading.sourceName, let value = reading.sourceValue {
-                return "Override · \(name): \(value.displayText)"
+            if let source = reading.source {
+                return "Override · \(source.name): \(source.value.displayText)"
             }
             return "Override · \(sourceKey)"
         }
