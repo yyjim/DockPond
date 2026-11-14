@@ -395,9 +395,25 @@ An extension sees the changes of the app only when it makes a store or changes a
 
 ```swift
 #if !DEBUG
-AppTweaks.tweakStore.isEnabled = false   // Each tweak returns its default value.
+AppTweaks.tweakStore.isEnabled = false   // The store ignores overrides. Each tweak returns its source value or its default value.
 #endif
 ```
+
+### Sources: remote config and experiments
+
+Give `sourceKey` to read a value from `TweakStore.source`, for example Remote Config or a local split.
+The store uses the override, then a valid source value, then the default value.
+
+```swift
+@Tweak(collection: "Experiments", group: "Remote", name: "Paywall", defaultValue: Paywall.A, sourceKey: "exp_paywall")
+static var paywall: Paywall
+
+AppTweaks.tweakStore.source = FirebaseTweakSource()
+AppTweaks.paywall                      // The remote value when it is valid, else .A.
+AppTweaks.paywallTweak.currentValue    // .default(.A), .source("Firebase", .B), or .override(.C)
+```
+
+For the built-in sources, the analytics rules, and a Firebase adapter, see [TweakDock sources](docs/TweakDockSources.md).
 
 ### Supported types
 

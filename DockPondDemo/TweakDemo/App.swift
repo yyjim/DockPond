@@ -23,6 +23,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if ProcessInfo.processInfo.arguments.contains("-resetTweaks") {
             DemoTweaks.tweakStore.resetAll()
         }
+        DemoTweaks.tweakStore.source = DemoSources.make()
         let window = TweaksWindow(windowScene: windowScene, tweaks: DemoTweaks.allTweaks, store: DemoTweaks.tweakStore)
         window.rootViewController = UIHostingController(rootView: DemoView())
         window.makeKeyAndVisible()

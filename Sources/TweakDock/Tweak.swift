@@ -18,9 +18,12 @@ public extension AnyTweak {
 
 /// The UI edits value tweaks through their primitive form.
 protocol PrimitiveTweak: AnyTweak {
+    var sourceKey: String? { get }
     var primitiveValue: TweakPrimitive { get nonmutating set }
     var defaultPrimitive: TweakPrimitive { get }
-    var primitivePublisher: AnyPublisher<TweakPrimitive, Never> { get }
+    var primitiveReading: TweakReading<TweakPrimitive> { get }
+    var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> { get }
+    func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool
     func reset()
 }
 
@@ -30,6 +33,8 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
     public let group: String
     public let name: String
     public let defaultValue: Value
+    /// The key that the store source reads. When it is `nil`, the tweak does not use the source.
+    public let sourceKey: String?
     public let control: TweakControl
     let store: TweakStore
     let normalize: @Sendable (Value) -> Value
@@ -39,9 +44,10 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         group: String,
         name: String,
         defaultValue: Value,
+        sourceKey: String? = nil,
         store: TweakStore = .shared
     ) {
-        self.init(collection, group, name, defaultValue, Value.control, store) { $0 }
+        self.init(collection, group, name, defaultValue, sourceKey, Value.control, store) { $0 }
     }
 
     private init(
@@ -49,6 +55,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         _ group: String,
         _ name: String,
         _ defaultValue: Value,
+        _ sourceKey: String?,
         _ control: TweakControl,
         _ store: TweakStore,
         normalize: @escaping @Sendable (Value) -> Value
@@ -57,6 +64,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         self.group = group
         self.name = name
         self.defaultValue = defaultValue
+        self.sourceKey = sourceKey
         self.control = control
         self.store = store
         self.normalize = normalize
@@ -67,8 +75,16 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         nonmutating set { store.setValue(newValue, for: self) }
     }
 
+    /// The current value, and where it comes from: `.default`, `.source`, or `.override`.
+    public var currentValue: TweakCurrentValue<Value> { store.currentValue(for: self) }
+
     /// Publishes the current value, then each change.
     public var publisher: AnyPublisher<Value, Never> { store.publisher(for: self) }
+
+    /// Publishes `currentValue`, then each change. It also publishes when only the source of the value changes.
+    public var currentValuePublisher: AnyPublisher<TweakCurrentValue<Value>, Never> {
+        store.readingPublisher(for: self).map(\.current).removeDuplicates().eraseToAnyPublisher()
+    }
 
     public func reset() { store.reset(self) }
 }
@@ -81,6 +97,7 @@ public extension Tweak where Value: Comparable & Numeric {
         min: Value,
         max: Value,
         defaultValue: Value,
+        sourceKey: String? = nil,
         store: TweakStore = .shared
     ) {
         precondition(min <= max, "Tweak \"\(name)\": min must not be greater than max.")
@@ -88,7 +105,7 @@ public extension Tweak where Value: Comparable & Numeric {
         let range = min.primitive.doubleValue.flatMap { lower in
             max.primitive.doubleValue.map { lower ... $0 }
         }
-        self.init(collection, group, name, defaultValue, .number(range: range), store) {
+        self.init(collection, group, name, defaultValue, sourceKey, .number(range: range), store) {
             Swift.min(Swift.max($0, min), max)
         }
     }
@@ -101,10 +118,11 @@ public extension Tweak where Value == String {
         name: String,
         options: [String],
         defaultValue: String,
+        sourceKey: String? = nil,
         store: TweakStore = .shared
     ) {
         assert(options.contains(defaultValue), "Tweak \"\(name)\": defaultValue must be one of the options.")
-        self.init(collection, group, name, defaultValue, .picker(options: options), store) {
+        self.init(collection, group, name, defaultValue, sourceKey, .picker(options: options), store) {
             options.contains($0) ? $0 : defaultValue
         }
     }
@@ -122,8 +140,21 @@ extension Tweak: PrimitiveTweak {
 
     var defaultPrimitive: TweakPrimitive { defaultValue.primitive }
 
-    var primitivePublisher: AnyPublisher<TweakPrimitive, Never> {
-        publisher.map(\.primitive).eraseToAnyPublisher()
+    var primitiveReading: TweakReading<TweakPrimitive> { store.reading(for: self).map(\.primitive) }
+
+    /// A text field writes its value again when editing ends, clamped and rounded to the digits that it shows.
+    /// That write must not pin a source value as an override, so it is not a change.
+    func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool {
+        guard let newValue = Value(primitive: primitive).map(normalize) else { return false }
+        let current = value
+        if let new = newValue.primitive.doubleValue, let old = current.primitive.doubleValue {
+            return abs(new - old) > tolerance
+        }
+        return newValue != current
+    }
+
+    var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> {
+        store.readingPublisher(for: self).map { $0.map(\.primitive) }.eraseToAnyPublisher()
     }
 }
 

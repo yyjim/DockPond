@@ -53,6 +53,17 @@ This file records the decisions, the current status, and the next steps for Dock
 - iOS does not give the fold position. GaugeDock estimates it: the fold crosses the middle of the longer screen edge. The UI labels it "estimated".
 - The fold section shows only on a device with a hinge.
 
+### TweakDock sources
+
+- A tweak with a `sourceKey` reads `TweakStore.source`. The order is override, then a valid source value, then the default value.
+- `isEnabled = false` turns off overrides only. Source values still apply, so a sourced tweak is also the release read path.
+- An invalid source value gives `currentValue == .default(defaultValue)`. The store does not clamp or correct it. This keeps the analytics rule: `.default` reports `"default"`.
+- `TweakCurrentValue` is one enum (`.default`, `.source`, `.override`), and each case holds its value. The source value that an override hides is internal. Only the tweaks UI shows it.
+- A sourced tweak keeps an override that equals its default value, because the override hides the source value.
+- TweakDock does not depend on Firebase. The app adds the Firebase adapter (see the README). A Firebase product in DockPond would add Firebase to the dependency graph of each DockPond user, and tie DockPond releases to Firebase versions.
+- Experiment features, such as analytics user properties and code generation, stay in the app.
+- The TweakDock demo uses `InMemoryTweakSource` as a fake remote config.
+
 ### Demo apps
 
 - SwiftUI demo: three docks. "Dev Tools" (tabs: General, Controls, Appearance), "Style" (element tools only), and the gauge dock.

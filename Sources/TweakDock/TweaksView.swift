@@ -27,7 +27,7 @@ public struct TweaksView: View {
                     Button("Reset All") { confirmsReset = true }
                 }
             }
-            .confirmationDialog("Reset all tweaks to their default values?", isPresented: $confirmsReset, titleVisibility: .visible) {
+            .confirmationDialog("Reset all tweaks? Each tweak goes back to its source value or its default value.", isPresented: $confirmsReset, titleVisibility: .visible) {
                 Button("Reset All Tweaks", role: .destructive) {
                     tweaks.forEach { ($0 as? any PrimitiveTweak)?.reset() }
                 }
@@ -68,28 +68,36 @@ private struct TweakCollectionView: View {
 
 private struct TweakRow: View {
     let tweak: any PrimitiveTweak
-    @State private var value: TweakPrimitive
-    @State private var changes: AnyPublisher<TweakPrimitive, Never>
+    @State private var reading: TweakReading<TweakPrimitive>
+    @State private var changes: AnyPublisher<TweakReading<TweakPrimitive>, Never>
 
     init(tweak: any PrimitiveTweak) {
         self.tweak = tweak
-        _value = State(initialValue: tweak.primitiveValue)
-        _changes = State(initialValue: tweak.primitivePublisher.receive(on: DispatchQueue.main).eraseToAnyPublisher())
+        _reading = State(initialValue: tweak.primitiveReading)
+        _changes = State(initialValue: tweak.primitiveReadingPublisher.receive(on: DispatchQueue.main).eraseToAnyPublisher())
     }
 
+    private var value: TweakPrimitive { reading.current.value }
+
     var body: some View {
-        content.onReceive(changes) { value = $0 }
+        content
+            .onReceive(changes) { reading = $0 }
+            .swipeActions {
+                if tweak.sourceKey != nil, reading.isOverride {
+                    Button("Reset") { tweak.reset() }
+                }
+            }
     }
 
     @ViewBuilder private var content: some View {
         switch (tweak.control, value) {
         case (.toggle, .bool):
-            Toggle(tweak.name, isOn: binding(Bool.self))
+            Toggle(isOn: binding(Bool.self)) { label }
         case let (.number(range), .int), let (.number(range), .double):
             numberRow(range: range)
         case (.text, .string):
             HStack {
-                Text(tweak.name)
+                label
                 TextField(tweak.name, text: binding(String.self))
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(.secondary)
@@ -98,7 +106,7 @@ private struct TweakRow: View {
             NavigationLink {
                 OptionsView(tweak: tweak, options: options)
             } label: {
-                LabeledContent(tweak.name, value: current)
+                LabeledContent { Text(current) } label: { label }
             }
         default:
             LabeledContent(tweak.name, value: "Unsupported")
@@ -122,9 +130,9 @@ private struct TweakRow: View {
             set: { number.wrappedValue = TweakStepper.trimmed($0, step: step) }
         )
         return HStack {
-            Text(tweak.name)
+            label
             Spacer()
-            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0 ... 3)))
+            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0 ... Self.fractionDigits)))
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
@@ -134,6 +142,19 @@ private struct TweakRow: View {
             } else {
                 Stepper(tweak.name, value: stepped, step: step).labelsHidden()
             }
+        }
+    }
+
+    @ViewBuilder private var label: some View {
+        if let caption = TweakCaption.text(sourceKey: tweak.sourceKey, reading: reading) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tweak.name)
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(reading.isOverride ? Color.orange : Color.secondary)
+            }
+        } else {
+            Text(tweak.name)
         }
     }
 
@@ -148,9 +169,12 @@ private struct TweakRow: View {
         )
     }
 
+    private static let fractionDigits = 3
+
     private func update(_ primitive: TweakPrimitive) {
+        guard tweak.changesValue(primitive, tolerance: 0.5 * pow(10, -Double(Self.fractionDigits))) else { return }
         tweak.primitiveValue = primitive
-        value = tweak.primitiveValue
+        reading = tweak.primitiveReading
     }
 }
 
@@ -160,16 +184,18 @@ private struct OptionsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        List(options, id: \.self) { option in
-            Button {
-                tweak.primitiveValue = .string(option)
-                dismiss()
-            } label: {
-                HStack {
-                    Text(option).foregroundStyle(Color.primary)
-                    Spacer()
-                    if tweak.primitiveValue == .string(option) {
-                        Image(systemName: "checkmark")
+        let reading = tweak.primitiveReading
+        let followsSource = tweak.sourceKey != nil && !reading.isOverride
+        List {
+            if tweak.sourceKey != nil {
+                Section {
+                    row(followTitle(reading), isSelected: followsSource) { tweak.reset() }
+                }
+            }
+            Section {
+                ForEach(options, id: \.self) { option in
+                    row(option, isSelected: !followsSource && reading.current.value == .string(option)) {
+                        tweak.primitiveValue = .string(option)
                     }
                 }
             }
@@ -177,6 +203,57 @@ private struct OptionsView: View {
         .groupedListStyle()
         .navigationTitle(tweak.name)
         .inlineNavigationTitle()
+    }
+
+    private func followTitle(_ reading: TweakReading<TweakPrimitive>) -> String {
+        if let source = reading.source {
+            return "Use \(source.name) (\(source.value.displayText))"
+        }
+        return "Use Default (\(tweak.defaultPrimitive.displayText))"
+    }
+
+    private func row(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            dismiss()
+        } label: {
+            HStack {
+                Text(title).foregroundStyle(Color.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                }
+            }
+        }
+    }
+}
+
+enum TweakCaption {
+    /// Describes where the value of a tweak with a `sourceKey` comes from.
+    static func text(sourceKey: String?, reading: TweakReading<TweakPrimitive>) -> String? {
+        guard let sourceKey else { return nil }
+        switch reading.current {
+        case let .source(name, _):
+            return "\(name) · \(sourceKey)"
+        case .default:
+            return "Default · \(sourceKey)"
+        case .override:
+            if let source = reading.source {
+                return "Override · \(source.name): \(source.value.displayText)"
+            }
+            return "Override · \(sourceKey)"
+        }
+    }
+}
+
+extension TweakPrimitive {
+    var displayText: String {
+        switch self {
+        case let .bool(value): String(value)
+        case let .int(value): String(value)
+        case let .double(value): value.formatted()
+        case let .string(value): value
+        }
     }
 }
 

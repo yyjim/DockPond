@@ -43,4 +43,43 @@ enum DemoTweaks {
     static func clearCache() {
         NotificationCenter.default.post(name: .demoCacheCleared, object: nil)
     }
+
+    enum ABC: String, CaseIterable, TweakValue { case A, B, C }
+    enum AB: String, CaseIterable, TweakValue { case A, B }
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Paywall Layout", defaultValue: ABC.A, sourceKey: "exp_paywall_layout")
+    static var paywallLayout: ABC
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Onboarding", defaultValue: AB.A, sourceKey: "exp_onboarding")
+    static var onboarding: AB
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Share Sheet", defaultValue: AB.A, sourceKey: "exp_share_sheet")
+    static var shareSheet: AB
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "iPad Sidebar", defaultValue: AB.A, sourceKey: "exp_ipad_sidebar")
+    static var iPadSidebar: AB
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Upload Limit", min: 1, max: 20, defaultValue: 5, sourceKey: "upload_limit")
+    static var uploadLimit: Int
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Fetch Remote Config")
+    static func fetchRemoteConfig() {
+        DemoSources.fetchRemoteConfig()
+    }
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Clear Remote Config")
+    static func clearRemoteConfig() {
+        DemoSources.clearRemoteConfig()
+    }
+
+    @Tweak(collection: "Experiments", group: "Local Split", name: "Card Style", defaultValue: AB.A, sourceKey: "lab_card_style")
+    static var cardStyle: AB
+
+    @Tweak(collection: "Experiments", group: "Local Split", name: "New Badge", defaultValue: false, sourceKey: "rollout_new_badge")
+    static var showsNewBadge: Bool
+
+    @Tweak(collection: "Experiments", group: "Local Split", name: "Reassign Buckets")
+    static func reassignBuckets() {
+        DemoSources.localSplit.reassignAll()
+    }
 }
