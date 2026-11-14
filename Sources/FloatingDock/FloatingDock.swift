@@ -145,7 +145,7 @@ extension View {
             configuration: configuration,
             content: content,
             actions: actions,
-            optionalLabel: nil as ((FloatingDockButtonState) -> EmptyView)?
+            optionalLabel: nil as (@MainActor (FloatingDockButtonState) -> EmptyView)?
         )
     }
 
