@@ -6,7 +6,7 @@ import Combine
 /// that the tweak cannot hold, such as an unknown enum case or a number out of range, the tweak
 /// uses its default value.
 public protocol TweakSource: AnyObject, Sendable {
-    /// The name that the tweaks UI and `TweakOrigin.source` show.
+    /// The name that the tweaks UI and `TweakCurrentValue.source` show.
     var name: String { get }
 
     /// Returns the value for `key`, or `nil` when the source has no value.
@@ -21,27 +21,44 @@ public extension TweakSource {
     var changes: AnyPublisher<Void, Never> { Empty().eraseToAnyPublisher() }
 }
 
-/// Where the current value of a tweak comes from.
-public enum TweakOrigin: Sendable, Hashable {
+/// The current value of a tweak, and where it comes from.
+///
+/// To report an experiment, send `"default"` for `.default`, and the value for the other cases.
+public enum TweakCurrentValue<Value: Sendable & Equatable>: Sendable, Equatable {
     /// No override and no valid source value.
-    case `default`
+    case `default`(Value)
     /// The value of the named source.
-    case source(String)
+    case source(String, Value)
     /// A value that you set in the tweaks UI or in code.
-    case override
+    case override(Value)
+
+    public var value: Value {
+        switch self {
+        case let .default(value), let .source(_, value), let .override(value): value
+        }
+    }
+
+    func map<T>(_ transform: (Value) -> T) -> TweakCurrentValue<T> {
+        switch self {
+        case let .default(value): .default(transform(value))
+        case let .source(name, value): .source(name, transform(value))
+        case let .override(value): .override(transform(value))
+        }
+    }
 }
 
-/// The value of a tweak, and where it comes from.
-public struct TweakResolution<Value: Sendable & Equatable>: Sendable, Equatable {
-    public let value: Value
-    public let origin: TweakOrigin
-    /// The valid source value, also when an override hides it.
-    public let sourceValue: Value?
-    /// The name of the source that gives `sourceValue`.
-    public let sourceName: String?
+/// The current value, and the source value that an override hides. The tweaks UI shows both.
+struct TweakReading<Value: Sendable & Equatable>: Sendable, Equatable {
+    let current: TweakCurrentValue<Value>
+    let sourceValue: Value?
+    let sourceName: String?
 
-    func map<T>(_ transform: (Value) -> T) -> TweakResolution<T> {
-        TweakResolution<T>(value: transform(value), origin: origin, sourceValue: sourceValue.map(transform), sourceName: sourceName)
+    var isOverride: Bool {
+        if case .override = current { true } else { false }
+    }
+
+    func map<T>(_ transform: (Value) -> T) -> TweakReading<T> {
+        TweakReading<T>(current: current.map(transform), sourceValue: sourceValue.map(transform), sourceName: sourceName)
     }
 }
 

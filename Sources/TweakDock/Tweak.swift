@@ -21,8 +21,8 @@ protocol PrimitiveTweak: AnyTweak {
     var sourceKey: String? { get }
     var primitiveValue: TweakPrimitive { get nonmutating set }
     var defaultPrimitive: TweakPrimitive { get }
-    var primitiveResolution: TweakResolution<TweakPrimitive> { get }
-    var primitiveResolutionPublisher: AnyPublisher<TweakResolution<TweakPrimitive>, Never> { get }
+    var primitiveReading: TweakReading<TweakPrimitive> { get }
+    var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> { get }
     func reset()
 }
 
@@ -74,17 +74,16 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         nonmutating set { store.setValue(newValue, for: self) }
     }
 
-    /// The current value, and where it comes from. Use `origin` to report experiment variants:
-    /// `.default` means that no valid source value or override exists.
-    public var resolution: TweakResolution<Value> { store.resolution(for: self) }
-
-    public var origin: TweakOrigin { resolution.origin }
+    /// The current value, and where it comes from: `.default`, `.source`, or `.override`.
+    public var currentValue: TweakCurrentValue<Value> { store.reading(for: self).current }
 
     /// Publishes the current value, then each change.
     public var publisher: AnyPublisher<Value, Never> { store.publisher(for: self) }
 
-    /// Publishes the current resolution, then each change, also a change of origin only.
-    public var resolutionPublisher: AnyPublisher<TweakResolution<Value>, Never> { store.resolutionPublisher(for: self) }
+    /// Publishes `currentValue`, then each change. It also publishes when only the source of the value changes.
+    public var currentValuePublisher: AnyPublisher<TweakCurrentValue<Value>, Never> {
+        store.readingPublisher(for: self).map(\.current).removeDuplicates().eraseToAnyPublisher()
+    }
 
     public func reset() { store.reset(self) }
 }
@@ -140,10 +139,10 @@ extension Tweak: PrimitiveTweak {
 
     var defaultPrimitive: TweakPrimitive { defaultValue.primitive }
 
-    var primitiveResolution: TweakResolution<TweakPrimitive> { resolution.map(\.primitive) }
+    var primitiveReading: TweakReading<TweakPrimitive> { store.reading(for: self).map(\.primitive) }
 
-    var primitiveResolutionPublisher: AnyPublisher<TweakResolution<TweakPrimitive>, Never> {
-        resolutionPublisher.map { $0.map(\.primitive) }.eraseToAnyPublisher()
+    var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> {
+        store.readingPublisher(for: self).map { $0.map(\.primitive) }.eraseToAnyPublisher()
     }
 }
 

@@ -6,7 +6,7 @@ import UIKit
 
 /// Asks each source in order, and uses the first value.
 ///
-/// `TweakOrigin.source` gives the name of the inner source that gives the value.
+/// `TweakCurrentValue.source` gives the name of the inner source that gives the value.
 public final class CombinedTweakSource: TweakSource, NamedTweakSource {
     public let name: String
     public let sources: [any TweakSource]

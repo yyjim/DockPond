@@ -76,7 +76,7 @@ private enum SampleTweaks {
         #expect(SampleTweaks.remoteSize == .small)
         TweakStore.integration.source = InMemoryTweakSource(name: "Remote", values: ["integration_size": .string("large")])
         #expect(SampleTweaks.remoteSize == .large)
-        #expect(SampleTweaks.remoteSizeTweak.origin == .source("Remote"))
+        #expect(SampleTweaks.remoteSizeTweak.currentValue == .source("Remote", .large))
         #expect(SampleTweaks.remoteSizeTweak.sourceKey == "integration_size")
     }
 

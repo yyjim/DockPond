@@ -26,27 +26,23 @@ import UIKit
         remote.setValue(.string("B"), forKey: "exp_paywall")
         let tweak = experiment()
         #expect(tweak.value == .B)
-        #expect(tweak.origin == .source("Remote"))
+        #expect(tweak.currentValue == .source("Remote", .B))
     }
 
     @Test func usesDefaultWhenSourceHasNoValue() {
         let tweak = experiment()
         #expect(tweak.value == .A)
-        #expect(tweak.origin == .default)
+        #expect(tweak.currentValue == .default(.A))
     }
 
     @Test func usesDefaultWhenStoreHasNoSource() {
         store.source = nil
-        let tweak = experiment()
-        #expect(tweak.value == .A)
-        #expect(tweak.origin == .default)
+        #expect(experiment().currentValue == .default(.A))
     }
 
     @Test func usesDefaultForUnknownVariant() {
         remote.setValue(.string("Z"), forKey: "exp_paywall")
-        let tweak = experiment()
-        #expect(tweak.value == .A)
-        #expect(tweak.origin == .default)
+        #expect(experiment().currentValue == .default(.A))
     }
 
     @Test func usesDefaultForValueOutsideRangeOrOptions() {
@@ -54,9 +50,9 @@ import UIKit
         let retries = Tweak(collection: "C", group: "G", name: "Retries", min: 0, max: 5, defaultValue: 3, sourceKey: "retries", store: store)
         let theme = Tweak(collection: "C", group: "G", name: "Theme", options: ["light", "dark"], defaultValue: "light", sourceKey: "theme", store: store)
         let flag = Tweak(collection: "C", group: "G", name: "Flag", defaultValue: false, sourceKey: "flag", store: store)
-        #expect(retries.resolution == TweakResolution(value: 3, origin: .default, sourceValue: nil, sourceName: nil))
-        #expect(theme.origin == .default)
-        #expect(flag.origin == .default)
+        #expect(retries.currentValue == .default(3))
+        #expect(theme.currentValue == .default("light"))
+        #expect(flag.currentValue == .default(false))
 
         remote.replaceValues(["retries": .string("4"), "theme": .string("dark"), "flag": .string("true")])
         #expect(retries.value == 4)
@@ -67,18 +63,17 @@ import UIKit
     @Test func ignoresSourceForTweakWithoutSourceKey() {
         remote.setValue(.int(9), forKey: "Count")
         let tweak = Tweak(collection: "C", group: "G", name: "Count", defaultValue: 1, store: store)
-        #expect(tweak.value == 1)
-        #expect(tweak.origin == .default)
+        #expect(tweak.currentValue == .default(1))
     }
 
     @Test func overrideHidesSourceValueUntilReset() {
         remote.setValue(.string("B"), forKey: "exp_paywall")
         let tweak = experiment()
         tweak.value = .A
-        #expect(tweak.resolution == TweakResolution(value: .A, origin: .override, sourceValue: .B, sourceName: "Remote"))
+        #expect(tweak.currentValue == .override(.A))
+        #expect(store.reading(for: tweak) == TweakReading(current: .override(.A), sourceValue: .B, sourceName: "Remote"))
         tweak.reset()
-        #expect(tweak.value == .B)
-        #expect(tweak.origin == .source("Remote"))
+        #expect(tweak.currentValue == .source("Remote", .B))
     }
 
     @Test func disabledStoreIgnoresOverridesButKeepsSource() {
@@ -86,20 +81,19 @@ import UIKit
         let tweak = experiment()
         tweak.value = .C
         store.isEnabled = false
-        #expect(tweak.value == .B)
-        #expect(tweak.origin == .source("Remote"))
+        #expect(tweak.currentValue == .source("Remote", .B))
     }
 
     @Test func publishesSourceChanges() {
         let tweak = experiment()
-        var received: [TweakOrigin] = []
-        let subscription = tweak.resolutionPublisher.sink { received.append($0.origin) }
+        var received: [TweakCurrentValue<Variant>] = []
+        let subscription = tweak.currentValuePublisher.sink { received.append($0) }
 
         remote.setValue(.string("B"), forKey: "exp_paywall")
         remote.setValue(.string("Z"), forKey: "exp_paywall")
         store.source = InMemoryTweakSource(name: "Other", values: ["exp_paywall": .string("B")])
 
-        #expect(received == [.default, .source("Remote"), .default, .source("Other")])
+        #expect(received == [.default(.A), .source("Remote", .B), .default(.A), .source("Other", .B)])
         subscription.cancel()
     }
 
@@ -108,9 +102,8 @@ import UIKit
         store.source = CombinedTweakSource([launch, remote])
         remote.replaceValues(["exp_paywall": .string("B"), "exp_other": .string("B")])
 
-        #expect(experiment().resolution.value == .C)
-        #expect(experiment().origin == .source("Launch Argument"))
-        #expect(experiment("exp_other").origin == .source("Remote"))
+        #expect(experiment().currentValue == .source("Launch Argument", .C))
+        #expect(experiment("exp_other").currentValue == .source("Remote", .B))
     }
 
     @Test func parsesLaunchArgumentsByKind() {
@@ -155,20 +148,20 @@ import UIKit
         let padOnly: [String: Set<UIUserInterfaceIdiom>] = ["exp_paywall": [.pad]]
 
         store.source = DeviceTweakSource(remote, devices: padOnly, idiom: .phone)
-        #expect(experiment().origin == .default)
-        #expect(experiment("exp_other").origin == .source("Remote"))
+        #expect(experiment().currentValue == .default(.A))
+        #expect(experiment("exp_other").currentValue == .source("Remote", .B))
 
         store.source = DeviceTweakSource(remote, devices: padOnly, idiom: .pad)
-        #expect(experiment().origin == .source("Remote"))
+        #expect(experiment().currentValue == .source("Remote", .B))
     }
     #endif
 
     @Test func describesOriginInCaption() {
         remote.setValue(.string("B"), forKey: "exp_paywall")
         let tweak = experiment()
-        #expect(TweakCaption.text(sourceKey: "exp_paywall", resolution: tweak.primitiveResolution) == "Remote · exp_paywall")
+        #expect(TweakCaption.text(sourceKey: "exp_paywall", reading: tweak.primitiveReading) == "Remote · exp_paywall")
         tweak.value = .C
-        #expect(TweakCaption.text(sourceKey: "exp_paywall", resolution: tweak.primitiveResolution) == "Override · Remote: B")
-        #expect(TweakCaption.text(sourceKey: nil, resolution: tweak.primitiveResolution) == nil)
+        #expect(TweakCaption.text(sourceKey: "exp_paywall", reading: tweak.primitiveReading) == "Override · Remote: B")
+        #expect(TweakCaption.text(sourceKey: nil, reading: tweak.primitiveReading) == nil)
     }
 }

@@ -423,37 +423,41 @@ AppTweaks.tweakStore.source = CombinedTweakSource([
     LocalSplitTweakSource(splits: ["lab_new_badge": .rollout(0.1)]),
 ])
 
-AppTweaks.paywallTweak.origin   // .default, .source("Firebase"), or .override
+AppTweaks.paywallTweak.currentValue   // .default(.A), .source("Firebase", .B), or .override(.C)
 ```
 
 The store uses a source value only when it is valid.
 An unknown enum case, a value out of `min...max`, a value that is not in `options`, or text of the wrong kind gives the default value.
-Use `origin` to report experiments to analytics:
+Use `currentValue` to report experiments to analytics:
 
-| Case | `origin` | Value | User property |
-| --- | --- | --- | --- |
-| The source value is present and valid | `.source(name)` | The source value, for example `B` | `B` |
-| The key is not fetched yet (first launch) | `.default` | `defaultValue` | `"default"` |
-| The key is not in the source | `.default` | `defaultValue` | `"default"` |
-| The value is not a known variant | `.default` | `defaultValue` | `"default"` |
-| The device is not in `devices` | `.default` | `defaultValue` | `"default"` |
+| Case | `currentValue` | User property |
+| --- | --- | --- |
+| The source value is present and valid | `.source("Firebase", .B)` | `B` |
+| The key is not fetched yet (first launch) | `.default(.A)` | `"default"` |
+| The key is not in the source | `.default(.A)` | `"default"` |
+| The value is not a known variant | `.default(.A)` | `"default"` |
+| The device is not in `devices` | `.default(.A)` | `"default"` |
 
 ```swift
-let tweak = AppTweaks.paywallTweak
-let userProperty = tweak.origin == .default ? "default" : tweak.value.rawValue
+let userProperty = switch AppTweaks.paywallTweak.currentValue {
+case .default: "default"
+case let .source(_, value), let .override(value): value.rawValue
+}
 ```
+
+`currentValuePublisher` publishes `currentValue`, then each change.
 
 TweakDock has these sources. None of them need a dependency.
 
 | Source | Use |
 | --- | --- |
-| `CombinedTweakSource` | Asks each source in order, and uses the first value. `origin` names the inner source. |
+| `CombinedTweakSource` | Asks each source in order, and uses the first value. `.source` gives the name of the inner source. |
 | `DeviceTweakSource` | Gives the values of its base source only on the given devices. |
 | `LocalSplitTweakSource` | Puts each device in a local bucket for an experiment or a rollout that has no server. |
 | `LaunchArgumentTweakSource` | Reads `-tweak.<key> <value>` launch arguments. |
 | `InMemoryTweakSource` | Keeps values in memory, for tests, previews, or a fake remote config. |
 
-In the tweaks UI, a tweak with a `sourceKey` shows its origin under its name.
+In the tweaks UI, a tweak with a `sourceKey` shows where its value comes from under its name.
 To remove an override, swipe the row, or select "Use <source>" in the options.
 
 #### Firebase Remote Config

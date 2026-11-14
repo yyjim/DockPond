@@ -61,10 +61,10 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func value<Value>(for tweak: Tweak<Value>) -> Value {
-        resolution(for: tweak).value
+        reading(for: tweak).current.value
     }
 
-    func resolution<Value>(for tweak: Tweak<Value>) -> TweakResolution<Value> {
+    func reading<Value>(for tweak: Tweak<Value>) -> TweakReading<Value> {
         let (override, source) = lock.withLock { (enabled ? overrides[tweak.id] : nil, currentSource) }
         let sourced = tweak.sourceKey
             .flatMap { source?.lookup($0, as: tweak.defaultValue.primitive.kind) }
@@ -74,12 +74,12 @@ public final class TweakStore: @unchecked Sendable {
         let sourceValue = sourced?.value
         let sourceName = sourced?.sourceName
         if let value = override.flatMap(Value.init(primitive:)).map(tweak.normalize) {
-            return TweakResolution(value: value, origin: .override, sourceValue: sourceValue, sourceName: sourceName)
+            return TweakReading(current: .override(value), sourceValue: sourceValue, sourceName: sourceName)
         }
         if let sourceValue, let sourceName {
-            return TweakResolution(value: sourceValue, origin: .source(sourceName), sourceValue: sourceValue, sourceName: sourceName)
+            return TweakReading(current: .source(sourceName, sourceValue), sourceValue: sourceValue, sourceName: sourceName)
         }
-        return TweakResolution(value: tweak.defaultValue, origin: .default, sourceValue: nil, sourceName: nil)
+        return TweakReading(current: .default(tweak.defaultValue), sourceValue: nil, sourceName: nil)
     }
 
     /// A tweak with a `sourceKey` keeps an override that equals its default value, because the
@@ -95,15 +95,15 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func publisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<Value, Never> {
-        resolutionPublisher(for: tweak).map(\.value).removeDuplicates().eraseToAnyPublisher()
+        readingPublisher(for: tweak).map(\.current.value).removeDuplicates().eraseToAnyPublisher()
     }
 
-    func resolutionPublisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<TweakResolution<Value>, Never> {
+    func readingPublisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<TweakReading<Value>, Never> {
         changes
             .filter { $0 == nil || $0 == tweak.id }
             .map { _ in }
             .merge(with: Just(()))
-            .map { [self] in resolution(for: tweak) }
+            .map { [self] in reading(for: tweak) }
             .removeDuplicates()
             .eraseToAnyPublisher()
     }

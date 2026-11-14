@@ -9,14 +9,19 @@ struct ExperimentState: Equatable {
     /// The analytics user property: the value, or `default` when no valid source value or override exists.
     let userProperty: String
 
-    init<Value: TweakValue>(_ resolution: TweakResolution<Value>) {
-        value = resolution.value.primitive.text
-        switch resolution.origin {
-        case .default: origin = "Default"
-        case let .source(name): origin = name
-        case .override: origin = "Override"
+    init<Value: TweakValue>(_ current: TweakCurrentValue<Value>) {
+        value = current.value.primitive.text
+        switch current {
+        case .default:
+            origin = "Default"
+            userProperty = "default"
+        case let .source(name, _):
+            origin = name
+            userProperty = value
+        case .override:
+            origin = "Override"
+            userProperty = value
         }
-        userProperty = resolution.origin == .default ? "default" : value
     }
 }
 
@@ -69,7 +74,7 @@ final class DemoModel: ObservableObject {
     }
 
     private func track<Value>(_ name: String, _ tweak: Tweak<Value>) {
-        tweak.resolutionPublisher
+        tweak.currentValuePublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.experiments[name] = ExperimentState($0) }
             .store(in: &cancellables)
