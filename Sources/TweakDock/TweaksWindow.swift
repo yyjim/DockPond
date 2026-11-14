@@ -28,7 +28,8 @@ open class TweaksWindow: UIWindow {
         }
     }
 
-    /// Returns `false` when the tweaks are already on screen.
+    /// Returns `false` when it does not present the tweaks, for example because they
+    /// are already on screen or the top controller is in a transition.
     @discardableResult
     public func presentTweaks() -> Bool {
         guard presentedTweaks?.presentingViewController == nil, var presenter = rootViewController else { return false }
@@ -37,6 +38,7 @@ open class TweaksWindow: UIWindow {
             guard let presented = presenter.presentedViewController else { break }
             presenter = presented
         }
+        guard !presenter.isBeingPresented, !presenter.isBeingDismissed else { return false }
         let controller = UIHostingController(rootView: TweaksView(tweaks) { [weak presenter] in
             presenter?.dismiss(animated: true)
         })

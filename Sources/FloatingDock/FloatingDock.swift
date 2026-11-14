@@ -138,14 +138,14 @@ extension View {
         @ViewBuilder content: () -> Content,
         @ViewBuilder actions: () -> Actions
     ) -> some View {
-        let tool = DockTool(title, systemImage: systemImage, content: content)
-        return floatingDock(
+        floatingDock(
             isEnabled: isEnabled,
             title: title,
             systemImage: systemImage,
             configuration: configuration,
-            tools: { tool },
-            actions: actions
+            content: content,
+            actions: actions,
+            optionalLabel: nil as ((FloatingDockButtonState) -> EmptyView)?
         )
     }
 
@@ -231,15 +231,14 @@ extension View {
         @ViewBuilder actions: () -> Actions,
         @ViewBuilder label: @escaping @MainActor (FloatingDockButtonState) -> Label
     ) -> some View {
-        let tool = DockTool(title, systemImage: systemImage, content: content)
-        return floatingDock(
+        floatingDock(
             isEnabled: isEnabled,
             title: title,
             systemImage: systemImage,
             configuration: configuration,
-            tools: { tool },
+            content: content,
             actions: actions,
-            label: label
+            optionalLabel: label
         )
     }
 
