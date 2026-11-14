@@ -61,19 +61,19 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func value<Value>(for tweak: Tweak<Value>) -> Value {
-        let (override, source) = snapshot(for: tweak)
-        return override ?? sourced(for: tweak, from: source)?.value ?? tweak.defaultValue
+        currentValue(for: tweak).value
     }
 
     func currentValue<Value>(for tweak: Tweak<Value>) -> TweakCurrentValue<Value> {
         let (override, source) = snapshot(for: tweak)
         if let override { return .override(override) }
-        return reading(override: nil, sourced: sourced(for: tweak, from: source), tweak: tweak).current
+        return current(sourced: sourced(for: tweak, from: source), tweak: tweak)
     }
 
     func reading<Value>(for tweak: Tweak<Value>) -> TweakReading<Value> {
         let (override, source) = snapshot(for: tweak)
-        return reading(override: override, sourced: sourced(for: tweak, from: source), tweak: tweak)
+        let sourced = sourced(for: tweak, from: source)
+        return TweakReading(current: override.map { .override($0) } ?? current(sourced: sourced, tweak: tweak), source: sourced)
     }
 
     /// A tweak with a `sourceKey` keeps an override that equals its default value, because the
@@ -84,7 +84,6 @@ public final class TweakStore: @unchecked Sendable {
         setOverride(isRedundant ? nil : value.primitive, id: tweak.id)
     }
 
-    /// Reads the override and the source in one lock, so that a reading never mixes two states.
     private func snapshot<Value>(for tweak: Tweak<Value>) -> (override: Value?, source: (any TweakSource)?) {
         let (primitive, source) = lock.withLock { (enabled ? overrides[tweak.id] : nil, currentSource) }
         return (primitive.flatMap(Value.init(primitive:)).map(tweak.normalize), source)
@@ -99,14 +98,8 @@ public final class TweakStore: @unchecked Sendable {
         return found.map { TweakReading<Value>.Sourced(name: $0.sourceName, value: $0.value) }
     }
 
-    private func reading<Value>(override: Value?, sourced: TweakReading<Value>.Sourced?, tweak: Tweak<Value>) -> TweakReading<Value> {
-        if let override {
-            return TweakReading(current: .override(override), source: sourced)
-        }
-        if let sourced {
-            return TweakReading(current: .source(sourced.name, sourced.value), source: sourced)
-        }
-        return TweakReading(current: .default(tweak.defaultValue), source: nil)
+    private func current<Value>(sourced: TweakReading<Value>.Sourced?, tweak: Tweak<Value>) -> TweakCurrentValue<Value> {
+        sourced.map { .source($0.name, $0.value) } ?? .default(tweak.defaultValue)
     }
 
     func reset(_ tweak: some AnyTweak) {

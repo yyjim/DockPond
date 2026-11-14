@@ -132,7 +132,7 @@ private struct TweakRow: View {
         return HStack {
             label
             Spacer()
-            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0 ... 3)))
+            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0 ... Self.fractionDigits)))
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
@@ -169,9 +169,10 @@ private struct TweakRow: View {
         )
     }
 
-    /// A text field writes its value again when editing ends. That write must not pin a source value as an override.
+    private static let fractionDigits = 3
+
     private func update(_ primitive: TweakPrimitive) {
-        guard primitive != value else { return }
+        guard tweak.changesValue(primitive, tolerance: 0.5 * pow(10, -Double(Self.fractionDigits))) else { return }
         tweak.primitiveValue = primitive
         reading = tweak.primitiveReading
     }

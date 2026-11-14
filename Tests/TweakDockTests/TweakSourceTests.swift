@@ -84,6 +84,21 @@ import UIKit
         #expect(tweak.currentValue == .override(.B))
     }
 
+    @Test func textFieldRewriteIsNotAChange() {
+        remote.replaceValues(["ratio": .double(1.23456), "limit": .int(10)])
+        let ratio = Tweak(collection: "C", group: "G", name: "Ratio", defaultValue: 1.0, sourceKey: "ratio", store: store)
+        let limit = Tweak(collection: "C", group: "G", name: "Limit", min: 0, max: 10, defaultValue: 5, sourceKey: "limit", store: store)
+        let paywall = experiment()
+
+        #expect(!ratio.changesValue(.double(1.235), tolerance: 0.0005))
+        #expect(ratio.changesValue(.double(1.24), tolerance: 0.0005))
+        #expect(!limit.changesValue(.int(15), tolerance: 0.0005))
+        #expect(limit.changesValue(.int(9), tolerance: 0.0005))
+        #expect(!paywall.changesValue(.string("A"), tolerance: 0.0005))
+        #expect(paywall.changesValue(.string("B"), tolerance: 0.0005))
+        #expect(!paywall.changesValue(.string("Z"), tolerance: 0.0005))
+    }
+
     @Test func combinedSourceSkipsValueThatIsNotValid() {
         let launch = LaunchArgumentTweakSource(arguments: ["app", "-tweak.exp_paywall", "Z"])
         store.source = CombinedTweakSource([launch, remote])

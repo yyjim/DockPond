@@ -6,7 +6,6 @@ import UIKit
 
 /// Asks each source in order. A tweak uses the first value that it can hold, and
 /// `TweakCurrentValue.source` gives the name of the inner source that gives it.
-/// `primitive(forKey:as:)` returns the first value of any kind.
 public final class CombinedTweakSource: TweakSource, NamedTweakSource {
     public let name: String
     public let sources: [any TweakSource]

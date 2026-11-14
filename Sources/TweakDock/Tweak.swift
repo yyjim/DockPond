@@ -23,6 +23,7 @@ protocol PrimitiveTweak: AnyTweak {
     var defaultPrimitive: TweakPrimitive { get }
     var primitiveReading: TweakReading<TweakPrimitive> { get }
     var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> { get }
+    func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool
     func reset()
 }
 
@@ -140,6 +141,17 @@ extension Tweak: PrimitiveTweak {
     var defaultPrimitive: TweakPrimitive { defaultValue.primitive }
 
     var primitiveReading: TweakReading<TweakPrimitive> { store.reading(for: self).map(\.primitive) }
+
+    /// A text field writes its value again when editing ends, clamped and rounded to the digits that it shows.
+    /// That write must not pin a source value as an override, so it is not a change.
+    func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool {
+        guard let newValue = Value(primitive: primitive).map(normalize) else { return false }
+        let current = value
+        if let new = newValue.primitive.doubleValue, let old = current.primitive.doubleValue {
+            return abs(new - old) > tolerance
+        }
+        return newValue != current
+    }
 
     var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> {
         store.readingPublisher(for: self).map { $0.map(\.primitive) }.eraseToAnyPublisher()

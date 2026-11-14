@@ -12,6 +12,9 @@ The store finds the value in this order:
 2. The source value, when it is valid.
 3. The default value.
 
+A write, such as `AppTweaks.paywall = .B`, saves an override, also when the value equals the source value.
+The override hides later source values. Call `reset()` to use the source value again.
+
 ```swift
 @Tweaks
 enum AppTweaks {
