@@ -55,7 +55,7 @@ final class DuoRootViewController: UIViewController {
     func showAbout() {
         let alert = UIAlertController(
             title: "UIKit Demo",
-            message: "This app installs two docks from its SceneDelegate. Dev Tools shows its tools as sections: the layout gauge from GaugeDock, the hinge element tools, a custom UIKit Controls view, and the ready-made Appearance tool. Style has only element tools, so it shows them without tabs or headers.",
+            message: "This app installs three docks from its SceneDelegate. Dev Tools shows its tools as sections: the layout gauge from GaugeDock, the hinge element tools, a custom UIKit Controls view, and the ready-made Appearance tool. Style has only element tools, so it shows them without tabs or headers. Gauge is the ready-made gauge dock from FloatingDockController.gaugeDock(_:).",
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))

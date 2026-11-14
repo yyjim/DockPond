@@ -11,12 +11,13 @@
 
 <p align="center">Floating docks for iOS layout work.</p>
 
-DockPond has two libraries:
+DockPond has three libraries:
 
 | Library | Use |
 |---|---|
 | **FloatingDock** | A floating button that docks to a screen edge and opens a panel. You supply the panel content and its actions. |
 | **GaugeDock** | A layout gauge. It measures the window size, the screen, the orientation, the size classes, the safe area, the display scale, and the hinge. It can show the values in a floating dock. |
+| **TweakDock** | Runtime tweaks. Declare values with macros, and change them in a debug screen while the app runs. |
 
 Requirements: iOS 17 or later, Swift 6. The hinge values need iOS 27.1 or later.
 
@@ -44,6 +45,7 @@ Then add the products that you need to your target:
 ```swift
 .product(name: "FloatingDock", package: "DockPond"),
 .product(name: "GaugeDock", package: "DockPond"),
+.product(name: "TweakDock", package: "DockPond"),
 ```
 
 In Xcode, select **File > Add Package Dependencies**, and enter the repository URL.
@@ -188,6 +190,34 @@ dock.tools = [
 ]
 ```
 
+### Custom button
+
+Add a `label` closure to show your own view in place of the default button. The closure receives a `FloatingDockButtonState` with the live state of the button:
+
+| Property | Value |
+|---|---|
+| `edge` | The edge of the button. During a drag, it is the edge that the button moves to when the user releases it. |
+| `isDragging` | `true` while the user drags the button. |
+| `isExpanded` | `true` while the panel is open. The button fades out and becomes smaller while the panel shows. |
+| `isIdle` | `true` after the button fades because nobody used it. |
+
+```swift
+.floatingDock(title: "Pool Toys", systemImage: "bird.fill") {
+    DockTool("Toys", systemImage: "bird.fill") { ToysPanel() }
+} label: { state in
+    Image("duck")
+        .resizable()
+        .frame(width: 56, height: 56)
+        .scaleEffect(x: state.edge == .trailing ? -1 : 1)
+        .rotationEffect(.degrees(state.isDragging ? 15 : 0))
+        .animation(.spring, value: state)
+}
+```
+
+In UIKit, call `setButtonLabel(_:)` on the controller. Call `removeButtonLabel()` to show the default button again.
+
+The dock keeps the drag, the edge snapping, and the tap. The label does not receive touches, and it can draw outside the button. The touch area is `buttonSize`, and it is never smaller than 44 points. VoiceOver reads the `title`. The label gets the `tint` of the configuration.
+
 ### More than one dock
 
 You can show more than one dock at the same time. Give each dock its own `id` and its own start position, so the buttons do not start on top of each other:
@@ -205,6 +235,11 @@ UI tests can find each dock by its accessibility identifier: `FloatingDock.<id>.
 To show the dock in debug builds only, set `isEnabled` (SwiftUI) or `isEnabled` on the controller (UIKit) to `false` in release builds.
 
 ## GaugeDock
+
+<img src="docs/gaugedock-logo.png" alt="GaugeDock logo: a duck that measures a folding phone with a ruler" width="120" align="right">
+
+GaugeDock measures the layout of a window, and shows the values in a floating dock.
+You can also read the values in your code.
 
 ### One line
 
@@ -235,6 +270,27 @@ Fold         Vertical at x 476 pt (estimated)      ┘
 
 Use `sections:` to show fewer rows, for example `.gaugeDock(sections: [.window, .sizeClasses])`.
 
+### Icon
+
+The icon of the dock follows the orientation of the window. Give `systemImage` to set your own icon:
+
+```swift
+RootView().gaugeDock(systemImage: "ruler")                         // SwiftUI
+
+let dock = FloatingDockController.gaugeDock(gauge, systemImage: "ruler")   // UIKit
+```
+
+To show your own view in place of the default button, add a `label` closure. It works as in [Custom button](#custom-button). When you use a label, `systemImage` shows in the panel header.
+
+```swift
+RootView().gaugeDock { state in
+    Image("gauge")
+        .rotationEffect(.degrees(state.isDragging ? 15 : 0))
+}
+```
+
+In UIKit, call `setButtonLabel(_:)` on the controller.
+
 ### Read the values in your code
 
 `LayoutGauge` is observable. Use `snapshot` to make your own layout decisions:
@@ -254,14 +310,126 @@ In UIKit, call `gauge.observe { snapshot in … }` and keep the returned observa
 
 iOS gives the hinge state and angle, but not the position of the fold on the screen. GaugeDock estimates the fold: it crosses the longer edge of the screen at its middle. The Fold row always says "estimated". Compare it with a real device before you use it for layout.
 
+## TweakDock
+
+<img src="docs/tweakdock-logo.png" alt="TweakDock logo: a duck at a fader console" width="120" align="right">
+
+TweakDock lets you change values at runtime from an in-app debug screen.
+It uses ideas from [SwiftTweaks](https://github.com/bryanjclark/SwiftTweaks).
+
+### Declare tweaks
+
+```swift
+import TweakDock
+
+@Tweaks
+enum AppTweaks {
+    enum Size: String, CaseIterable, TweakValue { case small, medium, large }
+
+    @Tweak(collection: "UI", group: "Theme", name: "Dark Mode", defaultValue: true)
+    static var isDarkMode: Bool
+
+    @Tweak(collection: "UI", group: "Font", name: "Font Size", min: 10, max: 40, defaultValue: 14)
+    static var fontSize: CGFloat
+
+    @Tweak(collection: "UI", group: "Appearance", name: "Theme", options: ["light", "dark"], defaultValue: "light")
+    static var theme: String
+
+    @Tweak(collection: "UI", group: "Appearance", name: "Size", defaultValue: Size.small)
+    static var size: Size
+
+    @Tweak(collection: "Debug", group: "Session", name: "Clear Cache")
+    static func clearCache() { /* runs when you tap it */ }
+}
+```
+
+### Read and write tweaks
+
+```swift
+let size = AppTweaks.fontSize
+AppTweaks.fontSize = 20
+
+AppTweaks.fontSizeTweak.publisher          // Publishes the current value, then each change.
+    .sink { size in /* ... */ }
+    .store(in: &cancellables)
+
+AppTweaks.fontSizeTweak.reset()
+AppTweaks.tweakStore.resetAll()
+```
+
+Each `@Tweak` adds a `<name>Tweak` peer. `@Tweaks` adds `allTweaks`, which the UI uses.
+
+### Show the UI
+
+```swift
+// SwiftUI
+.sheet(isPresented: $showsTweaks) { TweaksView(AppTweaks.allTweaks) }
+
+// UIKit: shake the device to show the tweaks.
+window = TweaksWindow(windowScene: scene, tweaks: AppTweaks.allTweaks, store: AppTweaks.tweakStore)
+```
+
+To show the tweaks without a shake, for example from a dock action, call `presentTweaks()` on the window. Give `onDismiss` to `TweaksView` to show a close button.
+
+### Storage and app groups
+
+`TweakStore` saves the changed values to `Application Support/TweakDock/<name>.json`.
+To share tweaks with app extensions, make a store in an app group container, and give it to `@Tweaks`:
+
+```swift
+extension TweakStore {
+    static let appGroup = TweakStore(appGroup: "group.com.example.app")
+}
+
+@Tweaks(store: .appGroup)
+enum AppTweaks { ... }
+```
+
+Declare the store one time.
+
+Each process reads the file when it makes the store, and again before each change.
+A change keeps the changes that other processes saved.
+An extension sees the changes of the app only when it makes a store or changes a tweak.
+
+### Disable in release builds
+
+```swift
+#if !DEBUG
+AppTweaks.tweakStore.isEnabled = false   // Each tweak returns its default value.
+#endif
+```
+
+### Supported types
+
+`Bool`, `Int`, `Double`, `CGFloat`, `String`, and `String`-backed `CaseIterable` enums.
+To add a type, conform it to `TweakValue`.
+
+When you open a project that uses TweakDock for the first time, Xcode asks you to trust the TweakDock macros.
+
 ## Demo
 
-`DockPondDemo/DockPondDemo.xcodeproj` has two apps that use this package:
+`DockPondDemo/DockPondDemo.xcodeproj` has four apps that use this package:
 
+- **PondDemo** ("DockPond"): one app for all three libraries. Pool Party shows a FloatingDock with a custom duck button. Pool Survey shows a GaugeDock with a custom gauge button. Duck Studio shows TweakDock. A Lifeguard dock with a lifebuoy button shows on every screen.
 - **SwiftUIDemo** (SwiftUI): a Dev Tools dock with tabs, a Style dock with element tools, and the gauge dock.
 - **UIKitDemo** (UIKit): a Dev Tools dock with sections, and a Style dock with element tools.
+- **TweakDemo**: TweakDock tweaks of each control type, and `TweaksWindow`. Its UI tests edit tweaks, check that the app updates, and check that the values stay after a relaunch.
 
-Both apps adapt their layout to the iPhone Duo hinge. Run them on the "iPhone Duo" simulator to see the hinge tools.
+SwiftUIDemo and UIKitDemo adapt their layout to the iPhone Duo hinge. Run them on the "iPhone Duo" simulator to see the hinge tools.
+
+## Development
+
+Run the unit tests of the three libraries on iOS:
+
+```sh
+xcodebuild test -scheme DockPond -destination 'platform=iOS Simulator,name=iPhone Duo' -skipMacroValidation
+```
+
+The TweakDock macro tests run only on macOS:
+
+```sh
+xcodebuild test -scheme TweakDockMacros -destination 'platform=macOS' -skipMacroValidation
+```
 
 ## Licence
 

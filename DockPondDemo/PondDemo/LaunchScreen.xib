@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" id="iN0-l3-epB">
+            <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="logo" translatesAutoresizingMaskIntoConstraints="NO" id="Ic0-n1-Lch">
+                    <rect key="frame" x="116.66666666666667" y="316" width="160" height="160"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="160" id="Ic0-w1-dth"/>
+                        <constraint firstAttribute="height" constant="160" id="Ic0-h1-ght"/>
+                    </constraints>
+                </imageView>
+                <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="wordmark" translatesAutoresizingMaskIntoConstraints="NO" id="Ttl-l4-bel">
+                    <rect key="frame" x="75.666666666666671" y="488" width="242" height="40"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="242" id="Ttl-w1-dth"/>
+                        <constraint firstAttribute="height" constant="40" id="Ttl-h1-ght"/>
+                    </constraints>
+                </imageView>
+            </subviews>
+            <color key="backgroundColor" name="LaunchBackground"/>
+            <constraints>
+                <constraint firstItem="Ic0-n1-Lch" firstAttribute="centerX" secondItem="iN0-l3-epB" secondAttribute="centerX" id="Ic0-cx-ntr"/>
+                <constraint firstItem="Ic0-n1-Lch" firstAttribute="centerY" secondItem="iN0-l3-epB" secondAttribute="centerY" constant="-30" id="Ic0-cy-ntr"/>
+                <constraint firstItem="Ttl-l4-bel" firstAttribute="centerX" secondItem="iN0-l3-epB" secondAttribute="centerX" id="Ttl-cx-ntr"/>
+                <constraint firstItem="Ttl-l4-bel" firstAttribute="top" secondItem="Ic0-n1-Lch" secondAttribute="bottom" constant="12" id="Ttl-tp-gap"/>
+            </constraints>
+            <point key="canvasLocation" x="0.0" y="0.0"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="logo" width="512" height="512"/>
+        <image name="wordmark" width="284" height="47"/>
+        <namedColor name="LaunchBackground">
+            <color red="0.937" green="0.922" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+    </resources>
+</document>

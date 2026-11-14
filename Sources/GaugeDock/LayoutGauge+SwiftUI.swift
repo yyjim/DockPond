@@ -10,12 +10,16 @@ extension View {
 
     /// Adds a floating dock whose panel shows the layout gauge. Apply it once to
     /// the root view of a scene.
+    ///
+    /// `systemImage` sets the icon of the dock. If it is `nil`, the icon follows the
+    /// orientation of the window.
     public func gaugeDock(
         isEnabled: Bool = true,
         sections: LayoutGauge.Sections = .all,
+        systemImage: String? = nil,
         configuration: FloatingDockConfiguration = FloatingDockConfiguration(id: "gauge")
     ) -> some View {
-        gaugeDock(isEnabled: isEnabled, sections: sections, configuration: configuration) {
+        gaugeDock(isEnabled: isEnabled, sections: sections, systemImage: systemImage, configuration: configuration) {
             EmptyView()
         }
     }
@@ -23,15 +27,55 @@ extension View {
     public func gaugeDock<Actions: View>(
         isEnabled: Bool = true,
         sections: LayoutGauge.Sections = .all,
+        systemImage: String? = nil,
         configuration: FloatingDockConfiguration = FloatingDockConfiguration(id: "gauge"),
         @ViewBuilder actions: () -> Actions
+    ) -> some View {
+        modifier(GaugeDockModifier<Actions, EmptyView>(
+            isEnabled: isEnabled,
+            sections: sections,
+            systemImage: systemImage,
+            configuration: configuration,
+            actions: actions(),
+            label: nil
+        ))
+    }
+
+    /// Adds a floating dock whose panel shows the layout gauge, with a custom view
+    /// as its button. `systemImage` shows in the panel header.
+    public func gaugeDock<Actions: View, Label: View>(
+        isEnabled: Bool = true,
+        sections: LayoutGauge.Sections = .all,
+        systemImage: String? = nil,
+        configuration: FloatingDockConfiguration = FloatingDockConfiguration(id: "gauge"),
+        @ViewBuilder actions: () -> Actions,
+        @ViewBuilder label: @escaping @MainActor (FloatingDockButtonState) -> Label
     ) -> some View {
         modifier(GaugeDockModifier(
             isEnabled: isEnabled,
             sections: sections,
+            systemImage: systemImage,
             configuration: configuration,
-            actions: actions()
+            actions: actions(),
+            label: label
         ))
+    }
+
+    public func gaugeDock<Label: View>(
+        isEnabled: Bool = true,
+        sections: LayoutGauge.Sections = .all,
+        systemImage: String? = nil,
+        configuration: FloatingDockConfiguration = FloatingDockConfiguration(id: "gauge"),
+        @ViewBuilder label: @escaping @MainActor (FloatingDockButtonState) -> Label
+    ) -> some View {
+        gaugeDock(
+            isEnabled: isEnabled,
+            sections: sections,
+            systemImage: systemImage,
+            configuration: configuration,
+            actions: { EmptyView() },
+            label: label
+        )
     }
 }
 
@@ -59,26 +103,26 @@ public struct LayoutGaugeView: View {
     }
 }
 
-private struct GaugeDockModifier<Actions: View>: ViewModifier {
+private struct GaugeDockModifier<Actions: View, Label: View>: ViewModifier {
     let isEnabled: Bool
     let sections: LayoutGauge.Sections
+    let systemImage: String?
     let configuration: FloatingDockConfiguration
     let actions: Actions
+    let label: (@MainActor (FloatingDockButtonState) -> Label)?
     @State private var gauge = LayoutGauge()
 
     func body(content: Content) -> some View {
-        content
-            .layoutGauge(gauge)
-            .floatingDock(
-                isEnabled: isEnabled,
-                title: gauge.snapshot.title,
-                systemImage: gauge.snapshot.symbol,
-                configuration: configuration
-            ) {
-                LayoutGaugeView(gauge, sections: sections)
-            } actions: {
-                actions
-            }
+        let measured = content.layoutGauge(gauge)
+        measured.floatingDock(
+            isEnabled: isEnabled,
+            title: gauge.snapshot.title,
+            systemImage: systemImage ?? gauge.snapshot.symbol,
+            configuration: configuration,
+            content: { LayoutGaugeView(gauge, sections: sections) },
+            actions: { actions },
+            optionalLabel: label
+        )
     }
 }
 

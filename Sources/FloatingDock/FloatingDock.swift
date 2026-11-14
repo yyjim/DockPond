@@ -47,6 +47,31 @@ public struct FloatingDockConfiguration {
     }
 }
 
+/// The live state of a floating dock button. A custom button label receives it, so
+/// that it can animate when the user drags the button or opens the panel.
+public struct FloatingDockButtonState: Equatable, Sendable {
+    /// The edge the button is docked to. During a drag, it is the edge the button
+    /// docks to when the user releases it.
+    public var edge: FloatingDockConfiguration.Edge
+    public var isDragging: Bool
+    /// The panel is open. The button fades out and shrinks while the panel shows.
+    public var isExpanded: Bool
+    /// The button is faded after `idleDelay` without interaction.
+    public var isIdle: Bool
+
+    public init(
+        edge: FloatingDockConfiguration.Edge = .trailing,
+        isDragging: Bool = false,
+        isExpanded: Bool = false,
+        isIdle: Bool = false
+    ) {
+        self.edge = edge
+        self.isDragging = isDragging
+        self.isExpanded = isExpanded
+        self.isIdle = isIdle
+    }
+}
+
 extension View {
     /// Shows a floating button in a separate window above all app content,
     /// including sheets. Drag the button to dock it on any screen edge. Tap it to
@@ -72,18 +97,15 @@ extension View {
         @DockToolBuilder tools: () -> [DockTool],
         @ViewBuilder actions: () -> Actions
     ) -> some View {
-        background(
-            DockInstaller(
-                content: DockContent(
-                    isPresented: isEnabled,
-                    title: title,
-                    systemImage: systemImage,
-                    panelStyle: panelStyle,
-                    tools: tools(),
-                    actions: AnyView(actions())
-                ),
-                configuration: configuration
-            )
+        installDock(
+            isEnabled: isEnabled,
+            title: title,
+            systemImage: systemImage,
+            panelStyle: panelStyle,
+            configuration: configuration,
+            tools: tools(),
+            actions: AnyView(actions()),
+            label: nil
         )
     }
 
@@ -116,14 +138,14 @@ extension View {
         @ViewBuilder content: () -> Content,
         @ViewBuilder actions: () -> Actions
     ) -> some View {
-        let tool = DockTool(title, systemImage: systemImage, content: content)
-        return floatingDock(
+        floatingDock(
             isEnabled: isEnabled,
             title: title,
             systemImage: systemImage,
             configuration: configuration,
-            tools: { tool },
-            actions: actions
+            content: content,
+            actions: actions,
+            optionalLabel: nil as (@MainActor (FloatingDockButtonState) -> EmptyView)?
         )
     }
 
@@ -144,6 +166,155 @@ extension View {
             EmptyView()
         }
     }
+
+    /// Shows a floating dock with a custom view as its button.
+    ///
+    /// `label` replaces the default button look. It receives the live button state,
+    /// so it can animate during a drag, face away from its edge, or react when the
+    /// panel opens. The dock keeps the drag, the edge snapping, and the tap. The
+    /// label does not receive touches.
+    ///
+    /// VoiceOver reads `title`. `systemImage` shows in the panel header. The touch
+    /// area is `configuration.buttonSize`, and never less than 44 points. The label
+    /// can draw outside that area.
+    public func floatingDock<Actions: View, Label: View>(
+        isEnabled: Bool = true,
+        title: String,
+        systemImage: String = "square.grid.2x2.fill",
+        panelStyle: FloatingDockPanelStyle = .tabs,
+        configuration: FloatingDockConfiguration = FloatingDockConfiguration(),
+        @DockToolBuilder tools: () -> [DockTool],
+        @ViewBuilder actions: () -> Actions,
+        @ViewBuilder label: @escaping @MainActor (FloatingDockButtonState) -> Label
+    ) -> some View {
+        installDock(
+            isEnabled: isEnabled,
+            title: title,
+            systemImage: systemImage,
+            panelStyle: panelStyle,
+            configuration: configuration,
+            tools: tools(),
+            actions: AnyView(actions()),
+            label: DockButtonLabel(label)
+        )
+    }
+
+    public func floatingDock<Label: View>(
+        isEnabled: Bool = true,
+        title: String,
+        systemImage: String = "square.grid.2x2.fill",
+        panelStyle: FloatingDockPanelStyle = .tabs,
+        configuration: FloatingDockConfiguration = FloatingDockConfiguration(),
+        @DockToolBuilder tools: () -> [DockTool],
+        @ViewBuilder label: @escaping @MainActor (FloatingDockButtonState) -> Label
+    ) -> some View {
+        floatingDock(
+            isEnabled: isEnabled,
+            title: title,
+            systemImage: systemImage,
+            panelStyle: panelStyle,
+            configuration: configuration,
+            tools: tools,
+            actions: { EmptyView() },
+            label: label
+        )
+    }
+
+    /// Shows a floating dock with one view in its panel and a custom view as its
+    /// button.
+    public func floatingDock<Content: View, Actions: View, Label: View>(
+        isEnabled: Bool = true,
+        title: String,
+        systemImage: String = "square.grid.2x2.fill",
+        configuration: FloatingDockConfiguration = FloatingDockConfiguration(),
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder actions: () -> Actions,
+        @ViewBuilder label: @escaping @MainActor (FloatingDockButtonState) -> Label
+    ) -> some View {
+        floatingDock(
+            isEnabled: isEnabled,
+            title: title,
+            systemImage: systemImage,
+            configuration: configuration,
+            content: content,
+            actions: actions,
+            optionalLabel: label
+        )
+    }
+
+    public func floatingDock<Content: View, Label: View>(
+        isEnabled: Bool = true,
+        title: String,
+        systemImage: String = "square.grid.2x2.fill",
+        configuration: FloatingDockConfiguration = FloatingDockConfiguration(),
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder label: @escaping @MainActor (FloatingDockButtonState) -> Label
+    ) -> some View {
+        floatingDock(
+            isEnabled: isEnabled,
+            title: title,
+            systemImage: systemImage,
+            configuration: configuration,
+            content: content,
+            actions: { EmptyView() },
+            label: label
+        )
+    }
+
+    package func floatingDock<Content: View, Actions: View, Label: View>(
+        isEnabled: Bool,
+        title: String,
+        systemImage: String,
+        configuration: FloatingDockConfiguration,
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder actions: () -> Actions,
+        optionalLabel label: (@MainActor (FloatingDockButtonState) -> Label)?
+    ) -> some View {
+        installDock(
+            isEnabled: isEnabled,
+            title: title,
+            systemImage: systemImage,
+            panelStyle: .tabs,
+            configuration: configuration,
+            tools: [DockTool(title, systemImage: systemImage, content: content)],
+            actions: AnyView(actions()),
+            label: label.map { DockButtonLabel($0) }
+        )
+    }
+
+    private func installDock(
+        isEnabled: Bool,
+        title: String,
+        systemImage: String,
+        panelStyle: FloatingDockPanelStyle,
+        configuration: FloatingDockConfiguration,
+        tools: [DockTool],
+        actions: AnyView,
+        label: DockButtonLabel?
+    ) -> some View {
+        background(
+            DockInstaller(
+                content: DockContent(
+                    isPresented: isEnabled,
+                    title: title,
+                    systemImage: systemImage,
+                    panelStyle: panelStyle,
+                    tools: tools,
+                    actions: actions,
+                    label: label
+                ),
+                configuration: configuration
+            )
+        )
+    }
+}
+
+struct DockButtonLabel {
+    let body: @MainActor (FloatingDockButtonState) -> AnyView
+
+    init<Label: View>(_ label: @escaping @MainActor (FloatingDockButtonState) -> Label) {
+        body = { AnyView(label($0)) }
+    }
 }
 
 struct DockContent {
@@ -153,6 +324,7 @@ struct DockContent {
     var panelStyle = FloatingDockPanelStyle.tabs
     var tools: [DockTool] = []
     var actions = AnyView(EmptyView())
+    var label: DockButtonLabel?
 }
 
 @MainActor

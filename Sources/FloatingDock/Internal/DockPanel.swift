@@ -54,11 +54,13 @@ struct DockPanel: View {
                 .controlSize(.small)
             }
 
-            ViewThatFits(in: .vertical) {
-                toolsBody(tools: tools, showsTabs: showsTabs, selectedTool: selectedTool)
+            // Not ViewThatFits: its two copies of the tools share one UIKit content
+            // view, and SwiftUI lays out the hidden copy off the main thread.
+            ContentHeightLayout {
                 ScrollView {
                     toolsBody(tools: tools, showsTabs: showsTabs, selectedTool: selectedTool)
                 }
+                .scrollBounceBehavior(.basedOnSize)
             }
         }
         .padding(14)
@@ -124,5 +126,19 @@ struct DockPanel: View {
                 tool.content
             }
         }
+    }
+}
+
+/// Sizes its one subview, a vertical scroll view, to the height of the content,
+/// up to the proposed height.
+private struct ContentHeightLayout: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let subview = subviews.first else { return .zero }
+        let ideal = subview.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil))
+        return CGSize(width: proposal.width ?? ideal.width, height: min(ideal.height, proposal.height ?? .infinity))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
 }
