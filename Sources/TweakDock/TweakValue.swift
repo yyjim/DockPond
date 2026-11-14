@@ -43,7 +43,6 @@ public enum TweakPrimitive: Codable, Hashable, Sendable {
         }
     }
 
-    /// Converts text to `kind`, as Remote Config text needs.
     func converted(to kind: Kind) -> TweakPrimitive? {
         guard case let .string(text) = self, kind != .string else { return self }
         return TweakPrimitive(string: text, as: kind)

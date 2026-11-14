@@ -68,19 +68,19 @@ struct TweakReading<Value: Sendable & Equatable>: Sendable, Equatable {
 
 /// A source that keeps the name of the inner source that gives each value.
 protocol NamedTweakSource {
-    func namedPrimitive(
-        forKey key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool
-    ) -> (primitive: TweakPrimitive, sourceName: String)?
+    func namedValue<T>(
+        forKey key: String, as kind: TweakPrimitive.Kind, transform: (TweakPrimitive) -> T?
+    ) -> (value: T, sourceName: String)?
 }
 
 extension TweakSource {
-    /// Returns the first value that `accepts` allows, so that a combined source can skip a value that is not valid.
-    func lookup(
-        _ key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool = { _ in true }
-    ) -> (primitive: TweakPrimitive, sourceName: String)? {
+    /// Returns the first value that `transform` accepts, so that a combined source can skip a value that is not valid.
+    func lookup<T>(
+        _ key: String, as kind: TweakPrimitive.Kind, transform: (TweakPrimitive) -> T?
+    ) -> (value: T, sourceName: String)? {
         if let named = self as? NamedTweakSource {
-            return named.namedPrimitive(forKey: key, as: kind, accepts: accepts)
+            return named.namedValue(forKey: key, as: kind, transform: transform)
         }
-        return primitive(forKey: key, as: kind).flatMap { accepts($0) ? ($0, name) : nil }
+        return primitive(forKey: key, as: kind).flatMap(transform).map { ($0, name) }
     }
 }

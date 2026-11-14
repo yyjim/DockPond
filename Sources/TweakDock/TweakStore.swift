@@ -61,51 +61,52 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func value<Value>(for tweak: Tweak<Value>) -> Value {
-        overrideValue(for: tweak) ?? reading(for: tweak).current.value
+        let (override, source) = snapshot(for: tweak)
+        return override ?? sourced(for: tweak, from: source)?.value ?? tweak.defaultValue
     }
 
     func currentValue<Value>(for tweak: Tweak<Value>) -> TweakCurrentValue<Value> {
-        overrideValue(for: tweak).map { .override($0) } ?? reading(for: tweak).current
+        let (override, source) = snapshot(for: tweak)
+        if let override { return .override(override) }
+        return reading(override: nil, sourced: sourced(for: tweak, from: source), tweak: tweak).current
     }
 
     func reading<Value>(for tweak: Tweak<Value>) -> TweakReading<Value> {
-        let source = lock.withLock { currentSource }
-        let sourced = tweak.sourceKey
-            .flatMap { key in
-                source?.lookup(key, as: tweak.defaultValue.primitive.kind) { sourceValue($0, for: tweak) != nil }
-            }
-            .flatMap { found in
-                sourceValue(found.primitive, for: tweak).map { TweakReading<Value>.Sourced(name: found.sourceName, value: $0) }
-            }
-        if let value = overrideValue(for: tweak) {
-            return TweakReading(current: .override(value), source: sourced)
+        let (override, source) = snapshot(for: tweak)
+        return reading(override: override, sourced: sourced(for: tweak, from: source), tweak: tweak)
+    }
+
+    /// A tweak with a `sourceKey` keeps an override that equals its default value, because the
+    /// override hides the source value.
+    func setValue<Value>(_ value: Value, for tweak: Tweak<Value>) {
+        let value = tweak.normalize(value)
+        let isRedundant = tweak.sourceKey == nil && value == tweak.defaultValue
+        setOverride(isRedundant ? nil : value.primitive, id: tweak.id)
+    }
+
+    /// Reads the override and the source in one lock, so that a reading never mixes two states.
+    private func snapshot<Value>(for tweak: Tweak<Value>) -> (override: Value?, source: (any TweakSource)?) {
+        let (primitive, source) = lock.withLock { (enabled ? overrides[tweak.id] : nil, currentSource) }
+        return (primitive.flatMap(Value.init(primitive:)).map(tweak.normalize), source)
+    }
+
+    /// A source value that the tweak would change, such as a number out of range, is not valid.
+    private func sourced<Value>(for tweak: Tweak<Value>, from source: (any TweakSource)?) -> TweakReading<Value>.Sourced? {
+        guard let key = tweak.sourceKey, let source else { return nil }
+        let found = source.lookup(key, as: tweak.defaultValue.primitive.kind) { primitive in
+            Value(primitive: primitive).flatMap { tweak.normalize($0) == $0 ? $0 : nil }
+        }
+        return found.map { TweakReading<Value>.Sourced(name: $0.sourceName, value: $0.value) }
+    }
+
+    private func reading<Value>(override: Value?, sourced: TweakReading<Value>.Sourced?, tweak: Tweak<Value>) -> TweakReading<Value> {
+        if let override {
+            return TweakReading(current: .override(override), source: sourced)
         }
         if let sourced {
             return TweakReading(current: .source(sourced.name, sourced.value), source: sourced)
         }
         return TweakReading(current: .default(tweak.defaultValue), source: nil)
-    }
-
-    /// A tweak with a `sourceKey` keeps an override that equals its default value, because the
-    /// override hides the source value. A write of the value that the tweak already shows does not
-    /// make an override, because a SwiftUI text field writes its value again when editing ends.
-    func setValue<Value>(_ value: Value, for tweak: Tweak<Value>) {
-        let value = tweak.normalize(value)
-        guard tweak.sourceKey != nil else {
-            setOverride(value == tweak.defaultValue ? nil : value.primitive, id: tweak.id)
-            return
-        }
-        if overrideValue(for: tweak) == nil, reading(for: tweak).current.value == value { return }
-        setOverride(value.primitive, id: tweak.id)
-    }
-
-    private func overrideValue<Value>(for tweak: Tweak<Value>) -> Value? {
-        lock.withLock { enabled ? overrides[tweak.id] : nil }.flatMap(Value.init(primitive:)).map(tweak.normalize)
-    }
-
-    /// A source value that the tweak would change, such as a number out of range, is not valid.
-    private func sourceValue<Value>(_ primitive: TweakPrimitive, for tweak: Tweak<Value>) -> Value? {
-        Value(primitive: primitive).flatMap { tweak.normalize($0) == $0 ? $0 : nil }
     }
 
     func reset(_ tweak: some AnyTweak) {

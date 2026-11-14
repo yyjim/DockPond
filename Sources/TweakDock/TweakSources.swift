@@ -4,9 +4,9 @@ import Foundation
 import UIKit
 #endif
 
-/// Asks each source in order, and uses the first value that the tweak can hold.
-///
-/// `TweakCurrentValue.source` gives the name of the inner source that gives the value.
+/// Asks each source in order. A tweak uses the first value that it can hold, and
+/// `TweakCurrentValue.source` gives the name of the inner source that gives it.
+/// `primitive(forKey:as:)` returns the first value of any kind.
 public final class CombinedTweakSource: TweakSource, NamedTweakSource {
     public let name: String
     public let sources: [any TweakSource]
@@ -17,14 +17,14 @@ public final class CombinedTweakSource: TweakSource, NamedTweakSource {
     }
 
     public func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
-        namedPrimitive(forKey: key, as: kind, accepts: { _ in true })?.primitive
+        namedValue(forKey: key, as: kind) { $0 }?.value
     }
 
-    func namedPrimitive(
-        forKey key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool
-    ) -> (primitive: TweakPrimitive, sourceName: String)? {
+    func namedValue<T>(
+        forKey key: String, as kind: TweakPrimitive.Kind, transform: (TweakPrimitive) -> T?
+    ) -> (value: T, sourceName: String)? {
         for source in sources {
-            if let value = source.lookup(key, as: kind, accepts: accepts) { return value }
+            if let value = source.lookup(key, as: kind, transform: transform) { return value }
         }
         return nil
     }
@@ -193,14 +193,14 @@ public final class DeviceTweakSource: TweakSource, NamedTweakSource {
     public var name: String { base.name }
 
     public func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
-        namedPrimitive(forKey: key, as: kind, accepts: { _ in true })?.primitive
+        namedValue(forKey: key, as: kind) { $0 }?.value
     }
 
-    func namedPrimitive(
-        forKey key: String, as kind: TweakPrimitive.Kind, accepts: (TweakPrimitive) -> Bool
-    ) -> (primitive: TweakPrimitive, sourceName: String)? {
+    func namedValue<T>(
+        forKey key: String, as kind: TweakPrimitive.Kind, transform: (TweakPrimitive) -> T?
+    ) -> (value: T, sourceName: String)? {
         guard devices[key].map({ $0.contains(idiom) }) ?? true else { return nil }
-        return base.lookup(key, as: kind, accepts: accepts)
+        return base.lookup(key, as: kind, transform: transform)
     }
 
     public var changes: AnyPublisher<Void, Never> { base.changes }

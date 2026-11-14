@@ -76,12 +76,12 @@ import UIKit
         #expect(tweak.currentValue == .source("Remote", .B))
     }
 
-    @Test func writeOfShownValueMakesNoOverride() {
+    @Test func writeOfShownValuePinsIt() {
         remote.setValue(.string("B"), forKey: "exp_paywall")
         let tweak = experiment()
         tweak.value = .B
         remote.setValue(.string("C"), forKey: "exp_paywall")
-        #expect(tweak.currentValue == .source("Remote", .C))
+        #expect(tweak.currentValue == .override(.B))
     }
 
     @Test func combinedSourceSkipsValueThatIsNotValid() {

@@ -169,7 +169,9 @@ private struct TweakRow: View {
         )
     }
 
+    /// A text field writes its value again when editing ends. That write must not pin a source value as an override.
     private func update(_ primitive: TweakPrimitive) {
+        guard primitive != value else { return }
         tweak.primitiveValue = primitive
         reading = tweak.primitiveReading
     }
