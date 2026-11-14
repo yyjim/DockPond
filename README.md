@@ -474,10 +474,15 @@ final class FirebaseTweakSource: TweakSource, @unchecked Sendable {
         self.remoteConfig = remoteConfig
     }
 
-    /// Call this after `activate()` completes.
-    func didActivate() { activated.send() }
-
     var changes: AnyPublisher<Void, Never> { activated.eraseToAnyPublisher() }
+
+    /// Use this in place of `RemoteConfig.fetchAndActivate()`, so that sourced tweaks update.
+    @discardableResult
+    func fetchAndActivate() async throws -> RemoteConfigFetchAndActivateStatus {
+        let status = try await remoteConfig.fetchAndActivate()
+        activated.send()
+        return status
+    }
 
     func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
         let value = remoteConfig.configValue(forKey: key)
@@ -488,7 +493,16 @@ final class FirebaseTweakSource: TweakSource, @unchecked Sendable {
 }
 ```
 
-Set the source after `FirebaseApp.configure()`.
+Set the source after `FirebaseApp.configure()`, and fetch through it:
+
+```swift
+let firebase = FirebaseTweakSource()
+AppTweaks.tweakStore.source = firebase
+try await firebase.fetchAndActivate()
+```
+
+The adapter owns activation, so the tweaks always know when values change.
+It does not listen for real-time updates. A variant that changes during a session can give wrong experiment data.
 Do not use `boolValue` or `numberValue`, because they return `false` or `0` for text that is not valid.
 `TweakPrimitive(string:as:)` returns `nil` for that text, so the tweak uses its default value.
 
