@@ -395,9 +395,102 @@ An extension sees the changes of the app only when it makes a store or changes a
 
 ```swift
 #if !DEBUG
-AppTweaks.tweakStore.isEnabled = false   // Each tweak returns its default value.
+AppTweaks.tweakStore.isEnabled = false   // The store ignores overrides. Each tweak returns its source value or its default value.
 #endif
 ```
+
+### Sources: remote config and experiments
+
+A tweak with a `sourceKey` reads its value from `TweakStore.source`.
+The store finds the value in this order:
+
+1. The override that you set in the tweaks UI or in code. The store ignores overrides when `isEnabled` is `false`.
+2. The source value, when it is valid.
+3. The default value.
+
+```swift
+@Tweaks
+enum AppTweaks {
+    enum Paywall: String, CaseIterable, TweakValue { case A, B, C }
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Paywall", defaultValue: Paywall.A, sourceKey: "exp_paywall")
+    static var paywall: Paywall
+}
+
+AppTweaks.tweakStore.source = CombinedTweakSource([
+    LaunchArgumentTweakSource(),                                   // -tweak.exp_paywall B, for UI tests
+    DeviceTweakSource(firebase, devices: ["exp_ipad_only": [.pad]]),
+    LocalSplitTweakSource(splits: ["lab_new_badge": .rollout(0.1)]),
+])
+
+AppTweaks.paywallTweak.origin   // .default, .source("Firebase"), or .override
+```
+
+The store uses a source value only when it is valid.
+An unknown enum case, a value out of `min...max`, a value that is not in `options`, or text of the wrong kind gives the default value.
+Use `origin` to report experiments to analytics:
+
+| Case | `origin` | Value | User property |
+| --- | --- | --- | --- |
+| The source value is present and valid | `.source(name)` | The source value, for example `B` | `B` |
+| The key is not fetched yet (first launch) | `.default` | `defaultValue` | `"default"` |
+| The key is not in the source | `.default` | `defaultValue` | `"default"` |
+| The value is not a known variant | `.default` | `defaultValue` | `"default"` |
+| The device is not in `devices` | `.default` | `defaultValue` | `"default"` |
+
+```swift
+let tweak = AppTweaks.paywallTweak
+let userProperty = tweak.origin == .default ? "default" : tweak.value.rawValue
+```
+
+TweakDock has these sources. None of them need a dependency.
+
+| Source | Use |
+| --- | --- |
+| `CombinedTweakSource` | Asks each source in order, and uses the first value. `origin` names the inner source. |
+| `DeviceTweakSource` | Gives the values of its base source only on the given devices. |
+| `LocalSplitTweakSource` | Puts each device in a local bucket for an experiment or a rollout that has no server. |
+| `LaunchArgumentTweakSource` | Reads `-tweak.<key> <value>` launch arguments. |
+| `InMemoryTweakSource` | Keeps values in memory, for tests, previews, or a fake remote config. |
+
+In the tweaks UI, a tweak with a `sourceKey` shows its origin under its name.
+To remove an override, swipe the row, or select "Use <source>" in the options.
+
+#### Firebase Remote Config
+
+TweakDock does not depend on Firebase. Add this adapter to your app:
+
+```swift
+import Combine
+import FirebaseRemoteConfig
+import TweakDock
+
+final class FirebaseTweakSource: TweakSource, @unchecked Sendable {
+    let name = "Firebase"
+    private let remoteConfig: RemoteConfig
+    private let activated = PassthroughSubject<Void, Never>()
+
+    init(remoteConfig: RemoteConfig = .remoteConfig()) {
+        self.remoteConfig = remoteConfig
+    }
+
+    /// Call this after `activate()` completes.
+    func didActivate() { activated.send() }
+
+    var changes: AnyPublisher<Void, Never> { activated.eraseToAnyPublisher() }
+
+    func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
+        let value = remoteConfig.configValue(forKey: key)
+        // `.static` means not fetched yet or not in Remote Config. `.default` is a `setDefaults` value.
+        guard value.source == .remote else { return nil }
+        return TweakPrimitive(string: value.stringValue, as: kind)
+    }
+}
+```
+
+Set the source after `FirebaseApp.configure()`.
+Do not use `boolValue` or `numberValue`, because they return `false` or `0` for text that is not valid.
+`TweakPrimitive(string:as:)` returns `nil` for that text, so the tweak uses its default value.
 
 ### Supported types
 

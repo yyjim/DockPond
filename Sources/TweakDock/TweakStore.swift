@@ -10,6 +10,8 @@ public final class TweakStore: @unchecked Sendable {
     private let writeLock = NSLock()
     private var overrides: [String: TweakPrimitive]
     private var enabled: Bool
+    private var currentSource: (any TweakSource)?
+    private var sourceSubscription: AnyCancellable?
     /// Sends the changed tweak ID, or `nil` when every tweak can have changed.
     private let changes = PassthroughSubject<String?, Never>()
 
@@ -26,11 +28,26 @@ public final class TweakStore: @unchecked Sendable {
         overrides = Self.load(from: fileURL)
     }
 
-    /// When `false`, each tweak returns its default value. Set it to `false` in release builds.
+    /// When `false`, the store ignores overrides. Each tweak returns its source value or its
+    /// default value. Set it to `false` in release builds.
     public var isEnabled: Bool {
         get { lock.withLock { enabled } }
         set {
             lock.withLock { enabled = newValue }
+            changes.send(nil)
+        }
+    }
+
+    /// Gives values to tweaks that have a `sourceKey`. Set it at launch, for example to a Remote Config adapter.
+    /// An override hides the source value until you reset the tweak.
+    public var source: (any TweakSource)? {
+        get { lock.withLock { currentSource } }
+        set {
+            let subscription = newValue?.changes.sink { [weak self] in self?.changes.send(nil) }
+            lock.withLock {
+                currentSource = newValue
+                sourceSubscription = subscription
+            }
             changes.send(nil)
         }
     }
@@ -44,13 +61,33 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func value<Value>(for tweak: Tweak<Value>) -> Value {
-        let primitive = lock.withLock { enabled ? overrides[tweak.id] : nil }
-        return primitive.flatMap(Value.init(primitive:)).map(tweak.normalize) ?? tweak.defaultValue
+        resolution(for: tweak).value
     }
 
+    func resolution<Value>(for tweak: Tweak<Value>) -> TweakResolution<Value> {
+        let (override, source) = lock.withLock { (enabled ? overrides[tweak.id] : nil, currentSource) }
+        let sourced = tweak.sourceKey
+            .flatMap { source?.lookup($0, as: tweak.defaultValue.primitive.kind) }
+            .flatMap { found in
+                Value(primitive: found.primitive).flatMap { tweak.normalize($0) == $0 ? (value: $0, sourceName: found.sourceName) : nil }
+            }
+        let sourceValue = sourced?.value
+        let sourceName = sourced?.sourceName
+        if let value = override.flatMap(Value.init(primitive:)).map(tweak.normalize) {
+            return TweakResolution(value: value, origin: .override, sourceValue: sourceValue, sourceName: sourceName)
+        }
+        if let sourceValue, let sourceName {
+            return TweakResolution(value: sourceValue, origin: .source(sourceName), sourceValue: sourceValue, sourceName: sourceName)
+        }
+        return TweakResolution(value: tweak.defaultValue, origin: .default, sourceValue: nil, sourceName: nil)
+    }
+
+    /// A tweak with a `sourceKey` keeps an override that equals its default value, because the
+    /// override hides the source value.
     func setValue<Value>(_ value: Value, for tweak: Tweak<Value>) {
         let value = tweak.normalize(value)
-        setOverride(value == tweak.defaultValue ? nil : value.primitive, id: tweak.id)
+        let isRedundant = tweak.sourceKey == nil && value == tweak.defaultValue
+        setOverride(isRedundant ? nil : value.primitive, id: tweak.id)
     }
 
     func reset(_ tweak: some AnyTweak) {
@@ -58,11 +95,15 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func publisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<Value, Never> {
+        resolutionPublisher(for: tweak).map(\.value).removeDuplicates().eraseToAnyPublisher()
+    }
+
+    func resolutionPublisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<TweakResolution<Value>, Never> {
         changes
             .filter { $0 == nil || $0 == tweak.id }
             .map { _ in }
             .merge(with: Just(()))
-            .map { [self] in value(for: tweak) }
+            .map { [self] in resolution(for: tweak) }
             .removeDuplicates()
             .eraseToAnyPublisher()
     }

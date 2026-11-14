@@ -68,28 +68,36 @@ private struct TweakCollectionView: View {
 
 private struct TweakRow: View {
     let tweak: any PrimitiveTweak
-    @State private var value: TweakPrimitive
-    @State private var changes: AnyPublisher<TweakPrimitive, Never>
+    @State private var resolution: TweakResolution<TweakPrimitive>
+    @State private var changes: AnyPublisher<TweakResolution<TweakPrimitive>, Never>
 
     init(tweak: any PrimitiveTweak) {
         self.tweak = tweak
-        _value = State(initialValue: tweak.primitiveValue)
-        _changes = State(initialValue: tweak.primitivePublisher.receive(on: DispatchQueue.main).eraseToAnyPublisher())
+        _resolution = State(initialValue: tweak.primitiveResolution)
+        _changes = State(initialValue: tweak.primitiveResolutionPublisher.receive(on: DispatchQueue.main).eraseToAnyPublisher())
     }
 
+    private var value: TweakPrimitive { resolution.value }
+
     var body: some View {
-        content.onReceive(changes) { value = $0 }
+        content
+            .onReceive(changes) { resolution = $0 }
+            .swipeActions {
+                if tweak.sourceKey != nil, resolution.origin == .override {
+                    Button("Reset") { tweak.reset() }
+                }
+            }
     }
 
     @ViewBuilder private var content: some View {
         switch (tweak.control, value) {
         case (.toggle, .bool):
-            Toggle(tweak.name, isOn: binding(Bool.self))
+            Toggle(isOn: binding(Bool.self)) { label }
         case let (.number(range), .int), let (.number(range), .double):
             numberRow(range: range)
         case (.text, .string):
             HStack {
-                Text(tweak.name)
+                label
                 TextField(tweak.name, text: binding(String.self))
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(.secondary)
@@ -98,7 +106,7 @@ private struct TweakRow: View {
             NavigationLink {
                 OptionsView(tweak: tweak, options: options)
             } label: {
-                LabeledContent(tweak.name, value: current)
+                LabeledContent { Text(current) } label: { label }
             }
         default:
             LabeledContent(tweak.name, value: "Unsupported")
@@ -122,7 +130,7 @@ private struct TweakRow: View {
             set: { number.wrappedValue = TweakStepper.trimmed($0, step: step) }
         )
         return HStack {
-            Text(tweak.name)
+            label
             Spacer()
             TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0 ... 3)))
                 .multilineTextAlignment(.trailing)
@@ -134,6 +142,19 @@ private struct TweakRow: View {
             } else {
                 Stepper(tweak.name, value: stepped, step: step).labelsHidden()
             }
+        }
+    }
+
+    @ViewBuilder private var label: some View {
+        if let caption = TweakCaption.text(sourceKey: tweak.sourceKey, resolution: resolution) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tweak.name)
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(resolution.origin == .override ? Color.orange : Color.secondary)
+            }
+        } else {
+            Text(tweak.name)
         }
     }
 
@@ -150,7 +171,7 @@ private struct TweakRow: View {
 
     private func update(_ primitive: TweakPrimitive) {
         tweak.primitiveValue = primitive
-        value = tweak.primitiveValue
+        resolution = tweak.primitiveResolution
     }
 }
 
@@ -160,16 +181,18 @@ private struct OptionsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        List(options, id: \.self) { option in
-            Button {
-                tweak.primitiveValue = .string(option)
-                dismiss()
-            } label: {
-                HStack {
-                    Text(option).foregroundStyle(Color.primary)
-                    Spacer()
-                    if tweak.primitiveValue == .string(option) {
-                        Image(systemName: "checkmark")
+        let resolution = tweak.primitiveResolution
+        let followsSource = tweak.sourceKey != nil && resolution.origin != .override
+        List {
+            if tweak.sourceKey != nil {
+                Section {
+                    row(followTitle(resolution), isSelected: followsSource) { tweak.reset() }
+                }
+            }
+            Section {
+                ForEach(options, id: \.self) { option in
+                    row(option, isSelected: !followsSource && resolution.value == .string(option)) {
+                        tweak.primitiveValue = .string(option)
                     }
                 }
             }
@@ -177,6 +200,57 @@ private struct OptionsView: View {
         .groupedListStyle()
         .navigationTitle(tweak.name)
         .inlineNavigationTitle()
+    }
+
+    private func followTitle(_ resolution: TweakResolution<TweakPrimitive>) -> String {
+        if let sourceName = resolution.sourceName, let value = resolution.sourceValue {
+            return "Use \(sourceName) (\(value.displayText))"
+        }
+        return "Use Default (\(tweak.defaultPrimitive.displayText))"
+    }
+
+    private func row(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            dismiss()
+        } label: {
+            HStack {
+                Text(title).foregroundStyle(Color.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                }
+            }
+        }
+    }
+}
+
+enum TweakCaption {
+    /// Describes where the value of a tweak with a `sourceKey` comes from.
+    static func text(sourceKey: String?, resolution: TweakResolution<TweakPrimitive>) -> String? {
+        guard let sourceKey else { return nil }
+        switch resolution.origin {
+        case let .source(name):
+            return "\(name) · \(sourceKey)"
+        case .default:
+            return "Default · \(sourceKey)"
+        case .override:
+            if let name = resolution.sourceName, let value = resolution.sourceValue {
+                return "Override · \(name): \(value.displayText)"
+            }
+            return "Override · \(sourceKey)"
+        }
+    }
+}
+
+extension TweakPrimitive {
+    var displayText: String {
+        switch self {
+        case let .bool(value): String(value)
+        case let .int(value): String(value)
+        case let .double(value): value.formatted()
+        case let .string(value): value
+        }
     }
 }
 

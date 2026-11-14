@@ -22,6 +22,9 @@ private enum SampleTweaks {
     @Tweak(collection: "UI", group: "Appearance", name: "Integration Size", defaultValue: Size.small)
     static var size: Size
 
+    @Tweak(collection: "UI", group: "Appearance", name: "Integration Remote Size", defaultValue: Size.small, sourceKey: "integration_size")
+    static var remoteSize: Size
+
     #if DEBUG
     @Tweak(collection: "Debug", group: "Flags", name: "Integration Debug Flag", defaultValue: false)
     static var debugFlag: Bool
@@ -38,7 +41,7 @@ private enum SampleTweaks {
 @Suite(.serialized) struct MacroIntegrationTests {
     @Test func listsTweaksInDeclarationOrder() {
         #expect(SampleTweaks.allTweaks.map(\.name) == [
-            "Integration Dark Mode", "Integration Font Size", "Integration Size", "Integration Debug Flag",
+            "Integration Dark Mode", "Integration Font Size", "Integration Size", "Integration Remote Size", "Integration Debug Flag",
             "Integration Clear Cache",
         ])
     }
@@ -66,6 +69,15 @@ private enum SampleTweaks {
         defer { SampleTweaks.sizeTweak.reset() }
         SampleTweaks.size = .large
         #expect(SampleTweaks.size == .large)
+    }
+
+    @Test func readsSourceKeyThroughTheStoreSource() {
+        defer { TweakStore.integration.source = nil }
+        #expect(SampleTweaks.remoteSize == .small)
+        TweakStore.integration.source = InMemoryTweakSource(name: "Remote", values: ["integration_size": .string("large")])
+        #expect(SampleTweaks.remoteSize == .large)
+        #expect(SampleTweaks.remoteSizeTweak.origin == .source("Remote"))
+        #expect(SampleTweaks.remoteSizeTweak.sourceKey == "integration_size")
     }
 
     @Test @MainActor func runsActionTweaks() {
