@@ -65,7 +65,7 @@ final class BookViewController: UIViewController {
             textStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             textStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             textStack.leadingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.leadingAnchor),
-            textStack.trailingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.trailingAnchor),
+            textStack.trailingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.trailingAnchor)
         ])
         let next = pageButton("Next", symbol: "chevron.right") { [weak self] in
             guard let self else { return }
@@ -80,7 +80,12 @@ final class BookViewController: UIViewController {
         let area = view.bounds.inset(by: view.safeAreaInsets).insetBy(dx: pageMargin, dy: pageMargin)
         let foldX = view.bounds.midX
         leftPage.frame = CGRect(x: area.minX, y: area.minY, width: max(0, foldX - foldGutter / 2 - area.minX), height: area.height)
-        rightPage.frame = CGRect(x: foldX + foldGutter / 2, y: area.minY, width: max(0, area.maxX - foldX - foldGutter / 2), height: area.height)
+        rightPage.frame = CGRect(
+            x: foldX + foldGutter / 2,
+            y: area.minY,
+            width: max(0, area.maxX - foldX - foldGutter / 2),
+            height: area.height
+        )
     }
 
     private func configurePage(_ page: UIView, with views: [UIView]) {
@@ -95,7 +100,7 @@ final class BookViewController: UIViewController {
             stack.topAnchor.constraint(equalTo: page.topAnchor, constant: 16),
             stack.bottomAnchor.constraint(equalTo: page.bottomAnchor, constant: -16),
             stack.leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 16),
-            stack.trailingAnchor.constraint(equalTo: page.trailingAnchor, constant: -16),
+            stack.trailingAnchor.constraint(equalTo: page.trailingAnchor, constant: -16)
         ])
         view.addSubview(page)
     }
@@ -158,7 +163,7 @@ final class TabletopViewController: UIViewController {
         viewer.addSubview(viewerLabel)
         NSLayoutConstraint.activate([
             viewerLabel.leadingAnchor.constraint(equalTo: viewer.leadingAnchor, constant: 16),
-            viewerLabel.bottomAnchor.constraint(equalTo: viewer.bottomAnchor, constant: -16),
+            viewerLabel.bottomAnchor.constraint(equalTo: viewer.bottomAnchor, constant: -16)
         ])
         view.addSubview(viewer)
 
@@ -204,7 +209,7 @@ final class TabletopViewController: UIViewController {
             thumbnailStack.bottomAnchor.constraint(equalTo: thumbnailScroll.contentLayoutGuide.bottomAnchor),
             thumbnailStack.leadingAnchor.constraint(equalTo: thumbnailScroll.contentLayoutGuide.leadingAnchor),
             thumbnailStack.trailingAnchor.constraint(equalTo: thumbnailScroll.contentLayoutGuide.trailingAnchor),
-            thumbnailScroll.heightAnchor.constraint(equalToConstant: 64),
+            thumbnailScroll.heightAnchor.constraint(equalToConstant: 64)
         ])
 
         let stack = UIStackView(arrangedSubviews: [progress, buttons, thumbnailScroll])
@@ -220,7 +225,7 @@ final class TabletopViewController: UIViewController {
             stack.leadingAnchor.constraint(equalTo: controls.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: controls.trailingAnchor, constant: -16),
             progress.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            thumbnailScroll.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            thumbnailScroll.widthAnchor.constraint(equalTo: stack.widthAnchor)
         ])
         view.addSubview(controls)
         render()
@@ -231,7 +236,12 @@ final class TabletopViewController: UIViewController {
         let area = view.bounds.inset(by: view.safeAreaInsets).insetBy(dx: pageMargin, dy: pageMargin)
         let foldY = view.bounds.midY
         viewer.frame = CGRect(x: area.minX, y: area.minY, width: area.width, height: max(0, foldY - foldGutter / 2 - area.minY))
-        controls.frame = CGRect(x: area.minX, y: foldY + foldGutter / 2, width: area.width, height: max(0, area.maxY - foldY - foldGutter / 2))
+        controls.frame = CGRect(
+            x: area.minX,
+            y: foldY + foldGutter / 2,
+            width: area.width,
+            height: max(0, area.maxY - foldY - foldGutter / 2)
+        )
     }
 
     private func togglePlay() {

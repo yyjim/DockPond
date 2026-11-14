@@ -264,7 +264,7 @@ final class TweakMacroTests: XCTestCase {
             static var flag: Bool = true
             """,
             diagnostics: [
-                DiagnosticSpec(message: "@Tweak property 'flag' must not have a value. Use 'defaultValue' instead.", line: 1, column: 1),
+                DiagnosticSpec(message: "@Tweak property 'flag' must not have a value. Use 'defaultValue' instead.", line: 1, column: 1)
             ],
             macros: macros
         )
@@ -284,7 +284,7 @@ final class TweakMacroTests: XCTestCase {
                     message: "@Tweak method 'run' must take no parameters, return nothing, and not throw or be async.",
                     line: 1,
                     column: 1
-                ),
+                )
             ],
             macros: macros
         )

@@ -9,7 +9,7 @@ final class FloatingDockUITests: XCTestCase {
         app.launchArguments += [
             "-FloatingDock.dev-tools.edge", "trailing", "-FloatingDock.dev-tools.fraction", "0.7",
             "-FloatingDock.gauge.edge", "leading", "-FloatingDock.gauge.fraction", "0.7",
-            "-FloatingDock.style.edge", "trailing", "-FloatingDock.style.fraction", "0.35",
+            "-FloatingDock.style.edge", "trailing", "-FloatingDock.style.fraction", "0.35"
         ]
         app.launch()
     }
@@ -21,12 +21,18 @@ final class FloatingDockUITests: XCTestCase {
         XCTAssertGreaterThan(button.frame.midX, app.frame.midX, "Button starts on the trailing edge")
         snapshot("1-start")
 
-        button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.4)))
+        button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+            forDuration: 0.1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.4))
+        )
         waitForAnimations()
         XCTAssertLessThan(button.frame.minX, app.frame.width * 0.15, "Button docks on the leading edge")
         snapshot("2-docked-leading")
 
-        button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.97)))
+        button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+            forDuration: 0.1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.97))
+        )
         waitForAnimations()
         XCTAssertGreaterThan(button.frame.maxY, app.frame.height * 0.8, "Button docks on the bottom edge")
         snapshot("3-docked-bottom")

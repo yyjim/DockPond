@@ -27,22 +27,28 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let hingeStates: [HingeState?] = [nil, .closed, .partiallyOpen, .fullyOpen]
         let foldAxes: [FoldAxis?] = [nil, .vertical, .horizontal]
         let hingeElements: [DockTool] = [
-            .selector("Hinge", options: ["Live", "Closed", "Half", "Flat"], get: {
-                hingeStates.firstIndex(of: settings.stateOverride) ?? 0
-            }, set: {
-                settings.stateOverride = hingeStates[$0]
-                settings.notifyChange()
-            }),
-            .selector("Fold axis", options: ["Auto", "Vertical", "Horizontal"], get: {
-                foldAxes.firstIndex(of: settings.axisOverride) ?? 0
-            }, set: {
-                settings.axisOverride = foldAxes[$0]
-                settings.notifyChange()
-            }),
+            .selector(
+                "Hinge",
+                options: ["Live", "Closed", "Half", "Flat"],
+                get: { hingeStates.firstIndex(of: settings.stateOverride) ?? 0 },
+                set: {
+                    settings.stateOverride = hingeStates[$0]
+                    settings.notifyChange()
+                }
+            ),
+            .selector(
+                "Fold axis",
+                options: ["Auto", "Vertical", "Horizontal"],
+                get: { foldAxes.firstIndex(of: settings.axisOverride) ?? 0 },
+                set: {
+                    settings.axisOverride = foldAxes[$0]
+                    settings.notifyChange()
+                }
+            ),
             .toggle("Fold line", get: { settings.showsFoldLine }, set: {
                 settings.showsFoldLine = $0
                 settings.notifyChange()
-            }),
+            })
         ]
         func tools(hasHinge: Bool) -> [DockTool] {
             [.layoutGauge(gauge)] + (hasHinge ? hingeElements : []) + [
@@ -52,7 +58,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     contentView: controls,
                     actions: hasHinge ? [historyAction] : []
                 ),
-                .appearance(),
+                .appearance()
             ]
         }
 
@@ -64,7 +70,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             tools: tools(hasHinge: false)
         )
         dock.actions = [
-            FloatingDockAction(title: "About", systemImage: "info.circle") { [weak root] in root?.showAbout() },
+            FloatingDockAction(title: "About", systemImage: "info.circle") { [weak root] in root?.showAbout() }
         ]
         var hasHinge = false
         root.onStateChange = { [weak dock] state in
@@ -80,11 +86,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             panelStyle: .sections,
             configuration: FloatingDockConfiguration(id: "style-uikit", initialPosition: 0.35),
             tools: [
-                .selector("Fill", options: ["Solid", "Soft", "Mono"], get: {
-                    SwatchStyle.current.fill.rawValue
-                }, set: {
-                    SwatchStyle.current.fill = SwatchStyle.Fill(rawValue: $0) ?? .solid
-                }),
+                .selector(
+                    "Fill",
+                    options: ["Solid", "Soft", "Mono"],
+                    get: { SwatchStyle.current.fill.rawValue },
+                    set: { SwatchStyle.current.fill = SwatchStyle.Fill(rawValue: $0) ?? .solid }
+                ),
                 .slider("Corners", in: 0...2, get: { SwatchStyle.current.cornerScale }, set: {
                     SwatchStyle.current.cornerScale = $0
                 }),
@@ -96,7 +103,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 }),
                 .button("Reset", systemImage: "arrow.counterclockwise") {
                     SwatchStyle.current = SwatchStyle()
-                },
+                }
             ]
         )
         self.styleDock = styleDock

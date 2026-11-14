@@ -13,7 +13,7 @@ struct Item: Identifiable, Hashable {
         LinearGradient(
             colors: [
                 Color(hue: hue, saturation: 0.75, brightness: 0.95),
-                Color(hue: (hue + 0.12).truncatingRemainder(dividingBy: 1), saturation: 0.8, brightness: 0.6),
+                Color(hue: (hue + 0.12).truncatingRemainder(dividingBy: 1), saturation: 0.8, brightness: 0.6)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -23,9 +23,19 @@ struct Item: Identifiable, Hashable {
     var paragraphs: [String] {
         [
             "\(title) is one of the places in this sample gallery. \(summary)",
-            "Fold the device, turn it, or open it flat. The same item stays selected while the layout changes around it, so you can see how each posture presents the same content.",
-            "On the outer display the gallery is a single column. Fully open, it becomes a split view. Half open, the content moves away from the fold: a book spread with a vertical fold, or a viewer above controls with a horizontal fold.",
-            "Use the diagnostics panel to compare the live hinge state with the window size, the size classes, and the posture the app derived from them.",
+            """
+            Fold the device, turn it, or open it flat. The same item stays selected while the layout changes \
+            around it, so you can see how each posture presents the same content.
+            """,
+            """
+            On the outer display the gallery is a single column. Fully open, it becomes a split view. Half open, \
+            the content moves away from the fold: a book spread with a vertical fold, or a viewer above controls \
+            with a horizontal fold.
+            """,
+            """
+            Use the diagnostics panel to compare the live hinge state with the window size, the size classes, \
+            and the posture the app derived from them.
+            """
         ]
     }
 
@@ -41,6 +51,6 @@ struct Item: Identifiable, Hashable {
         Item(id: 8, title: "Nebula", symbol: "moon.stars.fill", hue: 0.75, summary: "Gas and dust glow far from any city light."),
         Item(id: 9, title: "Harbor", symbol: "ferry.fill", hue: 0.62, summary: "Boats come and go between old stone piers."),
         Item(id: 10, title: "Orchard", symbol: "basket.fill", hue: 0.95, summary: "Rows of fruit trees fill a quiet hillside."),
-        Item(id: 11, title: "Tundra", symbol: "wind", hue: 0.15, summary: "Low plants survive a short summer and long winter."),
+        Item(id: 11, title: "Tundra", symbol: "wind", hue: 0.15, summary: "Low plants survive a short summer and long winter.")
     ]
 }

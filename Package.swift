@@ -8,10 +8,10 @@ let package = Package(
     products: [
         .library(name: "FloatingDock", targets: ["FloatingDock"]),
         .library(name: "GaugeDock", targets: ["GaugeDock"]),
-        .library(name: "TweakDock", targets: ["TweakDock"]),
+        .library(name: "TweakDock", targets: ["TweakDock"])
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0" ..< "700.0.0"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", "600.0.0"..<"700.0.0")
     ],
     targets: [
         .target(name: "FloatingDock"),
@@ -20,7 +20,7 @@ let package = Package(
             name: "TweakDockMacros",
             dependencies: [
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+                .product(name: "SwiftCompilerPlugin", package: "swift-syntax")
             ]
         ),
         .target(name: "TweakDock", dependencies: ["TweakDockMacros"]),
@@ -31,8 +31,8 @@ let package = Package(
             name: "TweakDockMacrosTests",
             dependencies: [
                 .target(name: "TweakDockMacros", condition: .when(platforms: [.macOS])),
-                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax", condition: .when(platforms: [.macOS])),
+                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax", condition: .when(platforms: [.macOS]))
             ]
-        ),
+        )
     ]
 )

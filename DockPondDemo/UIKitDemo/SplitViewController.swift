@@ -128,7 +128,7 @@ final class ColorDetailViewController: UIViewController {
             stack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -20),
             stack.leadingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.leadingAnchor, constant: 20),
             stack.trailingAnchor.constraint(equalTo: scrollView.frameLayoutGuide.trailingAnchor, constant: -20),
-            colorView.heightAnchor.constraint(equalTo: colorView.widthAnchor, multiplier: 0.6),
+            colorView.heightAnchor.constraint(equalTo: colorView.widthAnchor, multiplier: 0.6)
         ])
         render()
     }

@@ -19,10 +19,10 @@ struct SwiftUIDemoApp: App {
                 ) {
                     if diagnostics.hasHinge {
                         DockTool.selector("Hinge", selection: $settings.stateOverride, options: [
-                            "Live": nil, "Closed": .closed, "Half": .partiallyOpen, "Flat": .fullyOpen,
+                            "Live": nil, "Closed": .closed, "Half": .partiallyOpen, "Flat": .fullyOpen
                         ])
                         DockTool.selector("Fold axis", selection: $settings.axisOverride, options: [
-                            "Auto": nil, "Vertical": .vertical, "Horizontal": .horizontal,
+                            "Auto": nil, "Vertical": .vertical, "Horizontal": .horizontal
                         ])
                         DockTool.toggle("Fold line", isOn: $settings.showsFoldLine)
                     }
@@ -44,7 +44,7 @@ struct SwiftUIDemoApp: App {
                     configuration: FloatingDockConfiguration(id: "style", initialPosition: 0.35)
                 ) {
                     DockTool.selector("Fill", selection: $settings.itemStyle.fill, options: [
-                        "Gradient": .gradient, "Solid": .solid, "Mono": .mono,
+                        "Gradient": .gradient, "Solid": .solid, "Mono": .mono
                     ])
                     DockTool.slider("Corners", value: $settings.itemStyle.cornerScale, in: 0...2)
                     DockTool.toggle("Summaries", isOn: $settings.itemStyle.showsSummaries)

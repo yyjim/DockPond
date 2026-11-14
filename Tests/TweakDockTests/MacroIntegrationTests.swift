@@ -39,7 +39,7 @@ private enum SampleTweaks {
     @Test func listsTweaksInDeclarationOrder() {
         #expect(SampleTweaks.allTweaks.map(\.name) == [
             "Integration Dark Mode", "Integration Font Size", "Integration Size", "Integration Debug Flag",
-            "Integration Clear Cache",
+            "Integration Clear Cache"
         ])
     }
 
@@ -47,7 +47,10 @@ private enum SampleTweaks {
         defer { SampleTweaks.isDarkModeTweak.reset() }
         SampleTweaks.isDarkMode = false
         let reloaded = Tweak(
-            collection: "UI", group: "Theme", name: "Integration Dark Mode", defaultValue: true,
+            collection: "UI",
+            group: "Theme",
+            name: "Integration Dark Mode",
+            defaultValue: true,
             store: TweakStore(fileURL: TweakStore.integration.fileURL)
         )
         #expect(reloaded.value == false)

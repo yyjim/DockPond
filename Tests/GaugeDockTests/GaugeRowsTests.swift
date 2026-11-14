@@ -1,7 +1,7 @@
 import Foundation
+@testable import GaugeDock
 import Testing
 import UIKit
-@testable import GaugeDock
 
 struct GaugeRowsTests {
     let snapshot = LayoutGauge.Snapshot(
@@ -29,7 +29,7 @@ struct GaugeRowsTests {
             GaugeRow(name: "Orientation", value: "Landscape · right"),
             GaugeRow(name: "Size class", value: "H regular · V compact"),
             GaugeRow(name: "Safe area", value: "T 0 · L 59 · B 21 · R 59"),
-            GaugeRow(name: "Scale", value: "3×"),
+            GaugeRow(name: "Scale", value: "3×")
         ])
     }
 
@@ -51,7 +51,7 @@ struct GaugeRowsTests {
         book.fold = LayoutGauge.Fold(posture: .book, axis: .vertical, position: 475.5)
         #expect(book.rows(for: .fold) == [
             GaugeRow(name: "Posture", value: "Book"),
-            GaugeRow(name: "Fold", value: "Vertical at x 476 pt (estimated)"),
+            GaugeRow(name: "Fold", value: "Vertical at x 476 pt (estimated)")
         ])
 
         var outside = snapshot

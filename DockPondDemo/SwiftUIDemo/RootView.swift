@@ -56,10 +56,13 @@ struct RootView: View {
         switch posture {
         case .outer, .compact:
             SingleColumnLayout(selection: selection)
+
         case .flat, .regular:
             SplitLayout(selection: selection)
+
         case .book:
             BookLayout(selection: selection)
+
         case .tabletop:
             TabletopLayout(selection: selection)
         }

@@ -68,12 +68,18 @@ final class GaugeProbeView: UIView {
         let axis: LayoutGauge.Fold.Axis = screenBounds.width > screenBounds.height ? .vertical : .horizontal
         let center = window.convert(CGPoint(x: screenBounds.midX, y: screenBounds.midY), from: screen.coordinateSpace)
         let position: CGFloat? = switch axis {
-        case .vertical: (0...window.bounds.width).contains(center.x) ? center.x : nil
-        case .horizontal: (0...window.bounds.height).contains(center.y) ? center.y : nil
+        case .vertical:
+            (0...window.bounds.width).contains(center.x) ? center.x : nil
+
+        case .horizontal:
+            (0...window.bounds.height).contains(center.y) ? center.y : nil
         }
         let posture: LayoutGauge.Fold.Posture = switch hinge.state {
-        case .fullyOpen: .flat
-        default: axis == .vertical ? .book : .tabletop
+        case .fullyOpen:
+            .flat
+
+        default:
+            axis == .vertical ? .book : .tabletop
         }
         return LayoutGauge.Fold(posture: posture, axis: axis, position: position)
     }
@@ -84,10 +90,17 @@ final class GaugeProbeView: UIView {
             guard let self else { return }
             hinge = update.hinge.flatMap { hinge in
                 let state: LayoutGauge.Hinge.State? = switch hinge.status {
-                case .closed: .closed
-                case .partiallyOpen: .partiallyOpen
-                case .fullyOpen: .fullyOpen
-                default: nil
+                case .closed:
+                    .closed
+
+                case .partiallyOpen:
+                    .partiallyOpen
+
+                case .fullyOpen:
+                    .fullyOpen
+
+                default:
+                    nil
                 }
                 return state.map {
                     LayoutGauge.Hinge(state: $0, angle: Measurement(value: Double(hinge.angle), unit: .radians))

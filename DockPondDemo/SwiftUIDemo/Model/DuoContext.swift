@@ -8,10 +8,17 @@ extension HingeState {
             return
         }
         switch status {
-        case .closed: self = .closed
-        case .partiallyOpen: self = .partiallyOpen
-        case .fullyOpen: self = .fullyOpen
-        default: self = .unavailable
+        case .closed:
+            self = .closed
+
+        case .partiallyOpen:
+            self = .partiallyOpen
+
+        case .fullyOpen:
+            self = .fullyOpen
+
+        default:
+            self = .unavailable
         }
     }
 }

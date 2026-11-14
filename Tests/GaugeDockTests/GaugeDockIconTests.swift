@@ -1,6 +1,6 @@
 import FloatingDock
-import Testing
 @testable import GaugeDock
+import Testing
 
 @MainActor
 struct GaugeDockIconTests {

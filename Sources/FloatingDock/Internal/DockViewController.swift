@@ -127,13 +127,19 @@ final class DockViewController: UIViewController {
             self.button.transform = expanded ? CGAffineTransform(scaleX: 0.6, y: 0.6) : .identity
         }
         let completion = { (_: Bool) in
-            guard !self.isExpanded else { return }
+            if self.isExpanded { return }
             panel.isHidden = true
             panel.transform = .identity
             self.scheduleIdleFade()
         }
         if animated {
-            UIView.animate(springDuration: 0.4, bounce: expanded ? 0.2 : 0, options: .allowUserInteraction, animations: changes, completion: completion)
+            UIView.animate(
+                springDuration: 0.4,
+                bounce: expanded ? 0.2 : 0,
+                options: .allowUserInteraction,
+                animations: changes,
+                completion: completion
+            )
         } else {
             changes()
             completion(true)
@@ -150,16 +156,18 @@ final class DockViewController: UIViewController {
         let fitting = panelHost.sizeThatFits(in: CGSize(width: width, height: area.height))
         let size = CGSize(width: width, height: min(fitting.height, area.height))
 
-        var origin: CGPoint
-        switch position.edge {
+        var origin: CGPoint = switch position.edge {
         case .leading:
-            origin = CGPoint(x: area.minX, y: button.center.y - size.height / 2)
+            CGPoint(x: area.minX, y: button.center.y - size.height / 2)
+
         case .trailing:
-            origin = CGPoint(x: area.maxX - size.width, y: button.center.y - size.height / 2)
+            CGPoint(x: area.maxX - size.width, y: button.center.y - size.height / 2)
+
         case .top:
-            origin = CGPoint(x: button.center.x - size.width / 2, y: area.minY)
+            CGPoint(x: button.center.x - size.width / 2, y: area.minY)
+
         case .bottom:
-            origin = CGPoint(x: button.center.x - size.width / 2, y: area.maxY - size.height)
+            CGPoint(x: button.center.x - size.width / 2, y: area.maxY - size.height)
         }
         origin.x = min(max(origin.x, area.minX), area.maxX - size.width)
         origin.y = min(max(origin.y, area.minY), area.maxY - size.height)
@@ -184,11 +192,13 @@ final class DockViewController: UIViewController {
             dragStartCenter = button.center
             updateLabelState { $0.isDragging = true }
             wake()
+
         case .changed:
             let translation = gesture.translation(in: view)
             button.center = clamped(CGPoint(x: dragStartCenter.x + translation.x, y: dragStartCenter.y + translation.y))
             let edge = releasePosition(for: gesture).edge
             updateLabelState { $0.edge = edge }
+
         case .ended, .cancelled, .failed:
             position = releasePosition(for: gesture)
             position.save(id: configuration.id)
@@ -198,6 +208,7 @@ final class DockViewController: UIViewController {
                 self.button.center = self.position.center(in: self.dockingArea, itemSize: self.buttonSize)
             }
             scheduleIdleFade()
+
         default:
             break
         }
@@ -300,10 +311,17 @@ struct DockPosition: Equatable {
         let minY = area.minY + itemSize.height / 2
         let maxY = max(minY, area.maxY - itemSize.height / 2)
         switch edge {
-        case .leading: return CGPoint(x: minX, y: minY + (maxY - minY) * fraction)
-        case .trailing: return CGPoint(x: maxX, y: minY + (maxY - minY) * fraction)
-        case .top: return CGPoint(x: minX + (maxX - minX) * fraction, y: minY)
-        case .bottom: return CGPoint(x: minX + (maxX - minX) * fraction, y: maxY)
+        case .leading:
+            return CGPoint(x: minX, y: minY + (maxY - minY) * fraction)
+
+        case .trailing:
+            return CGPoint(x: maxX, y: minY + (maxY - minY) * fraction)
+
+        case .top:
+            return CGPoint(x: minX + (maxX - minX) * fraction, y: minY)
+
+        case .bottom:
+            return CGPoint(x: minX + (maxX - minX) * fraction, y: maxY)
         }
     }
 
@@ -316,13 +334,12 @@ struct DockPosition: Equatable {
         let side = min(left, right)
         let verticalThreshold = itemSize.height * 1.5
 
-        let edge: Edge
-        if top < verticalThreshold && top < side {
-            edge = .top
+        let edge: Edge = if top < verticalThreshold && top < side {
+            .top
         } else if bottom < verticalThreshold && bottom < side {
-            edge = .bottom
+            .bottom
         } else {
-            edge = left < right ? .leading : .trailing
+            left < right ? .leading : .trailing
         }
 
         let fraction: CGFloat
@@ -330,6 +347,7 @@ struct DockPosition: Equatable {
         case .leading, .trailing:
             let span = max(1, area.height - itemSize.height)
             fraction = (point.y - area.minY - itemSize.height / 2) / span
+
         case .top, .bottom:
             let span = max(1, area.width - itemSize.width)
             fraction = (point.x - area.minX - itemSize.width / 2) / span

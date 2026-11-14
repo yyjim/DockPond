@@ -88,7 +88,7 @@ final class TweakDemoUITests: XCTestCase {
 
     private func increment(_ name: String, times: Int = 1) {
         let button = app.buttons.matching(NSPredicate(format: "identifier == 'Increment' AND label BEGINSWITH %@", name)).firstMatch
-        for _ in 0 ..< times {
+        for _ in 0..<times {
             button.tap()
         }
     }

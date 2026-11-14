@@ -47,9 +47,10 @@ extension DockTool {
         alignment: HorizontalAlignment = .trailing,
         id: String? = nil
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             ElementToggle(title: title, isOn: isOn, tint: tint, alignment: alignment)
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 
     /// A control that selects one value of the app. Four options or fewer show as
@@ -60,9 +61,10 @@ extension DockTool {
         options: KeyValuePairs<String, Value>,
         id: String? = nil
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             SelectorControl(title: title, selection: selection, options: Array(options))
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 
     /// A stepper that changes an integer value of the app.
@@ -73,13 +75,14 @@ extension DockTool {
         step: Int = 1,
         id: String? = nil
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             Stepper(value: value, in: range, step: step) {
                 Text(value.wrappedValue, format: .number)
                     .monospacedDigit()
             }
             .accessibilityLabel(title)
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 
     /// A slider that changes a decimal value of the app.
@@ -90,7 +93,7 @@ extension DockTool {
         format: FloatingPointFormatStyle<Double> = .number.precision(.fractionLength(0...2)),
         id: String? = nil
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             HStack {
                 Slider(value: value, in: range)
                     .accessibilityLabel(title)
@@ -98,7 +101,8 @@ extension DockTool {
                     .monospacedDigit()
                     .frame(minWidth: 36, alignment: .trailing)
             }
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 
     /// A button that runs an action of the app. The panel stays open.
@@ -109,9 +113,10 @@ extension DockTool {
         id: String? = nil,
         action: @escaping @MainActor () -> Void
     ) -> DockTool {
-        DockTool(element: .wide(AnyView(
+        let view = AnyView(
             ElementButton(title: title, systemImage: systemImage, role: role, action: action)
-        )), title: title, id: id)
+        )
+        return DockTool(element: .wide(view), title: title, id: id)
     }
 
     // MARK: UIKit
@@ -127,9 +132,10 @@ extension DockTool {
         get: @escaping @MainActor () -> Bool,
         set: @escaping @MainActor (Bool) -> Void
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             ClosureBound(get: get, set: set) { ElementToggle(title: title, isOn: $0, tint: tint, alignment: alignment) }
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 
     /// A control that selects one of the option titles. The closures read and
@@ -141,7 +147,7 @@ extension DockTool {
         get: @escaping @MainActor () -> Int,
         set: @escaping @MainActor (Int) -> Void
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             ClosureBound(get: get, set: set) { selection in
                 SelectorControl(
                     title: title,
@@ -149,7 +155,8 @@ extension DockTool {
                     options: options.enumerated().map { ($0.element, $0.offset) }
                 )
             }
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 
     public static func stepper(
@@ -160,7 +167,7 @@ extension DockTool {
         get: @escaping @MainActor () -> Int,
         set: @escaping @MainActor (Int) -> Void
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             ClosureBound(get: get, set: set) { value in
                 Stepper(value: value, in: range, step: step) {
                     Text(value.wrappedValue, format: .number)
@@ -168,7 +175,8 @@ extension DockTool {
                 }
                 .accessibilityLabel(title)
             }
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 
     public static func slider(
@@ -179,7 +187,7 @@ extension DockTool {
         get: @escaping @MainActor () -> Double,
         set: @escaping @MainActor (Double) -> Void
     ) -> DockTool {
-        DockTool(element: .labeled(title, AnyView(
+        let view = AnyView(
             ClosureBound(get: get, set: set) { value in
                 HStack {
                     Slider(value: value, in: range)
@@ -189,7 +197,8 @@ extension DockTool {
                         .frame(minWidth: 36, alignment: .trailing)
                 }
             }
-        )), title: title, id: id)
+        )
+        return DockTool(element: .labeled(title, view), title: title, id: id)
     }
 }
 
@@ -209,6 +218,7 @@ struct ElementRows: View {
                         control
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
+
                 case let .wide(view):
                     view
                         .gridCellColumns(2)

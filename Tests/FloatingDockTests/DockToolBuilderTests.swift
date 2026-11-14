@@ -1,6 +1,6 @@
+@testable import FloatingDock
 import SwiftUI
 import Testing
-@testable import FloatingDock
 
 @MainActor
 struct DockToolBuilderTests {
@@ -33,7 +33,7 @@ struct DockToolBuilderTests {
             DockTool("Layout", systemImage: "ruler") { EmptyView() },
             .toggle("Grid", isOn: .constant(true)),
             DockTool.appearance(),
-            .button("Reset") {},
+            .button("Reset") {}
         ])
         #expect(tools.map(\.id) == ["Layout", DockTool.elementsID, "appearance"])
         #expect(tools[1].title == DockTool.elementsTitle)

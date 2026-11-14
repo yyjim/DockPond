@@ -55,7 +55,12 @@ final class DuoRootViewController: UIViewController {
     func showAbout() {
         let alert = UIAlertController(
             title: "UIKit Demo",
-            message: "This app installs three docks from its SceneDelegate. Dev Tools shows its tools as sections: the layout gauge from GaugeDock, the hinge element tools, a custom UIKit Controls view, and the ready-made Appearance tool. Style has only element tools, so it shows them without tabs or headers. Gauge is the ready-made gauge dock from FloatingDockController.gaugeDock(_:).",
+            message: """
+            This app installs three docks from its SceneDelegate. Dev Tools shows its tools as sections: the \
+            layout gauge from GaugeDock, the hinge element tools, a custom UIKit Controls view, and the \
+            ready-made Appearance tool. Style has only element tools, so it shows them without tabs or headers. \
+            Gauge is the ready-made gauge dock from FloatingDockController.gaugeDock(_:).
+            """,
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default))
@@ -101,9 +106,14 @@ final class DuoRootViewController: UIViewController {
 
     private func controller(for posture: Posture) -> UIViewController {
         switch posture {
-        case .outer, .flat, .compact, .regular: split
-        case .book: book
-        case .tabletop: tabletop
+        case .outer, .flat, .compact, .regular:
+            split
+
+        case .book:
+            book
+
+        case .tabletop:
+            tabletop
         }
     }
 
@@ -127,10 +137,17 @@ final class DuoRootViewController: UIViewController {
             let reading: HingeReading
             if let hinge = update.hinge {
                 let state: HingeState = switch hinge.status {
-                case .closed: .closed
-                case .partiallyOpen: .partiallyOpen
-                case .fullyOpen: .fullyOpen
-                default: .unavailable
+                case .closed:
+                    .closed
+
+                case .partiallyOpen:
+                    .partiallyOpen
+
+                case .fullyOpen:
+                    .fullyOpen
+
+                default:
+                    .unavailable
                 }
                 reading = HingeReading(state: state, angleDegrees: Int((hinge.angle * 180 / .pi).rounded()))
             } else {
@@ -174,6 +191,7 @@ final class FoldLineView: UIView {
         case .vertical:
             path.move(to: CGPoint(x: bounds.midX, y: 0))
             path.addLine(to: CGPoint(x: bounds.midX, y: bounds.maxY))
+
         case .horizontal:
             path.move(to: CGPoint(x: 0, y: bounds.midY))
             path.addLine(to: CGPoint(x: bounds.maxX, y: bounds.midY))

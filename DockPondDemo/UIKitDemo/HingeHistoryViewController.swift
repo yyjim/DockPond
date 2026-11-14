@@ -20,7 +20,12 @@ final class HingeHistoryViewController: UITableViewController {
         navigationItem.rightBarButtonItem = UIBarButtonItem(systemItem: .done, primaryAction: UIAction { [weak self] _ in
             self?.dismiss(animated: true)
         })
-        NotificationCenter.default.addObserver(self, selector: #selector(historyDidChange), name: DuoSettings.historyDidChange, object: settings)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(historyDidChange),
+            name: DuoSettings.historyDidChange,
+            object: settings
+        )
     }
 
     @objc private func historyDidChange() {

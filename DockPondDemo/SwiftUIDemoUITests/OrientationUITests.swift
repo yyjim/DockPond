@@ -8,11 +8,11 @@ final class OrientationUITests: XCTestCase {
         let window = app.windows.firstMatch
         XCTAssertTrue(window.waitForExistence(timeout: 5))
 
-        let orientations: [(UIDeviceOrientation, String, Bool)] = [
+        let orientations: [(orientation: UIDeviceOrientation, name: String, isLandscape: Bool)] = [
             (.portrait, "portrait", false),
             (.landscapeLeft, "landscape-left", true),
             (.portraitUpsideDown, "upside-down", false),
-            (.landscapeRight, "landscape-right", true),
+            (.landscapeRight, "landscape-right", true)
         ]
         for (orientation, name, isLandscape) in orientations {
             XCUIDevice.shared.orientation = orientation

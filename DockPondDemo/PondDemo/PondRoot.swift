@@ -10,25 +10,40 @@ enum Island: String, CaseIterable, Identifiable {
 
     var library: String {
         switch self {
-        case .party: "FloatingDock"
-        case .survey: "GaugeDock"
-        case .studio: "TweakDock"
+        case .party:
+            "FloatingDock"
+
+        case .survey:
+            "GaugeDock"
+
+        case .studio:
+            "TweakDock"
         }
     }
 
     var title: String {
         switch self {
-        case .party: "Pool Party"
-        case .survey: "Pool Survey"
-        case .studio: "Duck Studio"
+        case .party:
+            "Pool Party"
+
+        case .survey:
+            "Pool Survey"
+
+        case .studio:
+            "Duck Studio"
         }
     }
 
     var pitch: String {
         switch self {
-        case .party: "Throw ducks in. Drag the float to any edge."
-        case .survey: "Rotate, resize, or fold. The pool follows."
-        case .studio: "Remix the duck while the app runs."
+        case .party:
+            "Throw ducks in. Drag the float to any edge."
+
+        case .survey:
+            "Rotate, resize, or fold. The pool follows."
+
+        case .studio:
+            "Remix the duck while the app runs."
         }
     }
 
@@ -36,17 +51,27 @@ enum Island: String, CaseIterable, Identifiable {
 
     var fill: Color {
         switch self {
-        case .party: .duck
-        case .survey: .float
-        case .studio: .bill
+        case .party:
+            .duck
+
+        case .survey:
+            .float
+
+        case .studio:
+            .bill
         }
     }
 
     var tilt: Double {
         switch self {
-        case .party: -1.5
-        case .survey: 1
-        case .studio: -0.8
+        case .party:
+            -1.5
+
+        case .survey:
+            1
+
+        case .studio:
+            -0.8
         }
     }
 }
@@ -61,9 +86,14 @@ struct PondRoot: View {
             HomeView()
                 .navigationDestination(for: Island.self) { island in
                     switch island {
-                    case .party: PoolPartyView()
-                    case .survey: PoolSurveyView(gauge: gauge)
-                    case .studio: DuckStudioView(openTweaks: presentTweaks)
+                    case .party:
+                        PoolPartyView()
+
+                    case .survey:
+                        PoolSurveyView(gauge: gauge)
+
+                    case .studio:
+                        DuckStudioView(openTweaks: presentTweaks)
                     }
                 }
         }

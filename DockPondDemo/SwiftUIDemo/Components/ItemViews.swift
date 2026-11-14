@@ -21,9 +21,14 @@ struct ItemArtwork: View {
 
     private var fill: AnyShapeStyle {
         switch style.fill {
-        case .gradient: AnyShapeStyle(item.gradient)
-        case .solid: AnyShapeStyle(item.color)
-        case .mono: AnyShapeStyle(Color.gray)
+        case .gradient:
+            AnyShapeStyle(item.gradient)
+
+        case .solid:
+            AnyShapeStyle(item.color)
+
+        case .mono:
+            AnyShapeStyle(Color.gray)
         }
     }
 }
