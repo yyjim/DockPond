@@ -461,48 +461,30 @@ To remove an override, swipe the row, or select "Use <source>" in the options.
 TweakDock does not depend on Firebase. Add this adapter to your app:
 
 ```swift
-import Combine
 import FirebaseRemoteConfig
 import TweakDock
 
 final class FirebaseTweakSource: TweakSource, @unchecked Sendable {
     let name = "Firebase"
     private let remoteConfig: RemoteConfig
-    private let activated = PassthroughSubject<Void, Never>()
 
     init(remoteConfig: RemoteConfig = .remoteConfig()) {
         self.remoteConfig = remoteConfig
     }
 
-    var changes: AnyPublisher<Void, Never> { activated.eraseToAnyPublisher() }
-
-    /// Use this in place of `RemoteConfig.fetchAndActivate()`, so that sourced tweaks update.
-    @discardableResult
-    func fetchAndActivate() async throws -> RemoteConfigFetchAndActivateStatus {
-        let status = try await remoteConfig.fetchAndActivate()
-        activated.send()
-        return status
-    }
-
     func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
         let value = remoteConfig.configValue(forKey: key)
-        // `.static` means not fetched yet or not in Remote Config. `.default` is a `setDefaults` value.
+        // `.static` means not activated yet or not in Remote Config. `.default` is a `setDefaults` value.
         guard value.source == .remote else { return nil }
         return TweakPrimitive(string: value.stringValue, as: kind)
     }
 }
+
+AppTweaks.tweakStore.source = FirebaseTweakSource()   // After FirebaseApp.configure().
 ```
 
-Set the source after `FirebaseApp.configure()`, and fetch through it:
-
-```swift
-let firebase = FirebaseTweakSource()
-AppTweaks.tweakStore.source = firebase
-try await firebase.fetchAndActivate()
-```
-
-The adapter owns activation, so the tweaks always know when values change.
-It does not listen for real-time updates. A variant that changes during a session can give wrong experiment data.
+The adapter only reads values. The app fetches and activates Remote Config, as before.
+Until Remote Config activates, each sourced tweak gives its default value. After it activates, the next read gives the remote value.
 Do not use `boolValue` or `numberValue`, because they return `false` or `0` for text that is not valid.
 `TweakPrimitive(string:as:)` returns `nil` for that text, so the tweak uses its default value.
 
