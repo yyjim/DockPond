@@ -91,7 +91,8 @@ import FirebaseCore
 import FirebaseRemoteConfig
 import TweakDock
 
-final class FirebaseValueProvider: TweakValueProvider {
+// PassthroughSubject can send from any thread, so the class is safe to share.
+final class FirebaseValueProvider: TweakValueProvider, @unchecked Sendable {
     static let shared = FirebaseValueProvider()
     let name = "Firebase"
     private let subject = PassthroughSubject<Void, Never>()

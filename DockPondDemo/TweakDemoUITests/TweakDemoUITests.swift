@@ -152,6 +152,7 @@ final class TweakDemoUITests: XCTestCase {
 
     private func assertValue(_ name: String, _ expected: String, file: StaticString = #filePath, line: UInt = #line) {
         let element = app.staticTexts["value.\(name)"]
+        XCTAssertTrue(element.waitForExistence(timeout: 5), "\(name) is not shown", file: file, line: line)
         let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", expected), object: element)
         if XCTWaiter.wait(for: [shown], timeout: 5) != .completed {
             XCTAssertEqual(element.label, expected, name, file: file, line: line)

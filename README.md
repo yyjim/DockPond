@@ -414,7 +414,7 @@ enum Experiments {
 }
 
 Experiments.paywall                    // The remote value when it is valid, else .A.
-Experiments.paywallTweak.currentValue     // .default(.A), .source("Firebase", .B), or .override(.C)
+Experiments.paywallTweak.currentValue  // .default(.A), .source("Firebase", .B), or .override(.C)
 ```
 
 For devices, launch arguments, `experimentProperties` for analytics, and a Firebase adapter, see [TweakDock experiments](docs/TweakDockSources.md).

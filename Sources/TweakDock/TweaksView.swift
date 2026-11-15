@@ -131,6 +131,7 @@ private struct TweakRow: View {
             get: { number.wrappedValue },
             set: { typed in
                 // The text field writes its rounded value again when editing ends. That write must not pin a source value as an override.
+                let typed = isInteger ? typed.rounded() : typed
                 guard abs(typed - number.wrappedValue) >= 0.5 * pow(10, -Double(Self.fractionDigits)) else { return }
                 number.wrappedValue = typed
             }
@@ -193,8 +194,7 @@ private struct TweakRow: View {
     }
 
     private static func caption(for tweak: any PrimitiveTweak, current: TweakCurrentValue<TweakPrimitive>) -> String? {
-        guard let key = tweak.source?.key else { return nil }
-        return TweakCaption.text(key: key, current: current, source: tweak.primitiveSourceValue)
+        TweakCaption.text(key: tweak.source?.key, current: current, source: tweak.primitiveSourceValue)
     }
 }
 
@@ -251,7 +251,7 @@ private struct OptionsView: View {
 enum TweakCaption {
     /// Describes where the value of a tweak with a source comes from.
     static func text(
-        key: String?, current: TweakCurrentValue<TweakPrimitive>, source: (name: String, value: TweakPrimitive)?
+        key: String?, current: TweakCurrentValue<TweakPrimitive>, source: @autoclosure () -> (name: String, value: TweakPrimitive)?
     ) -> String? {
         guard let key else { return nil }
         switch current {
@@ -260,7 +260,7 @@ enum TweakCaption {
         case .default:
             return "Default · \(key)"
         case .override:
-            if let source {
+            if let source = source() {
                 return "Override · \(source.name): \(source.value.displayText)"
             }
             return "Override · \(key)"
