@@ -74,8 +74,9 @@ private struct TweakRow: View {
 
     init(tweak: any PrimitiveTweak) {
         self.tweak = tweak
-        _current = State(initialValue: tweak.primitiveCurrentValue)
-        _caption = State(initialValue: Self.caption(for: tweak))
+        let current = tweak.primitiveCurrentValue
+        _current = State(initialValue: current)
+        _caption = State(initialValue: Self.caption(for: tweak, current: current))
         _changes = State(initialValue: tweak.changeSignal.receive(on: DispatchQueue.main).eraseToAnyPublisher())
     }
 
@@ -119,14 +120,19 @@ private struct TweakRow: View {
         let number = Binding(
             get: { value.doubleValue ?? 0 },
             set: { number in
-                // The text field writes its rounded value again when editing ends. That write must not pin a source value as an override.
-                if abs(number - (value.doubleValue ?? 0)) < 0.5 * pow(10, -Double(Self.fractionDigits)) {
-                    return
-                } else if !isInteger {
+                if !isInteger {
                     update(.double(number))
                 } else if let integer = Int(exactly: number.rounded()) {
                     update(.int(integer))
                 }
+            }
+        )
+        let typed = Binding(
+            get: { number.wrappedValue },
+            set: { typed in
+                // The text field writes its rounded value again when editing ends. That write must not pin a source value as an override.
+                guard abs(typed - number.wrappedValue) >= 0.5 * pow(10, -Double(Self.fractionDigits)) else { return }
+                number.wrappedValue = typed
             }
         )
         let step = TweakStepper.stepSize(defaultValue: tweak.defaultPrimitive.doubleValue ?? 0, isInteger: isInteger, range: range)
@@ -137,7 +143,7 @@ private struct TweakRow: View {
         return HStack {
             label
             Spacer()
-            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0 ... Self.fractionDigits)))
+            TextField(tweak.name, value: typed, format: .number.precision(.fractionLength(0 ... Self.fractionDigits)))
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
@@ -181,13 +187,14 @@ private struct TweakRow: View {
 
     private func refresh() {
         let newCurrent = tweak.primitiveCurrentValue
-        let newCaption = Self.caption(for: tweak)
+        let newCaption = Self.caption(for: tweak, current: newCurrent)
         if newCurrent != current { current = newCurrent }
         if newCaption != caption { caption = newCaption }
     }
 
-    private static func caption(for tweak: any PrimitiveTweak) -> String? {
-        TweakCaption.text(key: tweak.source?.key, current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue)
+    private static func caption(for tweak: any PrimitiveTweak, current: TweakCurrentValue<TweakPrimitive>) -> String? {
+        guard let key = tweak.source?.key else { return nil }
+        return TweakCaption.text(key: key, current: current, source: tweak.primitiveSourceValue)
     }
 }
 

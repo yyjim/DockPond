@@ -405,15 +405,16 @@ Give `from: .experiment(key)` to read the value of a tweak from an A/B test serv
 The store uses the override, then a valid experiment value, then the default value.
 
 ```swift
-@Tweaks(store: TweakStore(experimentProvider: FirebaseValueProvider.shared))
-enum AppTweaks {
+// Give the store its own name, so that it does not share Tweaks.json with TweakStore.shared.
+@Tweaks(store: TweakStore(name: "Experiments", experimentProvider: FirebaseValueProvider.shared))
+enum Experiments {
     @Tweak(collection: "Experiments", group: "Paywall", name: "Layout",
            defaultValue: Paywall.A, from: .experiment("exp_paywall"))
     static var paywall: Paywall
 }
 
-AppTweaks.paywall                      // The remote value when it is valid, else .A.
-AppTweaks.paywallTweak.currentValue    // .default(.A), .source("Firebase", .B), or .override(.C)
+Experiments.paywall                    // The remote value when it is valid, else .A.
+Experiments.paywallTweak.currentValue     // .default(.A), .source("Firebase", .B), or .override(.C)
 ```
 
 For devices, launch arguments, `experimentProperties` for analytics, and a Firebase adapter, see [TweakDock experiments](docs/TweakDockSources.md).

@@ -23,6 +23,7 @@ enum Experiments {
 ```
 
 The store gets `experimentProvider` when you make it, and keeps it.
+Give the store its own `name`. Two stores with the same name use the same file, and each keeps its own copy of the overrides.
 When `experimentProvider` is `nil`, each experiment uses its default value.
 `from:` is optional. A tweak without it uses only its override and its default value.
 
@@ -85,25 +86,37 @@ An override and a launch argument apply on all devices, so you can test an iPad 
 TweakDock does not depend on Firebase. Add this adapter to your app:
 
 ```swift
+import Combine
+import FirebaseCore
 import FirebaseRemoteConfig
 import TweakDock
 
 final class FirebaseValueProvider: TweakValueProvider {
     static let shared = FirebaseValueProvider()
     let name = "Firebase"
+    private let subject = PassthroughSubject<Void, Never>()
+
+    var changes: AnyPublisher<Void, Never> { subject.eraseToAnyPublisher() }
 
     func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? {
-        // The store can be made before FirebaseApp.configure(), so get RemoteConfig only when a tweak reads a value.
+        // A tweak can be read before FirebaseApp.configure(), and RemoteConfig.remoteConfig() raises an exception then.
+        guard FirebaseApp.app() != nil else { return nil }
         let value = RemoteConfig.remoteConfig().configValue(forKey: key)
         // `.static` means not activated yet or not in Remote Config. `.default` is a `setDefaults` value.
         guard value.source == .remote else { return nil }
         return TweakPrimitive(string: value.stringValue, as: kind)
+    }
+
+    /// Call it on the main thread after Remote Config activates.
+    func didActivate() {
+        subject.send()
     }
 }
 ```
 
 The adapter only reads values. The app fetches and activates Remote Config, as before.
 Until Remote Config activates, each experiment gives its default value. After it activates, the next read gives the remote value.
-To update the subscribers of `publisher` and `currentValuePublisher` after activation, send `changes` from the adapter.
+Call `didActivate()` after activation, so that `publisher`, `currentValuePublisher`, and the tweaks UI update.
+The publishers send on the thread that sends `changes`. Send `changes` on the main thread, or use `receive(on:)` in the subscriber.
 Do not use `boolValue` or `numberValue`, because they return `false` or `0` for text that is not valid.
 `TweakPrimitive(string:as:)` returns `nil` for that text, so the tweak uses its default value.
