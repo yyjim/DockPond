@@ -69,11 +69,13 @@ private struct TweakCollectionView: View {
 private struct TweakRow: View {
     let tweak: any PrimitiveTweak
     @State private var current: TweakCurrentValue<TweakPrimitive>
+    @State private var caption: String?
     @State private var changes: AnyPublisher<Void, Never>
 
     init(tweak: any PrimitiveTweak) {
         self.tweak = tweak
         _current = State(initialValue: tweak.primitiveCurrentValue)
+        _caption = State(initialValue: Self.caption(for: tweak))
         _changes = State(initialValue: tweak.changeSignal.receive(on: DispatchQueue.main).eraseToAnyPublisher())
     }
 
@@ -81,7 +83,7 @@ private struct TweakRow: View {
 
     var body: some View {
         content
-            .onReceive(changes) { current = tweak.primitiveCurrentValue }
+            .onReceive(changes) { refresh() }
             .swipeActions {
                 if tweak.source != nil, current.isOverride {
                     Button("Reset") { tweak.reset() }
@@ -117,7 +119,10 @@ private struct TweakRow: View {
         let number = Binding(
             get: { value.doubleValue ?? 0 },
             set: { number in
-                if !isInteger {
+                // The text field writes its rounded value again when editing ends. That write must not pin a source value as an override.
+                if abs(number - (value.doubleValue ?? 0)) < 0.5 * pow(10, -Double(Self.fractionDigits)) {
+                    return
+                } else if !isInteger {
                     update(.double(number))
                 } else if let integer = Int(exactly: number.rounded()) {
                     update(.int(integer))
@@ -146,7 +151,7 @@ private struct TweakRow: View {
     }
 
     @ViewBuilder private var label: some View {
-        if let caption = TweakCaption.text(key: tweak.source?.key, current: current, source: tweak.primitiveSourceValue) {
+        if let caption {
             VStack(alignment: .leading, spacing: 2) {
                 Text(tweak.name)
                 Text(caption)
@@ -158,9 +163,7 @@ private struct TweakRow: View {
         }
     }
 
-    private var isInteger: Bool {
-        if case .int = tweak.defaultPrimitive { true } else { false }
-    }
+    private var isInteger: Bool { tweak.defaultPrimitive.kind == .int }
 
     private func binding<Value: TweakValue>(_: Value.Type) -> Binding<Value> {
         Binding(
@@ -172,9 +175,19 @@ private struct TweakRow: View {
     private static let fractionDigits = 3
 
     private func update(_ primitive: TweakPrimitive) {
-        guard tweak.changesValue(primitive, tolerance: 0.5 * pow(10, -Double(Self.fractionDigits))) else { return }
         tweak.primitiveValue = primitive
-        current = tweak.primitiveCurrentValue
+        refresh()
+    }
+
+    private func refresh() {
+        let newCurrent = tweak.primitiveCurrentValue
+        let newCaption = Self.caption(for: tweak)
+        if newCurrent != current { current = newCurrent }
+        if newCaption != caption { caption = newCaption }
+    }
+
+    private static func caption(for tweak: any PrimitiveTweak) -> String? {
+        TweakCaption.text(key: tweak.source?.key, current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue)
     }
 }
 
@@ -250,12 +263,7 @@ enum TweakCaption {
 
 extension TweakPrimitive {
     var displayText: String {
-        switch self {
-        case let .bool(value): String(value)
-        case let .int(value): String(value)
-        case let .double(value): value.formatted()
-        case let .string(value): value
-        }
+        if case let .double(value) = self { value.formatted() } else { text }
     }
 }
 

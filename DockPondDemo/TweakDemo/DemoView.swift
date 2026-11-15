@@ -5,17 +5,16 @@ import TweakDock
 struct ExperimentState: Equatable {
     let value: String
     let origin: String
-    /// The value in `experimentProperties`, or `-` for a tweak that is not an experiment.
-    let userProperty: String
+    let key: String?
 
     init<Value: TweakValue>(_ current: TweakCurrentValue<Value>, key: String?) {
+        self.key = key
         value = current.value.primitive.text
         switch current {
         case .default: origin = "Default"
         case let .source(name, _): origin = name
         case .override: origin = "Override"
         }
-        userProperty = key.flatMap { DemoTweaks.allTweaks.experimentProperties[$0] } ?? "-"
     }
 }
 
@@ -151,7 +150,8 @@ struct DemoView: View {
     }
 
     private var experiments: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let properties = DemoTweaks.allTweaks.experimentProperties
+        return VStack(alignment: .leading, spacing: 12) {
             Text("Experiments").font(.headline)
             Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
                 GridRow {
@@ -170,7 +170,7 @@ struct DemoView: View {
                             .accessibilityIdentifier("value.\(name)")
                         Text(state?.origin ?? "")
                             .accessibilityIdentifier("origin.\(name)")
-                        Text(state?.userProperty ?? "")
+                        Text(state.map { $0.key.flatMap { properties[$0] } ?? "-" } ?? "")
                             .accessibilityIdentifier("property.\(name)")
                     }
                     .font(.footnote)

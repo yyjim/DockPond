@@ -43,6 +43,16 @@ public enum TweakPrimitive: Codable, Hashable, Sendable {
         }
     }
 
+    /// The text of the value, the same in each locale.
+    var text: String {
+        switch self {
+        case let .bool(value): String(value)
+        case let .int(value): String(value)
+        case let .double(value): String(value)
+        case let .string(value): value
+        }
+    }
+
     func converted(to kind: Kind) -> TweakPrimitive? {
         guard case let .string(text) = self, kind != .string else { return self }
         return TweakPrimitive(string: text, as: kind)

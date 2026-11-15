@@ -25,7 +25,6 @@ protocol PrimitiveTweak: AnyTweak {
     var primitiveSourceValue: (name: String, value: TweakPrimitive)? { get }
     var changeSignal: AnyPublisher<Void, Never> { get }
     var experimentProperty: (key: String, value: String)? { get }
-    func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool
     func reset()
 }
 
@@ -154,25 +153,8 @@ extension Tweak: PrimitiveTweak {
         guard let source, source.isExperiment else { return nil }
         let current = primitiveCurrentValue
         if case .default = current { return (source.key, "default") }
-        switch current.value {
-        case let .bool(value): return (source.key, String(value))
-        case let .int(value): return (source.key, String(value))
-        case let .double(value): return (source.key, String(value))
-        case let .string(value): return (source.key, value)
-        }
+        return (source.key, current.value.text)
     }
-
-    /// A text field writes its value again when editing ends, clamped and rounded to the digits that it shows.
-    /// That write must not pin a source value as an override, so it is not a change.
-    func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool {
-        guard let newValue = Value(primitive: primitive).map(normalize) else { return false }
-        let current = value
-        if let new = newValue.primitive.doubleValue, let old = current.primitive.doubleValue {
-            return abs(new - old) > tolerance
-        }
-        return newValue != current
-    }
-
 }
 
 /// A tweak that runs a closure when you tap it in the tweaks UI.

@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 /// Where a tweak reads its value when no override exists. Give it as `from:` in `@Tweak`.
@@ -17,8 +16,9 @@ import Foundation
 public struct TweakSource: Sendable {
     enum Kind: Sendable {
         case remote
-        case local(TweakSplit)
         case custom(any TweakValueProvider)
+        /// A local split. Each weight is more than 0.
+        case split([(value: TweakPrimitive, weight: Double)])
     }
 
     public let key: String
@@ -43,54 +43,21 @@ public struct TweakSource: Sendable {
     public static func localExperiment(
         _ key: String, _ weights: KeyValuePairs<String, Double>, devices: TweakDevices = .all
     ) -> TweakSource {
-        TweakSource(key: key, devices: devices, isExperiment: true, kind: .local(.weighted(weights)))
+        let weights = weights.map { (value: TweakPrimitive.string($0.key), weight: $0.value) }
+        return TweakSource(key: key, devices: devices, isExperiment: true, kind: .split(weights.filter { $0.weight > 0 }))
     }
 
     /// Gives `true` to `fraction` of the devices. When you increase the fraction, the devices that had
     /// `true` keep it.
     public static func rollout(_ key: String, _ fraction: Double, devices: TweakDevices = .all) -> TweakSource {
-        TweakSource(key: key, devices: devices, isExperiment: false, kind: .local(.fraction(fraction)))
+        let fraction = min(max(fraction, 0), 1)
+        let weights: [(value: TweakPrimitive, weight: Double)] = [(.bool(true), fraction), (.bool(false), 1 - fraction)]
+        return TweakSource(key: key, devices: devices, isExperiment: false, kind: .split(weights.filter { $0.weight > 0 }))
     }
 
     /// Reads `key` from your own provider, for example a second config service.
     public static func custom(_ key: String, _ provider: any TweakValueProvider, devices: TweakDevices = .all) -> TweakSource {
         TweakSource(key: key, devices: devices, isExperiment: false, kind: .custom(provider))
-    }
-
-    var provider: (any TweakValueProvider)? {
-        if case let .custom(provider) = kind { provider } else { nil }
-    }
-}
-
-/// The values of a local split, and the part of the devices that gets each value.
-struct TweakSplit: Sendable {
-    let weights: [(value: TweakPrimitive, weight: Double)]
-
-    static func weighted(_ weights: KeyValuePairs<String, Double>) -> TweakSplit {
-        TweakSplit(weights: weights.map { (TweakPrimitive.string($0.key), $0.value) })
-    }
-
-    static func fraction(_ fraction: Double) -> TweakSplit {
-        let fraction = min(max(fraction, 0), 1)
-        return TweakSplit(weights: [(.bool(true), fraction), (.bool(false), 1 - fraction)])
-    }
-
-    func value(at bucket: Double) -> TweakPrimitive? {
-        let weights = weights.filter { $0.weight > 0 }
-        let target = bucket * weights.reduce(0) { $0 + $1.weight }
-        var total = 0.0
-        for (value, weight) in weights {
-            total += weight
-            if target < total { return value }
-        }
-        return weights.last?.value
-    }
-
-    /// A number from 0 to 1 that does not change for a seed and a key.
-    static func bucket(seed: String, key: String) -> Double {
-        let digest = SHA256.hash(data: Data("\(seed).\(key)".utf8))
-        let number = digest.prefix(8).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
-        return Double(number >> 11) / Double(UInt64(1) << 53)
     }
 }
 
@@ -116,12 +83,13 @@ public struct TweakDevices: OptionSet, Sendable {
         return .vision
         #elseif os(macOS)
         return .mac
+        #elseif os(tvOS)
+        return .tv
         #else
         let info = ProcessInfo.processInfo
         if info.isiOSAppOnMac || info.isMacCatalystApp { return .mac }
         let model = info.environment["SIMULATOR_MODEL_IDENTIFIER"] ?? machineIdentifier()
         if model.hasPrefix("iPad") { return .pad }
-        if model.hasPrefix("AppleTV") { return .tv }
         if model.hasPrefix("RealityDevice") { return .vision }
         return .phone
         #endif

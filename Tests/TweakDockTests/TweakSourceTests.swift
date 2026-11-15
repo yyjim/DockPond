@@ -124,22 +124,6 @@ import Testing
         #expect(tweak.currentValue == .source("Remote", .B))
     }
 
-    @Test func textFieldRewriteIsNotAChange() {
-        let store = makeStore()
-        store.remote = remote(["ratio": .double(1.23456), "limit": .int(10)])
-        let ratio = Tweak(collection: "C", group: "G", name: "Ratio", defaultValue: 1.0, from: .config("ratio"), store: store)
-        let limit = Tweak(collection: "C", group: "G", name: "Limit", min: 0, max: 10, defaultValue: 5, from: .config("limit"), store: store)
-        let paywall = experiment(store)
-
-        #expect(!ratio.changesValue(.double(1.235), tolerance: 0.0005))
-        #expect(ratio.changesValue(.double(1.24), tolerance: 0.0005))
-        #expect(!limit.changesValue(.int(15), tolerance: 0.0005))
-        #expect(limit.changesValue(.int(9), tolerance: 0.0005))
-        #expect(!paywall.changesValue(.string("A"), tolerance: 0.0005))
-        #expect(paywall.changesValue(.string("B"), tolerance: 0.0005))
-        #expect(!paywall.changesValue(.string("Z"), tolerance: 0.0005))
-    }
-
     @Test func publishesRemoteChanges() {
         let store = makeStore()
         let tweak = experiment(store)
@@ -176,20 +160,25 @@ import Testing
         #expect(limit.currentValue == .source("Local Split", 3))
     }
 
+    private func splitValue(_ source: TweakSource, at bucket: Double) -> TweakPrimitive? {
+        guard case let .split(weights) = source.kind else { return nil }
+        return TweakStore.splitValue(weights, at: bucket)
+    }
+
     @Test func splitMapsBucketsByWeight() {
-        let split = TweakSplit.weighted(["A": 1, "B": 1, "C": 2])
-        #expect(split.value(at: 0.1) == .string("A"))
-        #expect(split.value(at: 0.3) == .string("B"))
-        #expect(split.value(at: 0.9) == .string("C"))
-        #expect(TweakSplit.fraction(0.2).value(at: 0.1) == .bool(true))
-        #expect(TweakSplit.fraction(0.2).value(at: 0.3) == .bool(false))
-        #expect(TweakSplit.fraction(0.5).value(at: 0.3) == .bool(true))
-        #expect(TweakSplit.fraction(0).value(at: 0) == .bool(false))
+        let split = TweakSource.localExperiment("k", ["A": 1, "B": 1, "C": 2, "D": 0])
+        #expect(splitValue(split, at: 0.1) == .string("A"))
+        #expect(splitValue(split, at: 0.3) == .string("B"))
+        #expect(splitValue(split, at: 0.9) == .string("C"))
+        #expect(splitValue(.rollout("k", 0.2), at: 0.1) == .bool(true))
+        #expect(splitValue(.rollout("k", 0.2), at: 0.3) == .bool(false))
+        #expect(splitValue(.rollout("k", 0.5), at: 0.3) == .bool(true))
+        #expect(splitValue(.rollout("k", 0), at: 0) == .bool(false))
     }
 
     @Test func splitBucketIsStableAndSpread() {
-        #expect(TweakSplit.bucket(seed: "s", key: "k") == TweakSplit.bucket(seed: "s", key: "k"))
-        let buckets = (0 ..< 1000).map { TweakSplit.bucket(seed: "seed-\($0)", key: "k") }
+        #expect(TweakStore.splitBucket(seed: "s", key: "k") == TweakStore.splitBucket(seed: "s", key: "k"))
+        let buckets = (0 ..< 1000).map { TweakStore.splitBucket(seed: "seed-\($0)", key: "k") }
         #expect(buckets.allSatisfy { (0 ..< 1).contains($0) })
         #expect((400 ... 600).contains(buckets.filter { $0 < 0.5 }.count))
     }
