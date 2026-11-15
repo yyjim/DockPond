@@ -64,6 +64,7 @@ This file records the decisions, the current status, and the next steps for Dock
 - `isEnabled = false` turns off overrides and launch arguments. Provider values still apply, so an experiment tweak is also the release read path.
 - An invalid provider value gives `currentValue == .default(defaultValue)`. The store does not clamp or correct it. This keeps the analytics rule: `.default` reports `"default"`.
 - The device comes from the model identifier, because `UIDevice` can be read only on the main thread.
+- `.phone` is `[.standardPhone, .foldablePhone]`, so existing `.phone` experiments include iPhone Duo. The foldable model identifiers are copied from DeviceKit, so DockPond does not depend on it. `UIHingeInteraction` needs a view and the main thread, so the store cannot use it.
 - `TweakCurrentValue` is one enum (`.default`, `.source`, `.override`), and each case holds its value. The provider value that an override hides is internal. Only the tweaks UI shows it.
 - TweakDock does not depend on Firebase. The app adds the Firebase adapter (see `docs/TweakDockSources.md`). A Firebase product in DockPond would add Firebase to the dependency graph of each DockPond user, and tie DockPond releases to Firebase versions.
 - The TweakDock demo uses `DemoRemoteConfig` as a fake remote config. It keeps the activated values in `UserDefaults` and sends `changes`.

@@ -64,7 +64,7 @@ import Testing
     }
 
     @Test func usesDefaultOnOtherDevices() {
-        let phone = makeStore(device: .phone, remote: ["exp_paywall": .string("B")])
+        let phone = makeStore(device: .standardPhone, remote: ["exp_paywall": .string("B")])
         let pad = makeStore(device: .pad, remote: ["exp_paywall": .string("B")])
         let padOnly = TweakSource.experiment("exp_paywall", devices: [.pad])
         #expect(experiment(phone, padOnly).currentValue == .default(.A))
@@ -72,8 +72,22 @@ import Testing
         #expect(experiment(phone).currentValue == .source("Remote", .B))
     }
 
+    @Test func phoneIncludesFoldablePhone() {
+        let duo = makeStore(device: .foldablePhone, remote: ["exp_paywall": .string("B")])
+        #expect(experiment(duo, .experiment("exp_paywall", devices: [.phone])).currentValue == .source("Remote", .B))
+        #expect(experiment(duo, .experiment("exp_paywall", devices: [.foldablePhone])).currentValue == .source("Remote", .B))
+        #expect(experiment(duo, .experiment("exp_paywall", devices: [.standardPhone])).currentValue == .default(.A))
+    }
+
+    @Test func mapsModelIdentifierToDevice() {
+        #expect(TweakDevices.device(forModel: "iPhone19,4") == .foldablePhone)
+        #expect(TweakDevices.device(forModel: "iPhone18,1") == .standardPhone)
+        #expect(TweakDevices.device(forModel: "iPad16,3") == .pad)
+        #expect(TweakDevices.device(forModel: "RealityDevice14,1") == .vision)
+    }
+
     @Test func launchArgumentReplacesSourceValueOnAnyDevice() {
-        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "C"], device: .phone, remote: ["exp_paywall": .string("B")])
+        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "C"], device: .standardPhone, remote: ["exp_paywall": .string("B")])
         #expect(experiment(store, .experiment("exp_paywall", devices: [.pad])).currentValue == .source("Launch Argument", .C))
     }
 
@@ -130,7 +144,7 @@ import Testing
     }
 
     @Test func listsExperimentProperties() {
-        let store = makeStore(device: .phone, remote: ["exp_paywall": .string("B"), "exp_pad": .string("B"), "exp_limit": .string("12")])
+        let store = makeStore(device: .standardPhone, remote: ["exp_paywall": .string("B"), "exp_pad": .string("B"), "exp_limit": .string("12")])
         let pinned = experiment(store, .experiment("exp_pinned"))
         pinned.value = .C
         let tweaks: [any AnyTweak] = [

@@ -66,6 +66,13 @@ Analytics.setUserProperties(Experiments.allTweaks.experimentProperties)
 ## Devices
 
 `devices` is `.all` when you do not give it. Give it only to restrict an experiment: `.phone`, `.pad`, `.mac`, `.vision`, or `.tv`.
+`.phone` contains `.standardPhone` and `.foldablePhone`, such as iPhone Duo. Give one of them to restrict an experiment to that kind of iPhone.
+
+```swift
+from: .experiment("exp_split_view", devices: [.foldablePhone, .pad])   // large screens
+from: .experiment("exp_compact_tabs", devices: [.standardPhone])       // iPhone, not iPhone Duo
+```
+
 An iPhone app that runs on an iPad counts as `.pad`.
 An override and a launch argument apply on all devices, so you can test an iPad experiment on an iPhone.
 
