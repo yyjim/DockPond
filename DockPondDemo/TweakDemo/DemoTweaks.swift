@@ -5,7 +5,7 @@ extension Notification.Name {
     static let demoCacheCleared = Notification.Name("demoCacheCleared")
 }
 
-@Tweaks
+@Tweaks(store: TweakStore(experimentProvider: DemoSources.remoteConfig))
 enum DemoTweaks {
     enum Accent: String, CaseIterable, TweakValue { case blue, orange, purple, green }
 
@@ -59,9 +59,6 @@ enum DemoTweaks {
     @Tweak(collection: "Experiments", group: "Remote", name: "iPad Sidebar", defaultValue: AB.A, from: .experiment("exp_ipad_sidebar", devices: [.pad]))
     static var iPadSidebar: AB
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "Upload Limit", min: 1, max: 20, defaultValue: 5, from: .config("upload_limit"))
-    static var uploadLimit: Int
-
     @Tweak(collection: "Experiments", group: "Remote", name: "Fetch Remote Config")
     static func fetchRemoteConfig() {
         DemoSources.fetchRemoteConfig()
@@ -70,16 +67,5 @@ enum DemoTweaks {
     @Tweak(collection: "Experiments", group: "Remote", name: "Clear Remote Config")
     static func clearRemoteConfig() {
         DemoSources.clearRemoteConfig()
-    }
-
-    @Tweak(collection: "Experiments", group: "Local Split", name: "Card Style", defaultValue: AB.A, from: .localExperiment("lab_card_style", ["A": 50, "B": 50]))
-    static var cardStyle: AB
-
-    @Tweak(collection: "Experiments", group: "Local Split", name: "New Badge", defaultValue: false, from: .rollout("rollout_new_badge", 0.5))
-    static var showsNewBadge: Bool
-
-    @Tweak(collection: "Experiments", group: "Local Split", name: "Reassign Buckets")
-    static func reassignBuckets() {
-        tweakStore.resetSplits()
     }
 }

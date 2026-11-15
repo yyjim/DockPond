@@ -1,5 +1,4 @@
 import Combine
-import CryptoKit
 import Foundation
 
 /// Keeps the values that override tweak defaults, and saves them to a JSON file.
@@ -11,31 +10,54 @@ public final class TweakStore: @unchecked Sendable {
     private let writeLock = NSLock()
     private var overrides: [String: TweakPrimitive]
     private var enabled: Bool
-    private var currentRemote: (any TweakValueProvider)?
-    private var remoteSubscription: AnyCancellable?
-    private var splitSeed: String?
     private let launchArguments: [String: String]
     private let device: TweakDevices
     /// Sends the changed tweak ID, or `nil` when every tweak can have changed.
     private let changes = PassthroughSubject<String?, Never>()
 
+    /// Gives the values of `.experiment` tweaks, for example a Firebase Remote Config adapter.
+    /// When it is `nil`, each experiment uses its default value.
+    public let experimentProvider: (any TweakValueProvider)?
+
     /// Saves to `<name>.json` in Application Support, or in the app group container when you give `appGroup`.
     /// Use an app group to share tweaks with app extensions. Each process reads the file when it makes the store,
     /// and reads it again before each change, so processes keep the changes of the others.
-    public convenience init(name: String = "Tweaks", appGroup: String? = nil, isEnabled: Bool = true) {
-        self.init(fileURL: Self.fileURL(name: name, appGroup: appGroup), isEnabled: isEnabled)
+    public convenience init(
+        name: String = "Tweaks",
+        appGroup: String? = nil,
+        isEnabled: Bool = true,
+        experimentProvider: (any TweakValueProvider)? = nil
+    ) {
+        self.init(
+            fileURL: Self.fileURL(name: name, appGroup: appGroup), isEnabled: isEnabled,
+            experimentProvider: experimentProvider
+        )
     }
 
-    public convenience init(fileURL: URL, isEnabled: Bool = true) {
-        self.init(fileURL: fileURL, isEnabled: isEnabled, arguments: ProcessInfo.processInfo.arguments, device: .current)
+    public convenience init(
+        fileURL: URL,
+        isEnabled: Bool = true,
+        experimentProvider: (any TweakValueProvider)? = nil
+    ) {
+        self.init(
+            fileURL: fileURL, isEnabled: isEnabled, arguments: ProcessInfo.processInfo.arguments, device: .current,
+            experimentProvider: experimentProvider
+        )
     }
 
-    init(fileURL: URL, isEnabled: Bool, arguments: [String], device: TweakDevices) {
+    init(
+        fileURL: URL,
+        isEnabled: Bool,
+        arguments: [String],
+        device: TweakDevices,
+        experimentProvider: (any TweakValueProvider)? = nil
+    ) {
         self.fileURL = fileURL
         enabled = isEnabled
         overrides = Self.load(from: fileURL)
         launchArguments = Self.tweakArguments(in: arguments)
         self.device = device
+        self.experimentProvider = experimentProvider
     }
 
     /// When `false`, the store ignores overrides and launch arguments. Each tweak returns its source
@@ -46,28 +68,6 @@ public final class TweakStore: @unchecked Sendable {
             lock.withLock { enabled = newValue }
             changes.send(nil)
         }
-    }
-
-    /// Gives the values of `.experiment` and `.config` tweaks. Set it at launch, for example to a Firebase
-    /// Remote Config adapter.
-    public var remote: (any TweakValueProvider)? {
-        get { lock.withLock { currentRemote } }
-        set {
-            let subscription = newValue?.changes.sink { [weak self] in self?.changes.send(nil) }
-            lock.withLock {
-                currentRemote = newValue
-                remoteSubscription = subscription
-            }
-            changes.send(nil)
-        }
-    }
-
-    /// Gives this device new values in each `.localExperiment` and `.rollout`.
-    public func resetSplits() {
-        let seed = UUID().uuidString
-        Self.saveSplitSeed(seed, next: fileURL)
-        lock.withLock { splitSeed = seed }
-        changes.send(nil)
     }
 
     public func resetAll() {
@@ -83,14 +83,14 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func currentValue<Value>(for tweak: Tweak<Value>) -> TweakCurrentValue<Value> {
-        let (override, state) = snapshot(for: tweak)
+        let (isEnabled, override) = snapshot(for: tweak)
         if let value = override.flatMap(Value.init(primitive:)).map(tweak.normalize) { return .override(value) }
-        return sourceValue(for: tweak, in: state).map { .source($0.name, $0.value) } ?? .default(tweak.defaultValue)
+        return sourceValue(for: tweak, isEnabled: isEnabled).map { .source($0.name, $0.value) } ?? .default(tweak.defaultValue)
     }
 
     /// The valid source value, also when an override hides it. The tweaks UI shows it.
     func sourceValue<Value>(for tweak: Tweak<Value>) -> (name: String, value: Value)? {
-        sourceValue(for: tweak, in: snapshot(for: tweak).state)
+        sourceValue(for: tweak, isEnabled: isEnabled)
     }
 
     /// A tweak with a source keeps an override that equals its default value, because the
@@ -101,63 +101,24 @@ public final class TweakStore: @unchecked Sendable {
         setOverride(isRedundant ? nil : value.primitive, id: tweak.id)
     }
 
-    private struct SourceState {
-        let isEnabled: Bool
-        let remote: (any TweakValueProvider)?
-    }
-
-    private func snapshot(for tweak: some AnyTweak) -> (override: TweakPrimitive?, state: SourceState) {
-        lock.withLock { (enabled ? overrides[tweak.id] : nil, SourceState(isEnabled: enabled, remote: currentRemote)) }
+    private func snapshot(for tweak: some AnyTweak) -> (isEnabled: Bool, override: TweakPrimitive?) {
+        lock.withLock { (enabled, enabled ? overrides[tweak.id] : nil) }
     }
 
     /// Uses a launch argument, then the source of the tweak. A value that the tweak would change,
     /// such as a number out of range, is not valid, and the next step is used.
-    private func sourceValue<Value>(for tweak: Tweak<Value>, in state: SourceState) -> (name: String, value: Value)? {
+    private func sourceValue<Value>(for tweak: Tweak<Value>, isEnabled: Bool) -> (name: String, value: Value)? {
         guard let source = tweak.source else { return nil }
         let kind = tweak.defaultValue.primitive.kind
         func valid(_ primitive: TweakPrimitive?) -> Value? {
             primitive.flatMap(Value.init(primitive:)).flatMap { tweak.normalize($0) == $0 ? $0 : nil }
         }
-        if state.isEnabled, let value = valid(launchArguments[source.key].flatMap { TweakPrimitive(string: $0, as: kind) }) {
+        if isEnabled, let value = valid(launchArguments[source.key].flatMap { TweakPrimitive(string: $0, as: kind) }) {
             return ("Launch Argument", value)
         }
-        guard source.devices.contains(device) else { return nil }
-        switch source.kind {
-        case .remote:
-            guard let remote = state.remote, let value = valid(remote.primitive(forKey: source.key, as: kind)) else { return nil }
-            return (remote.name, value)
-        case let .custom(provider):
-            return valid(provider.primitive(forKey: source.key, as: kind)).map { (provider.name, $0) }
-        case let .split(weights):
-            let bucket = Self.splitBucket(seed: currentSplitSeed(), key: source.key)
-            return valid(Self.splitValue(weights, at: bucket)?.converted(to: kind)).map { ("Local Split", $0) }
-        }
-    }
-
-    private func currentSplitSeed() -> String {
-        lock.withLock {
-            if let splitSeed { return splitSeed }
-            let seed = Self.loadSplitSeed(next: fileURL)
-            splitSeed = seed
-            return seed
-        }
-    }
-
-    static func splitValue(_ weights: [(value: TweakPrimitive, weight: Double)], at bucket: Double) -> TweakPrimitive? {
-        let target = bucket * weights.reduce(0) { $0 + $1.weight }
-        var total = 0.0
-        for (value, weight) in weights {
-            total += weight
-            if target < total { return value }
-        }
-        return weights.last?.value
-    }
-
-    /// A number from 0 to 1 that does not change for a seed and a key.
-    static func splitBucket(seed: String, key: String) -> Double {
-        let digest = SHA256.hash(data: Data("\(seed).\(key)".utf8))
-        let number = digest.prefix(8).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
-        return Double(number >> 11) / Double(UInt64(1) << 53)
+        guard source.devices.contains(device), let provider = experimentProvider,
+              let value = valid(provider.primitive(forKey: source.key, as: kind)) else { return nil }
+        return (provider.name, value)
     }
 
     func reset(_ tweak: some AnyTweak) {
@@ -174,14 +135,11 @@ public final class TweakStore: @unchecked Sendable {
 
     /// Sends one time when you subscribe, then each time that the tweak can have changed.
     func changeSignal<Value>(for tweak: Tweak<Value>) -> AnyPublisher<Void, Never> {
-        var providerChanges = Empty<Void, Never>().eraseToAnyPublisher()
-        if case let .custom(provider) = tweak.source?.kind {
-            providerChanges = provider.changes
-        }
+        let providerChanges = tweak.source == nil ? nil : experimentProvider?.changes
         return changes
             .filter { $0 == nil || $0 == tweak.id }
             .map { _ in }
-            .merge(with: providerChanges)
+            .merge(with: providerChanges ?? Empty().eraseToAnyPublisher())
             .merge(with: Just(()))
             .eraseToAnyPublisher()
     }
@@ -235,25 +193,6 @@ public final class TweakStore: @unchecked Sendable {
             values[String(argument.dropFirst(prefix.count))] = value
         }
         return values
-    }
-
-    /// The seed is next to the tweaks file, so that app extensions in the same app group get the same splits.
-    private static func loadSplitSeed(next fileURL: URL) -> String {
-        let seedURL = fileURL.appendingPathExtension("seed")
-        if let seed = try? String(contentsOf: seedURL, encoding: .utf8), !seed.isEmpty {
-            return seed
-        }
-        let seed = UUID().uuidString
-        try? FileManager.default.createDirectory(at: seedURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if (try? Data(seed.utf8).write(to: seedURL, options: .withoutOverwriting)) == nil,
-           let saved = try? String(contentsOf: seedURL, encoding: .utf8), !saved.isEmpty {
-            return saved
-        }
-        return seed
-    }
-
-    private static func saveSplitSeed(_ seed: String, next fileURL: URL) {
-        try? Data(seed.utf8).write(to: fileURL.appendingPathExtension("seed"), options: .atomic)
     }
 
     private static func load(from fileURL: URL) -> [String: TweakPrimitive] {

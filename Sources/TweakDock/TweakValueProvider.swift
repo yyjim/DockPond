@@ -1,7 +1,7 @@
 import Combine
 
-/// Gives the values of `.experiment` and `.config` tweaks. Set it as `TweakStore.remote`, for example to a
-/// Firebase Remote Config adapter. A `.custom` tweak uses its own provider.
+/// Gives the values of `.experiment` tweaks. Give it to `TweakStore` as `experimentProvider`, for example a
+/// Firebase Remote Config adapter.
 ///
 /// A tweak uses a value only when it is valid. When the provider returns `nil`, or a value that the
 /// tweak cannot hold, such as an unknown enum case or a number out of range, the tweak uses its

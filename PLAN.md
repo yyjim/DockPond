@@ -53,20 +53,20 @@ This file records the decisions, the current status, and the next steps for Dock
 - iOS does not give the fold position. GaugeDock estimates it: the fold crosses the middle of the longer screen edge. The UI labels it "estimated".
 - The fold section shows only on a device with a hinge.
 
-### TweakDock sources
+### TweakDock experiments
 
-- Each `@Tweak` declares its whole experiment setup in `from:`, as one YAML entry does in PicCollage: `.experiment`, `.config`, `.localExperiment`, `.rollout`, or `.custom`. The app sets only `TweakStore.remote`.
-- The case names give the intent, not the mechanism. `.experiment` and `.config` both read `TweakStore.remote`, but only experiments are in `experimentProperties`, the read-only list for analytics.
+- Each `@Tweak` declares its whole experiment in `from: .experiment(key, devices:)`, as one YAML entry does in PicCollage.
+- The first version has only `.experiment`. Config values, local splits, rollouts, and custom providers can come later.
+- The store gets `experimentProvider` in `init`, and it does not change. The store needs no lock for it.
 - `defaultValue` stays on `@Tweak`, because each tweak needs it, and the macro uses it to check the type.
-- The order is override, then a launch argument (`-tweak.<key>`), then the declared source, then the default value. A value that is not valid goes to the next step.
-- `devices` applies to the declared source. Launch arguments and overrides apply on all devices.
-- `isEnabled = false` turns off overrides and launch arguments. Source values still apply, so a sourced tweak is also the release read path.
-- An invalid source value gives `currentValue == .default(defaultValue)`. The store does not clamp or correct it. This keeps the analytics rule: `.default` reports `"default"`.
-- A local split bucket is a hash of a seed and the key. The seed is in a file next to the tweaks file, so app extensions get the same values. No bucket is saved for each key, and the sources use no lock.
+- The order is override, then a launch argument (`-tweak.<key>`), then the provider, then the default value. A value that is not valid goes to the next step.
+- `devices` applies to the provider. Launch arguments and overrides apply on all devices.
+- `isEnabled = false` turns off overrides and launch arguments. Provider values still apply, so an experiment tweak is also the release read path.
+- An invalid provider value gives `currentValue == .default(defaultValue)`. The store does not clamp or correct it. This keeps the analytics rule: `.default` reports `"default"`.
 - The device comes from the model identifier, because `UIDevice` can be read only on the main thread.
-- `TweakCurrentValue` is one enum (`.default`, `.source`, `.override`), and each case holds its value. The source value that an override hides is internal. Only the tweaks UI shows it.
+- `TweakCurrentValue` is one enum (`.default`, `.source`, `.override`), and each case holds its value. The provider value that an override hides is internal. Only the tweaks UI shows it.
 - TweakDock does not depend on Firebase. The app adds the Firebase adapter (see `docs/TweakDockSources.md`). A Firebase product in DockPond would add Firebase to the dependency graph of each DockPond user, and tie DockPond releases to Firebase versions.
-- The TweakDock demo uses `InMemoryValueProvider` as a fake remote config.
+- The TweakDock demo uses `DemoRemoteConfig` as a fake remote config. It keeps the activated values in `UserDefaults` and sends `changes`.
 
 ### Demo apps
 

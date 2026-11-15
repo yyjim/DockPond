@@ -25,8 +25,7 @@ public macro Tweaks(store: TweakStore = .shared) = #externalMacro(module: "Tweak
 /// static var isDarkMode: Bool
 /// ```
 ///
-/// Give `from` to read the value from Remote Config or a local split, for example
-/// `from: .experiment("exp_paywall")` or `from: .rollout("new_badge", 0.1)`.
+/// Give `from` to read the value from an experiment, for example `from: .experiment("exp_paywall")`.
 @attached(accessor)
 @attached(peer, names: suffixed(Tweak))
 public macro Tweak<T>(collection: String, group: String, name: String, defaultValue: T, from: TweakSource? = nil)

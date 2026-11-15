@@ -1,5 +1,4 @@
-/// Gives fixed values. Use it for tests, previews, or a fake remote config.
-/// To change the values, set a new provider on the store.
+/// Gives fixed values. Use it for tests and previews.
 ///
 /// A `.string` value converts to the kind of the tweak, as Remote Config text does.
 public final class InMemoryValueProvider: TweakValueProvider {

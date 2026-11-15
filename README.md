@@ -399,22 +399,24 @@ AppTweaks.tweakStore.isEnabled = false   // The store ignores overrides. Each tw
 #endif
 ```
 
-### Sources: remote config and experiments
+### Experiments
 
-Give `from:` to declare where a tweak reads its value: Remote Config, a local experiment, or a rollout.
-The store uses the override, then a valid source value, then the default value.
+Give `from: .experiment(key)` to read the value of a tweak from an A/B test service, such as Firebase Remote Config.
+The store uses the override, then a valid experiment value, then the default value.
 
 ```swift
-@Tweak(collection: "Experiments", group: "Paywall", name: "Layout",
-       defaultValue: Paywall.A, from: .experiment("exp_paywall"))
-static var paywall: Paywall
+@Tweaks(store: TweakStore(experimentProvider: FirebaseValueProvider.shared))
+enum AppTweaks {
+    @Tweak(collection: "Experiments", group: "Paywall", name: "Layout",
+           defaultValue: Paywall.A, from: .experiment("exp_paywall"))
+    static var paywall: Paywall
+}
 
-AppTweaks.tweakStore.remote = FirebaseValueProvider()
 AppTweaks.paywall                      // The remote value when it is valid, else .A.
 AppTweaks.paywallTweak.currentValue    // .default(.A), .source("Firebase", .B), or .override(.C)
 ```
 
-For config values, local experiments, rollouts, devices, launch arguments, `experimentProperties` for analytics, and a Firebase adapter, see [TweakDock sources](docs/TweakDockSources.md).
+For devices, launch arguments, `experimentProperties` for analytics, and a Firebase adapter, see [TweakDock experiments](docs/TweakDockSources.md).
 
 ### Supported types
 

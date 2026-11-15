@@ -8,12 +8,18 @@ import Testing
 
     let fileURL = FileManager.default.temporaryDirectory.appending(components: "TweakDockTests", "\(UUID().uuidString).json")
 
-    private func makeStore(arguments: [String] = [], device: TweakDevices = .phone) -> TweakStore {
-        TweakStore(fileURL: fileURL, isEnabled: true, arguments: arguments, device: device)
+    private func makeStore(
+        arguments: [String] = [], device: TweakDevices = .phone,
+        remote: [String: TweakPrimitive]? = nil
+    ) -> TweakStore {
+        let provider = remote.map { InMemoryValueProvider(name: "Remote", values: $0) }
+        return makeStore(arguments: arguments, device: device, provider: provider)
     }
 
-    private func remote(_ values: [String: TweakPrimitive]) -> InMemoryValueProvider {
-        InMemoryValueProvider(name: "Remote", values: values)
+    private func makeStore(
+        arguments: [String] = [], device: TweakDevices = .phone, provider: (any TweakValueProvider)?
+    ) -> TweakStore {
+        TweakStore(fileURL: fileURL, isEnabled: true, arguments: arguments, device: device, experimentProvider: provider)
     }
 
     private func experiment(_ store: TweakStore, _ source: TweakSource = .experiment("exp_paywall")) -> Tweak<Variant> {
@@ -21,55 +27,45 @@ import Testing
     }
 
     @Test func usesValidRemoteValue() {
-        let store = makeStore()
-        store.remote = remote(["exp_paywall": .string("B")])
-        let tweak = experiment(store)
+        let tweak = experiment(makeStore(remote: ["exp_paywall": .string("B")]))
         #expect(tweak.value == .B)
         #expect(tweak.currentValue == .source("Remote", .B))
     }
 
     @Test func usesDefaultWhenRemoteHasNoValue() {
-        let store = makeStore()
-        #expect(experiment(store).currentValue == .default(.A))
-        store.remote = remote([:])
-        #expect(experiment(store).currentValue == .default(.A))
+        #expect(experiment(makeStore()).currentValue == .default(.A))
+        #expect(experiment(makeStore(remote: [:])).currentValue == .default(.A))
     }
 
     @Test func usesDefaultForUnknownVariant() {
-        let store = makeStore()
-        store.remote = remote(["exp_paywall": .string("Z")])
-        #expect(experiment(store).currentValue == .default(.A))
+        #expect(experiment(makeStore(remote: ["exp_paywall": .string("Z")])).currentValue == .default(.A))
     }
 
     @Test func usesDefaultForValueOutsideRangeOrOptions() {
-        let store = makeStore()
-        store.remote = remote(["retries": .string("99"), "theme": .string("blue"), "flag": .string("maybe")])
-        let retries = Tweak(collection: "C", group: "G", name: "Retries", min: 0, max: 5, defaultValue: 3, from: .config("retries"), store: store)
-        let theme = Tweak(collection: "C", group: "G", name: "Theme", options: ["light", "dark"], defaultValue: "light", from: .config("theme"), store: store)
-        let flag = Tweak(collection: "C", group: "G", name: "Flag", defaultValue: false, from: .config("flag"), store: store)
+        let remote = TestProvider(values: ["retries": .string("99"), "theme": .string("blue"), "flag": .string("maybe")])
+        let store = makeStore(provider: remote)
+        let retries = Tweak(collection: "C", group: "G", name: "Retries", min: 0, max: 5, defaultValue: 3, from: .experiment("retries"), store: store)
+        let theme = Tweak(collection: "C", group: "G", name: "Theme", options: ["light", "dark"], defaultValue: "light", from: .experiment("theme"), store: store)
+        let flag = Tweak(collection: "C", group: "G", name: "Flag", defaultValue: false, from: .experiment("flag"), store: store)
         #expect(retries.currentValue == .default(3))
         #expect(theme.currentValue == .default("light"))
         #expect(flag.currentValue == .default(false))
 
-        store.remote = remote(["retries": .string("4"), "theme": .string("dark"), "flag": .string("true")])
+        remote.values = ["retries": .string("4"), "theme": .string("dark"), "flag": .string("true")]
         #expect(retries.value == 4)
         #expect(theme.value == "dark")
         #expect(flag.value == true)
     }
 
     @Test func ignoresRemoteForTweakWithoutSource() {
-        let store = makeStore(arguments: ["app", "-tweak.Count", "7"])
-        store.remote = remote(["Count": .int(9)])
+        let store = makeStore(arguments: ["app", "-tweak.Count", "7"], remote: ["Count": .int(9)])
         let tweak = Tweak(collection: "C", group: "G", name: "Count", defaultValue: 1, store: store)
         #expect(tweak.currentValue == .default(1))
     }
 
     @Test func usesDefaultOnOtherDevices() {
-        let phone = makeStore(device: .phone)
-        let pad = makeStore(device: .pad)
-        for store in [phone, pad] {
-            store.remote = remote(["exp_paywall": .string("B")])
-        }
+        let phone = makeStore(device: .phone, remote: ["exp_paywall": .string("B")])
+        let pad = makeStore(device: .pad, remote: ["exp_paywall": .string("B")])
         let padOnly = TweakSource.experiment("exp_paywall", devices: [.pad])
         #expect(experiment(phone, padOnly).currentValue == .default(.A))
         #expect(experiment(pad, padOnly).currentValue == .source("Remote", .B))
@@ -77,14 +73,12 @@ import Testing
     }
 
     @Test func launchArgumentReplacesSourceValueOnAnyDevice() {
-        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "C"], device: .phone)
-        store.remote = remote(["exp_paywall": .string("B")])
+        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "C"], device: .phone, remote: ["exp_paywall": .string("B")])
         #expect(experiment(store, .experiment("exp_paywall", devices: [.pad])).currentValue == .source("Launch Argument", .C))
     }
 
     @Test func skipsLaunchArgumentThatIsNotValid() {
-        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "Z"])
-        store.remote = remote(["exp_paywall": .string("B")])
+        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "Z"], remote: ["exp_paywall": .string("B")])
         #expect(experiment(store).currentValue == .source("Remote", .B))
     }
 
@@ -96,8 +90,7 @@ import Testing
     }
 
     @Test func overrideHidesSourceValueUntilReset() {
-        let store = makeStore()
-        store.remote = remote(["exp_paywall": .string("B")])
+        let store = makeStore(remote: ["exp_paywall": .string("B")])
         let tweak = experiment(store)
         tweak.value = .A
         #expect(tweak.currentValue == .override(.A))
@@ -107,125 +100,53 @@ import Testing
     }
 
     @Test func writeOfShownValuePinsIt() {
-        let store = makeStore()
-        store.remote = remote(["exp_paywall": .string("B")])
-        let tweak = experiment(store)
+        let remote = TestProvider(values: ["exp_paywall": .string("B")])
+        let tweak = experiment(makeStore(provider: remote))
         tweak.value = .B
-        store.remote = remote(["exp_paywall": .string("C")])
+        remote.values = ["exp_paywall": .string("C")]
         #expect(tweak.currentValue == .override(.B))
     }
 
     @Test func disabledStoreIgnoresOverridesAndLaunchArguments() {
-        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "C"])
-        store.remote = remote(["exp_paywall": .string("B")])
+        let store = makeStore(arguments: ["app", "-tweak.exp_paywall", "C"], remote: ["exp_paywall": .string("B")])
         let tweak = experiment(store)
         tweak.value = .A
         store.isEnabled = false
         #expect(tweak.currentValue == .source("Remote", .B))
     }
 
-    @Test func publishesRemoteChanges() {
-        let store = makeStore()
-        let tweak = experiment(store)
+    @Test func publishesProviderChanges() {
+        let remote = TestProvider()
+        let tweak = experiment(makeStore(provider: remote))
         var received: [TweakCurrentValue<Variant>] = []
         let subscription = tweak.currentValuePublisher.sink { received.append($0) }
 
-        store.remote = remote(["exp_paywall": .string("B")])
-        store.remote = remote(["exp_paywall": .string("Z")])
-        store.remote = InMemoryValueProvider(name: "Other", values: ["exp_paywall": .string("B")])
+        remote.values = ["exp_paywall": .string("B")]
+        remote.values = ["exp_paywall": .string("Z")]
+        remote.values = ["exp_paywall": .string("C")]
 
-        #expect(received == [.default(.A), .source("Remote", .B), .default(.A), .source("Other", .B)])
-        subscription.cancel()
-    }
-
-    @Test func localSplitKeepsValueForTheSameSeed() {
-        let rule = TweakSource.localExperiment("lab_style", ["A": 1, "B": 1, "C": 1])
-        let first = experiment(makeStore(), rule).currentValue
-        guard case .source("Local Split", _) = first else {
-            Issue.record("Expected a local split value, got \(first)")
-            return
-        }
-        #expect(experiment(makeStore(), rule).currentValue == first)
-    }
-
-    @Test func localSplitUsesDefaultOnOtherDevices() {
-        let rule = TweakSource.localExperiment("lab_style", ["B": 1], devices: [.pad])
-        #expect(experiment(makeStore(device: .phone), rule).currentValue == .default(.A))
-        #expect(experiment(makeStore(device: .pad), rule).currentValue == .source("Local Split", .B))
-    }
-
-    @Test func localSplitConvertsTextVariants() {
-        let store = makeStore()
-        let limit = Tweak(collection: "C", group: "G", name: "Limit", defaultValue: 0, from: .localExperiment("lab_limit", ["3": 1]), store: store)
-        #expect(limit.currentValue == .source("Local Split", 3))
-    }
-
-    private func splitValue(_ source: TweakSource, at bucket: Double) -> TweakPrimitive? {
-        guard case let .split(weights) = source.kind else { return nil }
-        return TweakStore.splitValue(weights, at: bucket)
-    }
-
-    @Test func splitMapsBucketsByWeight() {
-        let split = TweakSource.localExperiment("k", ["A": 1, "B": 1, "C": 2, "D": 0])
-        #expect(splitValue(split, at: 0.1) == .string("A"))
-        #expect(splitValue(split, at: 0.3) == .string("B"))
-        #expect(splitValue(split, at: 0.9) == .string("C"))
-        #expect(splitValue(.rollout("k", 0.2), at: 0.1) == .bool(true))
-        #expect(splitValue(.rollout("k", 0.2), at: 0.3) == .bool(false))
-        #expect(splitValue(.rollout("k", 0.5), at: 0.3) == .bool(true))
-        #expect(splitValue(.rollout("k", 0), at: 0) == .bool(false))
-    }
-
-    @Test func splitBucketIsStableAndSpread() {
-        #expect(TweakStore.splitBucket(seed: "s", key: "k") == TweakStore.splitBucket(seed: "s", key: "k"))
-        let buckets = (0 ..< 1000).map { TweakStore.splitBucket(seed: "seed-\($0)", key: "k") }
-        #expect(buckets.allSatisfy { (0 ..< 1).contains($0) })
-        #expect((400 ... 600).contains(buckets.filter { $0 < 0.5 }.count))
-    }
-
-    @Test func resetSplitsGivesNewValuesAndKeepsThem() {
-        let store = makeStore()
-        let rules = (0 ..< 20).map { TweakSource.localExperiment("lab_\($0)", ["A": 1, "B": 1, "C": 1]) }
-        let before = rules.map { experiment(store, $0).value }
-        store.resetSplits()
-        let after = rules.map { experiment(store, $0).value }
-        #expect(after != before)
-        #expect(rules.map { experiment(makeStore(), $0).value } == after)
-    }
-
-    @Test func customProviderGivesItsValueAndChanges() {
-        let store = makeStore()
-        let server = ServerProvider()
-        let tweak = experiment(store, .custom("exp_server", server))
-        var received: [TweakCurrentValue<Variant>] = []
-        let subscription = tweak.currentValuePublisher.sink { received.append($0) }
-        server.value = .string("C")
-        #expect(received == [.default(.A), .source("Server", .C)])
+        #expect(received == [.default(.A), .source("Remote", .B), .default(.A), .source("Remote", .C)])
         subscription.cancel()
     }
 
     @Test func listsExperimentProperties() {
-        let store = makeStore(device: .phone)
-        store.remote = remote(["exp_paywall": .string("B"), "exp_pad": .string("B"), "upload_limit": .string("12")])
+        let store = makeStore(device: .phone, remote: ["exp_paywall": .string("B"), "exp_pad": .string("B"), "exp_limit": .string("12")])
         let pinned = experiment(store, .experiment("exp_pinned"))
         pinned.value = .C
         let tweaks: [any AnyTweak] = [
             experiment(store),
             experiment(store, .experiment("exp_pad", devices: [.pad])),
-            experiment(store, .localExperiment("lab_style", ["B": 1])),
             pinned,
-            Tweak(collection: "C", group: "G", name: "Limit", defaultValue: 5, from: .config("upload_limit"), store: store),
-            Tweak(collection: "C", group: "G", name: "Badge", defaultValue: false, from: .rollout("new_badge", 1), store: store),
+            Tweak(collection: "C", group: "G", name: "Limit", defaultValue: 5, from: .experiment("exp_limit"), store: store),
             Tweak(collection: "C", group: "G", name: "Plain", defaultValue: 1, store: store),
         ]
         #expect(tweaks.experimentProperties == [
-            "exp_paywall": "B", "exp_pad": "default", "lab_style": "B", "exp_pinned": "C",
+            "exp_paywall": "B", "exp_pad": "default", "exp_pinned": "C", "exp_limit": "12",
         ])
     }
 
     @Test func describesSourceInCaption() {
-        let store = makeStore()
-        store.remote = remote(["exp_paywall": .string("B")])
+        let store = makeStore(remote: ["exp_paywall": .string("B")])
         let tweak = experiment(store)
         #expect(TweakCaption.text(key: "exp_paywall", current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue) == "Remote · exp_paywall")
         tweak.value = .C
@@ -234,13 +155,18 @@ import Testing
     }
 }
 
-private final class ServerProvider: TweakValueProvider, @unchecked Sendable {
-    let name = "Server"
+/// Tests change the values on one thread only.
+private final class TestProvider: TweakValueProvider, @unchecked Sendable {
+    let name = "Remote"
     private let subject = PassthroughSubject<Void, Never>()
-    var value: TweakPrimitive? {
+    var values: [String: TweakPrimitive] {
         didSet { subject.send() }
     }
 
-    func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? { value }
+    init(values: [String: TweakPrimitive] = [:]) {
+        self.values = values
+    }
+
+    func primitive(forKey key: String, as kind: TweakPrimitive.Kind) -> TweakPrimitive? { values[key]?.converted(to: kind) }
     var changes: AnyPublisher<Void, Never> { subject.eraseToAnyPublisher() }
 }

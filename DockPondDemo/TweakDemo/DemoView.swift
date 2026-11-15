@@ -5,9 +5,9 @@ import TweakDock
 struct ExperimentState: Equatable {
     let value: String
     let origin: String
-    let key: String?
+    let key: String
 
-    init<Value: TweakValue>(_ current: TweakCurrentValue<Value>, key: String?) {
+    init<Value: TweakValue>(_ current: TweakCurrentValue<Value>, key: String) {
         self.key = key
         value = current.value.primitive.text
         switch current {
@@ -44,16 +44,13 @@ final class DemoModel: ObservableObject {
     @Published var experiments: [String: ExperimentState] = [:]
     private var cancellables: Set<AnyCancellable> = []
 
-    static let experimentNames = ["Paywall Layout", "Onboarding", "Share Sheet", "iPad Sidebar", "Upload Limit", "Card Style", "New Badge"]
+    static let experimentNames = ["Paywall Layout", "Onboarding", "Share Sheet", "iPad Sidebar"]
 
     init() {
         track("Paywall Layout", DemoTweaks.paywallLayoutTweak)
         track("Onboarding", DemoTweaks.onboardingTweak)
         track("Share Sheet", DemoTweaks.shareSheetTweak)
         track("iPad Sidebar", DemoTweaks.iPadSidebarTweak)
-        track("Upload Limit", DemoTweaks.uploadLimitTweak)
-        track("Card Style", DemoTweaks.cardStyleTweak)
-        track("New Badge", DemoTweaks.showsNewBadgeTweak)
         DemoTweaks.titleTweak.publisher.assign(to: &$title)
         DemoTweaks.fontSizeTweak.publisher.assign(to: &$fontSize)
         DemoTweaks.accentTweak.publisher.assign(to: &$accent)
@@ -69,7 +66,7 @@ final class DemoModel: ObservableObject {
     private func track<Value>(_ name: String, _ tweak: Tweak<Value>) {
         tweak.currentValuePublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] in self?.experiments[name] = ExperimentState($0, key: tweak.source?.key) }
+            .sink { [weak self] in self?.experiments[name] = ExperimentState($0, key: tweak.source?.key ?? "") }
             .store(in: &cancellables)
     }
 }
@@ -170,7 +167,7 @@ struct DemoView: View {
                             .accessibilityIdentifier("value.\(name)")
                         Text(state?.origin ?? "")
                             .accessibilityIdentifier("origin.\(name)")
-                        Text(state.map { $0.key.flatMap { properties[$0] } ?? "-" } ?? "")
+                        Text(state.flatMap { properties[$0.key] } ?? "")
                             .accessibilityIdentifier("property.\(name)")
                     }
                     .font(.footnote)

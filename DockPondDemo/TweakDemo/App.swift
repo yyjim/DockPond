@@ -22,6 +22,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         if ProcessInfo.processInfo.arguments.contains("-resetTweaks") {
             DemoTweaks.tweakStore.resetAll()
+            DemoSources.clearRemoteConfig()
         }
         let window = TweaksWindow(windowScene: windowScene, tweaks: DemoTweaks.allTweaks, store: DemoTweaks.tweakStore)
         window.rootViewController = UIHostingController(rootView: DemoView())

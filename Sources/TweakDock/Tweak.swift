@@ -150,7 +150,7 @@ extension Tweak: PrimitiveTweak {
     var changeSignal: AnyPublisher<Void, Never> { store.changeSignal(for: self) }
 
     var experimentProperty: (key: String, value: String)? {
-        guard let source, source.isExperiment else { return nil }
+        guard let source else { return nil }
         let current = primitiveCurrentValue
         if case .default = current { return (source.key, "default") }
         return (source.key, current.value.text)
@@ -183,7 +183,7 @@ public struct TweakAction: AnyTweak {
 
 public extension Sequence where Element == any AnyTweak {
     /// The experiments to report to analytics, by key. Each value is the current value, or `"default"` when
-    /// no valid source value or override exists. Only `.experiment` and `.localExperiment` tweaks are in it.
+    /// no valid source value or override exists. Only tweaks with `from: .experiment(...)` are in it.
     var experimentProperties: [String: String] {
         Dictionary(compactMap { ($0 as? any PrimitiveTweak)?.experimentProperty }) { first, _ in first }
     }
