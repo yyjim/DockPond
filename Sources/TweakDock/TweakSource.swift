@@ -1,10 +1,10 @@
 import Combine
 
-/// Gives values for tweaks that have a `sourceKey`, for example from Remote Config or a local split.
+/// Gives the values of `.remote` tweaks. Set it as `TweakStore.remote`, for example to a Firebase Remote Config adapter.
 ///
-/// A tweak uses a source value only when it is valid. When the source returns `nil`, or a value
-/// that the tweak cannot hold, such as an unknown enum case or a number out of range, the tweak
-/// uses its default value.
+/// A tweak uses a value only when it is valid. When the source returns `nil`, or a value that the
+/// tweak cannot hold, such as an unknown enum case or a number out of range, the tweak uses its
+/// default value.
 public protocol TweakSource: AnyObject, Sendable {
     /// The name that the tweaks UI and `TweakCurrentValue.source` show.
     var name: String { get }
@@ -48,24 +48,5 @@ public enum TweakCurrentValue<Value: Sendable & Equatable>: Sendable, Equatable 
         case let .source(name, value): .source(name, transform(value))
         case let .override(value): .override(transform(value))
         }
-    }
-}
-
-/// A source that keeps the name of the inner source that gives each value.
-protocol NamedTweakSource {
-    func namedValue<T>(
-        forKey key: String, as kind: TweakPrimitive.Kind, transform: (TweakPrimitive) -> T?
-    ) -> (value: T, sourceName: String)?
-}
-
-extension TweakSource {
-    /// Returns the first value that `transform` accepts, so that a combined source can skip a value that is not valid.
-    func lookup<T>(
-        _ key: String, as kind: TweakPrimitive.Kind, transform: (TweakPrimitive) -> T?
-    ) -> (value: T, sourceName: String)? {
-        if let named = self as? NamedTweakSource {
-            return named.namedValue(forKey: key, as: kind, transform: transform)
-        }
-        return primitive(forKey: key, as: kind).flatMap(transform).map { ($0, name) }
     }
 }

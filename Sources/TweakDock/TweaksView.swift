@@ -83,7 +83,7 @@ private struct TweakRow: View {
         content
             .onReceive(changes) { current = tweak.primitiveCurrentValue }
             .swipeActions {
-                if tweak.sourceKey != nil, current.isOverride {
+                if tweak.source != nil, current.isOverride {
                     Button("Reset") { tweak.reset() }
                 }
             }
@@ -146,7 +146,7 @@ private struct TweakRow: View {
     }
 
     @ViewBuilder private var label: some View {
-        if let caption = TweakCaption.text(sourceKey: tweak.sourceKey, current: current, source: tweak.primitiveSourceValue) {
+        if let caption = TweakCaption.text(key: tweak.source?.key, current: current, source: tweak.primitiveSourceValue) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(tweak.name)
                 Text(caption)
@@ -185,9 +185,9 @@ private struct OptionsView: View {
 
     var body: some View {
         let current = tweak.primitiveCurrentValue
-        let followsSource = tweak.sourceKey != nil && !current.isOverride
+        let followsSource = tweak.source != nil && !current.isOverride
         List {
-            if tweak.sourceKey != nil {
+            if tweak.source != nil {
                 Section {
                     row(followTitle, isSelected: followsSource) { tweak.reset() }
                 }
@@ -229,21 +229,21 @@ private struct OptionsView: View {
 }
 
 enum TweakCaption {
-    /// Describes where the value of a tweak with a `sourceKey` comes from.
+    /// Describes where the value of a tweak with a source comes from.
     static func text(
-        sourceKey: String?, current: TweakCurrentValue<TweakPrimitive>, source: (name: String, value: TweakPrimitive)?
+        key: String?, current: TweakCurrentValue<TweakPrimitive>, source: (name: String, value: TweakPrimitive)?
     ) -> String? {
-        guard let sourceKey else { return nil }
+        guard let key else { return nil }
         switch current {
         case let .source(name, _):
-            return "\(name) · \(sourceKey)"
+            return "\(name) · \(key)"
         case .default:
-            return "Default · \(sourceKey)"
+            return "Default · \(key)"
         case .override:
             if let source {
                 return "Override · \(source.name): \(source.value.displayText)"
             }
-            return "Override · \(sourceKey)"
+            return "Override · \(key)"
         }
     }
 }

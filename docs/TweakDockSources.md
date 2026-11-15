@@ -1,71 +1,102 @@
 # TweakDock sources
 
-A source gives values to tweaks, for example from Remote Config, a local split, or launch arguments.
-Use sources to run experiments and remote config with the same `@Tweak` properties.
+A source rule tells a tweak where to read its value: Remote Config or a local split.
+Each `@Tweak` declares its whole experiment in one place: the key, the variants, the default value, the devices, and the source.
 
-## Read a value from a source
-
-A tweak with a `sourceKey` reads its value from `TweakStore.source`.
-The store finds the value in this order:
-
-1. The override that you set in the tweaks UI or in code. The store ignores overrides when `isEnabled` is `false`.
-2. The source value, when it is valid.
-3. The default value.
-
-A write, such as `AppTweaks.paywall = .B`, saves an override, also when the value equals the source value.
-The override hides later source values. Call `reset()` to use the source value again.
+## Declare experiments
 
 ```swift
 @Tweaks
-enum AppTweaks {
+enum Experiments {
     enum Paywall: String, CaseIterable, TweakValue { case A, B, C }
+    enum CardStyle: String, CaseIterable, TweakValue { case A, B }
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "Paywall", defaultValue: Paywall.A, sourceKey: "exp_paywall")
+    // Remote Config, all devices
+    @Tweak(collection: "Experiments", group: "Paywall", name: "Layout",
+           defaultValue: Paywall.A, source: .remote("exp_paywall"))
     static var paywall: Paywall
+
+    // Remote Config, iPhone only
+    @Tweak(collection: "Experiments", group: "Recap", name: "Monthly Recap",
+           defaultValue: Paywall.A, source: .remote("exp_monthly_recap", devices: [.phone]))
+    static var monthlyRecap: Paywall
+
+    // A local split, no server
+    @Tweak(collection: "Experiments", group: "Home", name: "Card Style",
+           defaultValue: CardStyle.A, source: .local("lab_card_style", .variants(["A": 50, "B": 50])))
+    static var cardStyle: CardStyle
+
+    // A local rollout: true on 10% of devices
+    @Tweak(collection: "Experiments", group: "Home", name: "New Badge",
+           defaultValue: false, source: .local("rollout_new_badge", .rollout(0.1)))
+    static var showsNewBadge: Bool
 }
 
-AppTweaks.tweakStore.source = CombinedTweakSource([
-    LaunchArgumentTweakSource(),                                   // -tweak.exp_paywall B, for UI tests
-    DeviceTweakSource(firebase, devices: ["exp_ipad_only": [.pad]]),
-    LocalSplitTweakSource(splits: ["lab_new_badge": .rollout(0.1)]),
-])
-
-AppTweaks.paywallTweak.currentValue   // .default(.A), .source("Firebase", .B), or .override(.C)
+// The only setup at launch, after FirebaseApp.configure().
+Experiments.tweakStore.remote = FirebaseTweakSource()
 ```
 
-The store uses a source value only when it is valid.
-An unknown enum case, a value out of `min...max`, a value that is not in `options`, or text of the wrong kind gives the default value.
-Use `currentValue` to report experiments to analytics:
+`source` is optional. A tweak without it uses only its override and its default value.
+
+## Where the value comes from
+
+The store finds the value of a tweak in this order:
+
+1. The override that you set in the tweaks UI or in code.
+2. A launch argument `-tweak.<key> <value>`, for UI tests. It applies on all devices.
+3. The declared source, on the devices in `devices`. `.remote` reads `TweakStore.remote`. `.local` computes the split.
+4. The default value.
+
+A value that is not valid goes to the next step. Examples: an unknown enum case, a value out of `min...max`, a value that is not in `options`, or text of the wrong kind.
+When `isEnabled` is `false`, the store ignores overrides and launch arguments.
+
+A write, such as `Experiments.paywall = .B`, saves an override, also when the value equals the source value.
+The override hides later source values. Call `reset()` to use the source value again.
+
+## Report experiments to analytics
+
+Use `currentValue`:
 
 | Case | `currentValue` | User property |
 | --- | --- | --- |
 | The source value is present and valid | `.source("Firebase", .B)` | `B` |
 | The key is not fetched yet (first launch) | `.default(.A)` | `"default"` |
-| The key is not in the source | `.default(.A)` | `"default"` |
+| The key is not in Remote Config | `.default(.A)` | `"default"` |
 | The value is not a known variant | `.default(.A)` | `"default"` |
 | The device is not in `devices` | `.default(.A)` | `"default"` |
 
 ```swift
-let userProperty = switch AppTweaks.paywallTweak.currentValue {
+let userProperty = switch Experiments.paywallTweak.currentValue {
 case .default: "default"
 case let .source(_, value), let .override(value): value.rawValue
 }
 ```
 
 `currentValuePublisher` publishes `currentValue`, then each change.
+The source names are the name of `TweakStore.remote`, `"Local Split"`, and `"Launch Argument"`.
 
-TweakDock has these sources. None of them need a dependency.
+## Local splits
 
-| Source | Use |
-| --- | --- |
-| `CombinedTweakSource` | Asks each source in order, and uses the first value. `.source` gives the name of the inner source. |
-| `DeviceTweakSource` | Gives the values of its base source only on the given devices. |
-| `LocalSplitTweakSource` | Puts each device in a local bucket for an experiment or a rollout that has no server. |
-| `LaunchArgumentTweakSource` | Reads `-tweak.<key> <value>` launch arguments. |
-| `InMemoryTweakSource` | Gives fixed values, for tests, previews, or a fake remote config. To change the values, set a new source. |
+A local split gives each device a value without a server. The device keeps its value.
 
-In the tweaks UI, a tweak with a `sourceKey` shows where its value comes from under its name.
-To remove an override, swipe the row, or select "Use <source>" in the options.
+- `.variants(["A": 50, "B": 50])` gives each variant in proportion to its weight. The weights are relative, so `["A": 1, "B": 1]` is the same split. A variant can also be the text of a number or a Boolean value.
+- `.rollout(0.1)` gives `true` to 10% of the devices. When you increase the fraction, the devices that had `true` keep it.
+- Each key has its own value. If you change the weights of variants, some devices get a different value. To start an experiment again, use a new key.
+- `tweakStore.resetSplits()` gives this device new values in all splits.
+
+The value comes from a hash of the key and a random seed. The store keeps the seed in a file next to the tweaks file, so app extensions in the same app group get the same values.
+A new install gets a new seed.
+
+## Devices
+
+`devices` is `.all` when you do not give it. Give it only to restrict an experiment: `.phone`, `.pad`, `.mac`, `.vision`, or `.tv`.
+An iPhone app that runs on an iPad counts as `.pad`.
+An override and a launch argument apply on all devices, so you can test an iPad experiment on an iPhone.
+
+## Tests and previews
+
+`InMemoryTweakSource` gives fixed values. Use it as `TweakStore.remote` in tests, previews, or a fake remote config.
+To change the values, set a new source.
 
 ## Firebase Remote Config
 
@@ -91,7 +122,7 @@ final class FirebaseTweakSource: TweakSource, @unchecked Sendable {
     }
 }
 
-AppTweaks.tweakStore.source = FirebaseTweakSource()   // After FirebaseApp.configure().
+AppTweaks.tweakStore.remote = FirebaseTweakSource()   // After FirebaseApp.configure().
 ```
 
 The adapter only reads values. The app fetches and activates Remote Config, as before.

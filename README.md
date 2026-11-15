@@ -401,19 +401,20 @@ AppTweaks.tweakStore.isEnabled = false   // The store ignores overrides. Each tw
 
 ### Sources: remote config and experiments
 
-Give `sourceKey` to read a value from `TweakStore.source`, for example Remote Config or a local split.
+Give `source` to declare where a tweak reads its value: Remote Config or a local split.
 The store uses the override, then a valid source value, then the default value.
 
 ```swift
-@Tweak(collection: "Experiments", group: "Remote", name: "Paywall", defaultValue: Paywall.A, sourceKey: "exp_paywall")
+@Tweak(collection: "Experiments", group: "Paywall", name: "Layout",
+       defaultValue: Paywall.A, source: .remote("exp_paywall"))
 static var paywall: Paywall
 
-AppTweaks.tweakStore.source = FirebaseTweakSource()
+AppTweaks.tweakStore.remote = FirebaseTweakSource()
 AppTweaks.paywall                      // The remote value when it is valid, else .A.
 AppTweaks.paywallTweak.currentValue    // .default(.A), .source("Firebase", .B), or .override(.C)
 ```
 
-For the built-in sources, the analytics rules, and a Firebase adapter, see [TweakDock sources](docs/TweakDockSources.md).
+For local splits, devices, launch arguments, the analytics rules, and a Firebase adapter, see [TweakDock sources](docs/TweakDockSources.md).
 
 ### Supported types
 

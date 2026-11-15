@@ -55,13 +55,15 @@ This file records the decisions, the current status, and the next steps for Dock
 
 ### TweakDock sources
 
-- A tweak with a `sourceKey` reads `TweakStore.source`. The order is override, then a valid source value, then the default value.
-- `isEnabled = false` turns off overrides only. Source values still apply, so a sourced tweak is also the release read path.
+- Each `@Tweak` declares its whole experiment setup in `source:`, as one YAML entry does in PicCollage: `.remote(key, devices:)` or `.local(key, split, devices:)`. The app sets only `TweakStore.remote`.
+- The order is override, then a launch argument (`-tweak.<key>`), then the declared source, then the default value. A value that is not valid goes to the next step.
+- `devices` applies to the declared source. Launch arguments and overrides apply on all devices.
+- `isEnabled = false` turns off overrides and launch arguments. Source values still apply, so a sourced tweak is also the release read path.
 - An invalid source value gives `currentValue == .default(defaultValue)`. The store does not clamp or correct it. This keeps the analytics rule: `.default` reports `"default"`.
+- A local split bucket is a hash of a seed and the key. The seed is in a file next to the tweaks file, so app extensions get the same values. No bucket is saved for each key, and the sources use no lock.
+- The device comes from the model identifier, because `UIDevice` can be read only on the main thread.
 - `TweakCurrentValue` is one enum (`.default`, `.source`, `.override`), and each case holds its value. The source value that an override hides is internal. Only the tweaks UI shows it.
-- A sourced tweak keeps an override that equals its default value, because the override hides the source value.
-- TweakDock does not depend on Firebase. The app adds the Firebase adapter (see the README). A Firebase product in DockPond would add Firebase to the dependency graph of each DockPond user, and tie DockPond releases to Firebase versions.
-- Experiment features, such as analytics user properties and code generation, stay in the app.
+- TweakDock does not depend on Firebase. The app adds the Firebase adapter (see `docs/TweakDockSources.md`). A Firebase product in DockPond would add Firebase to the dependency graph of each DockPond user, and tie DockPond releases to Firebase versions.
 - The TweakDock demo uses `InMemoryTweakSource` as a fake remote config.
 
 ### Demo apps

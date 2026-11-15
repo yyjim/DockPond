@@ -10,8 +10,11 @@ public final class TweakStore: @unchecked Sendable {
     private let writeLock = NSLock()
     private var overrides: [String: TweakPrimitive]
     private var enabled: Bool
-    private var currentSource: (any TweakSource)?
-    private var sourceSubscription: AnyCancellable?
+    private var currentRemote: (any TweakSource)?
+    private var remoteSubscription: AnyCancellable?
+    private var splitSeed: String
+    private let launchArguments: [String: String]
+    private let device: TweakDevices
     /// Sends the changed tweak ID, or `nil` when every tweak can have changed.
     private let changes = PassthroughSubject<String?, Never>()
 
@@ -22,14 +25,21 @@ public final class TweakStore: @unchecked Sendable {
         self.init(fileURL: Self.fileURL(name: name, appGroup: appGroup), isEnabled: isEnabled)
     }
 
-    public init(fileURL: URL, isEnabled: Bool = true) {
+    public convenience init(fileURL: URL, isEnabled: Bool = true) {
+        self.init(fileURL: fileURL, isEnabled: isEnabled, arguments: ProcessInfo.processInfo.arguments, device: .current)
+    }
+
+    init(fileURL: URL, isEnabled: Bool, arguments: [String], device: TweakDevices) {
         self.fileURL = fileURL
         enabled = isEnabled
         overrides = Self.load(from: fileURL)
+        splitSeed = Self.loadSplitSeed(next: fileURL)
+        launchArguments = Self.tweakArguments(in: arguments)
+        self.device = device
     }
 
-    /// When `false`, the store ignores overrides. Each tweak returns its source value or its
-    /// default value. Set it to `false` in release builds.
+    /// When `false`, the store ignores overrides and launch arguments. Each tweak returns its source
+    /// value or its default value. Set it to `false` in release builds.
     public var isEnabled: Bool {
         get { lock.withLock { enabled } }
         set {
@@ -38,18 +48,25 @@ public final class TweakStore: @unchecked Sendable {
         }
     }
 
-    /// Gives values to tweaks that have a `sourceKey`. Set it at launch, for example to a Remote Config adapter.
-    /// An override hides the source value until you reset the tweak.
-    public var source: (any TweakSource)? {
-        get { lock.withLock { currentSource } }
+    /// Gives the values of `.remote` tweaks. Set it at launch, for example to a Firebase Remote Config adapter.
+    public var remote: (any TweakSource)? {
+        get { lock.withLock { currentRemote } }
         set {
             let subscription = newValue?.changes.sink { [weak self] in self?.changes.send(nil) }
             lock.withLock {
-                currentSource = newValue
-                sourceSubscription = subscription
+                currentRemote = newValue
+                remoteSubscription = subscription
             }
             changes.send(nil)
         }
+    }
+
+    /// Gives this device new values in each `.local` split.
+    public func resetSplits() {
+        let seed = UUID().uuidString
+        Self.saveSplitSeed(seed, next: fileURL)
+        lock.withLock { splitSeed = seed }
+        changes.send(nil)
     }
 
     public func resetAll() {
@@ -65,36 +82,59 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func currentValue<Value>(for tweak: Tweak<Value>) -> TweakCurrentValue<Value> {
-        let (override, source) = snapshot(for: tweak)
-        if let override { return .override(override) }
-        return sourceValue(for: tweak, from: source).map { .source($0.name, $0.value) } ?? .default(tweak.defaultValue)
+        let state = snapshot(for: tweak)
+        if let override = state.override { return .override(override) }
+        return sourceValue(for: tweak, in: state).map { .source($0.name, $0.value) } ?? .default(tweak.defaultValue)
     }
 
     /// The valid source value, also when an override hides it. The tweaks UI shows it.
     func sourceValue<Value>(for tweak: Tweak<Value>) -> (name: String, value: Value)? {
-        sourceValue(for: tweak, from: source)
+        sourceValue(for: tweak, in: snapshot(for: tweak))
     }
 
-    /// A tweak with a `sourceKey` keeps an override that equals its default value, because the
+    /// A tweak with a source keeps an override that equals its default value, because the
     /// override hides the source value.
     func setValue<Value>(_ value: Value, for tweak: Tweak<Value>) {
         let value = tweak.normalize(value)
-        let isRedundant = tweak.sourceKey == nil && value == tweak.defaultValue
+        let isRedundant = tweak.source == nil && value == tweak.defaultValue
         setOverride(isRedundant ? nil : value.primitive, id: tweak.id)
     }
 
-    private func snapshot<Value>(for tweak: Tweak<Value>) -> (override: Value?, source: (any TweakSource)?) {
-        let (primitive, source) = lock.withLock { (enabled ? overrides[tweak.id] : nil, currentSource) }
-        return (primitive.flatMap(Value.init(primitive:)).map(tweak.normalize), source)
+    private struct Snapshot<Value> {
+        let override: Value?
+        let isEnabled: Bool
+        let remote: (any TweakSource)?
+        let splitSeed: String
     }
 
-    /// A source value that the tweak would change, such as a number out of range, is not valid.
-    private func sourceValue<Value>(for tweak: Tweak<Value>, from source: (any TweakSource)?) -> (name: String, value: Value)? {
-        guard let key = tweak.sourceKey, let source else { return nil }
-        let found = source.lookup(key, as: tweak.defaultValue.primitive.kind) { primitive in
-            Value(primitive: primitive).flatMap { tweak.normalize($0) == $0 ? $0 : nil }
+    private func snapshot<Value>(for tweak: Tweak<Value>) -> Snapshot<Value> {
+        let (primitive, isEnabled, remote, seed) = lock.withLock {
+            (enabled ? overrides[tweak.id] : nil, enabled, currentRemote, splitSeed)
         }
-        return found.map { ($0.sourceName, $0.value) }
+        let override = primitive.flatMap(Value.init(primitive:)).map(tweak.normalize)
+        return Snapshot(override: override, isEnabled: isEnabled, remote: remote, splitSeed: seed)
+    }
+
+    /// Uses a launch argument, then the source of the rule. A value that the tweak would change,
+    /// such as a number out of range, is not valid, and the next step is used.
+    private func sourceValue<Value>(for tweak: Tweak<Value>, in state: Snapshot<Value>) -> (name: String, value: Value)? {
+        guard let rule = tweak.source else { return nil }
+        let kind = tweak.defaultValue.primitive.kind
+        func valid(_ primitive: TweakPrimitive?) -> Value? {
+            primitive.flatMap(Value.init(primitive:)).flatMap { tweak.normalize($0) == $0 ? $0 : nil }
+        }
+        if state.isEnabled, let value = valid(launchArguments[rule.key].flatMap { TweakPrimitive(string: $0, as: kind) }) {
+            return ("Launch Argument", value)
+        }
+        guard rule.devices.contains(device) else { return nil }
+        switch rule.kind {
+        case .remote:
+            guard let remote = state.remote, let value = valid(remote.primitive(forKey: rule.key, as: kind)) else { return nil }
+            return (remote.name, value)
+        case let .local(split):
+            let bucket = TweakSplit.bucket(seed: state.splitSeed, key: rule.key)
+            return valid(split.value(at: bucket)?.converted(to: kind)).map { ("Local Split", $0) }
+        }
     }
 
     func reset(_ tweak: some AnyTweak) {
@@ -157,6 +197,35 @@ public final class TweakStore: @unchecked Sendable {
         while flock(descriptor, LOCK_EX) != 0, errno == EINTR {}
         defer { flock(descriptor, LOCK_UN) }
         return body()
+    }
+
+    /// Reads `-tweak.<key> <value>` pairs. A value that starts with the prefix is the next pair, not a value.
+    static func tweakArguments(in arguments: [String], prefix: String = "-tweak.") -> [String: String] {
+        var values: [String: String] = [:]
+        for (argument, value) in zip(arguments, arguments.dropFirst())
+            where argument.hasPrefix(prefix) && !value.hasPrefix(prefix) {
+            values[String(argument.dropFirst(prefix.count))] = value
+        }
+        return values
+    }
+
+    /// The seed is next to the tweaks file, so that app extensions in the same app group get the same splits.
+    private static func loadSplitSeed(next fileURL: URL) -> String {
+        let seedURL = fileURL.appendingPathExtension("seed")
+        if let seed = try? String(contentsOf: seedURL, encoding: .utf8), !seed.isEmpty {
+            return seed
+        }
+        let seed = UUID().uuidString
+        try? FileManager.default.createDirectory(at: seedURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if (try? Data(seed.utf8).write(to: seedURL, options: .withoutOverwriting)) == nil,
+           let saved = try? String(contentsOf: seedURL, encoding: .utf8), !saved.isEmpty {
+            return saved
+        }
+        return seed
+    }
+
+    private static func saveSplitSeed(_ seed: String, next fileURL: URL) {
+        try? Data(seed.utf8).write(to: fileURL.appendingPathExtension("seed"), options: .atomic)
     }
 
     private static func load(from fileURL: URL) -> [String: TweakPrimitive] {

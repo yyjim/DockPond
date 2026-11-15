@@ -18,7 +18,7 @@ public extension AnyTweak {
 
 /// The UI edits value tweaks through their primitive form.
 protocol PrimitiveTweak: AnyTweak {
-    var sourceKey: String? { get }
+    var source: TweakSourceRule? { get }
     var primitiveValue: TweakPrimitive { get nonmutating set }
     var defaultPrimitive: TweakPrimitive { get }
     var primitiveCurrentValue: TweakCurrentValue<TweakPrimitive> { get }
@@ -34,8 +34,8 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
     public let group: String
     public let name: String
     public let defaultValue: Value
-    /// The key that the store source reads. When it is `nil`, the tweak does not use the source.
-    public let sourceKey: String?
+    /// Where the tweak reads its value when no override exists. When it is `nil`, the tweak uses only its default value.
+    public let source: TweakSourceRule?
     public let control: TweakControl
     let store: TweakStore
     let normalize: @Sendable (Value) -> Value
@@ -45,10 +45,10 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         group: String,
         name: String,
         defaultValue: Value,
-        sourceKey: String? = nil,
+        source: TweakSourceRule? = nil,
         store: TweakStore = .shared
     ) {
-        self.init(collection, group, name, defaultValue, sourceKey, Value.control, store) { $0 }
+        self.init(collection, group, name, defaultValue, source, Value.control, store) { $0 }
     }
 
     private init(
@@ -56,7 +56,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         _ group: String,
         _ name: String,
         _ defaultValue: Value,
-        _ sourceKey: String?,
+        _ source: TweakSourceRule?,
         _ control: TweakControl,
         _ store: TweakStore,
         normalize: @escaping @Sendable (Value) -> Value
@@ -65,7 +65,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         self.group = group
         self.name = name
         self.defaultValue = defaultValue
-        self.sourceKey = sourceKey
+        self.source = source
         self.control = control
         self.store = store
         self.normalize = normalize
@@ -98,7 +98,7 @@ public extension Tweak where Value: Comparable & Numeric {
         min: Value,
         max: Value,
         defaultValue: Value,
-        sourceKey: String? = nil,
+        source: TweakSourceRule? = nil,
         store: TweakStore = .shared
     ) {
         precondition(min <= max, "Tweak \"\(name)\": min must not be greater than max.")
@@ -106,7 +106,7 @@ public extension Tweak where Value: Comparable & Numeric {
         let range = min.primitive.doubleValue.flatMap { lower in
             max.primitive.doubleValue.map { lower ... $0 }
         }
-        self.init(collection, group, name, defaultValue, sourceKey, .number(range: range), store) {
+        self.init(collection, group, name, defaultValue, source, .number(range: range), store) {
             Swift.min(Swift.max($0, min), max)
         }
     }
@@ -119,11 +119,11 @@ public extension Tweak where Value == String {
         name: String,
         options: [String],
         defaultValue: String,
-        sourceKey: String? = nil,
+        source: TweakSourceRule? = nil,
         store: TweakStore = .shared
     ) {
         assert(options.contains(defaultValue), "Tweak \"\(name)\": defaultValue must be one of the options.")
-        self.init(collection, group, name, defaultValue, sourceKey, .picker(options: options), store) {
+        self.init(collection, group, name, defaultValue, source, .picker(options: options), store) {
             options.contains($0) ? $0 : defaultValue
         }
     }
