@@ -55,7 +55,9 @@ This file records the decisions, the current status, and the next steps for Dock
 
 ### TweakDock sources
 
-- Each `@Tweak` declares its whole experiment setup in `source:`, as one YAML entry does in PicCollage: `.remote(key, devices:)` or `.local(key, split, devices:)`. The app sets only `TweakStore.remote`.
+- Each `@Tweak` declares its whole experiment setup in `from:`, as one YAML entry does in PicCollage: `.experiment`, `.config`, `.localExperiment`, `.rollout`, or `.custom`. The app sets only `TweakStore.remote`.
+- The case names give the intent, not the mechanism. `.experiment` and `.config` both read `TweakStore.remote`, but only experiments are in `experimentProperties`, the read-only list for analytics.
+- `defaultValue` stays on `@Tweak`, because each tweak needs it, and the macro uses it to check the type.
 - The order is override, then a launch argument (`-tweak.<key>`), then the declared source, then the default value. A value that is not valid goes to the next step.
 - `devices` applies to the declared source. Launch arguments and overrides apply on all devices.
 - `isEnabled = false` turns off overrides and launch arguments. Source values still apply, so a sourced tweak is also the release read path.
@@ -64,7 +66,7 @@ This file records the decisions, the current status, and the next steps for Dock
 - The device comes from the model identifier, because `UIDevice` can be read only on the main thread.
 - `TweakCurrentValue` is one enum (`.default`, `.source`, `.override`), and each case holds its value. The source value that an override hides is internal. Only the tweaks UI shows it.
 - TweakDock does not depend on Firebase. The app adds the Firebase adapter (see `docs/TweakDockSources.md`). A Firebase product in DockPond would add Firebase to the dependency graph of each DockPond user, and tie DockPond releases to Firebase versions.
-- The TweakDock demo uses `InMemoryTweakSource` as a fake remote config.
+- The TweakDock demo uses `InMemoryValueProvider` as a fake remote config.
 
 ### Demo apps
 

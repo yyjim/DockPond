@@ -18,12 +18,13 @@ public extension AnyTweak {
 
 /// The UI edits value tweaks through their primitive form.
 protocol PrimitiveTweak: AnyTweak {
-    var source: TweakSourceRule? { get }
+    var source: TweakSource? { get }
     var primitiveValue: TweakPrimitive { get nonmutating set }
     var defaultPrimitive: TweakPrimitive { get }
     var primitiveCurrentValue: TweakCurrentValue<TweakPrimitive> { get }
     var primitiveSourceValue: (name: String, value: TweakPrimitive)? { get }
     var changeSignal: AnyPublisher<Void, Never> { get }
+    var experimentProperty: (key: String, value: String)? { get }
     func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool
     func reset()
 }
@@ -35,7 +36,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
     public let name: String
     public let defaultValue: Value
     /// Where the tweak reads its value when no override exists. When it is `nil`, the tweak uses only its default value.
-    public let source: TweakSourceRule?
+    public let source: TweakSource?
     public let control: TweakControl
     let store: TweakStore
     let normalize: @Sendable (Value) -> Value
@@ -45,7 +46,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         group: String,
         name: String,
         defaultValue: Value,
-        source: TweakSourceRule? = nil,
+        from source: TweakSource? = nil,
         store: TweakStore = .shared
     ) {
         self.init(collection, group, name, defaultValue, source, Value.control, store) { $0 }
@@ -56,7 +57,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         _ group: String,
         _ name: String,
         _ defaultValue: Value,
-        _ source: TweakSourceRule?,
+        _ source: TweakSource?,
         _ control: TweakControl,
         _ store: TweakStore,
         normalize: @escaping @Sendable (Value) -> Value
@@ -98,7 +99,7 @@ public extension Tweak where Value: Comparable & Numeric {
         min: Value,
         max: Value,
         defaultValue: Value,
-        source: TweakSourceRule? = nil,
+        from source: TweakSource? = nil,
         store: TweakStore = .shared
     ) {
         precondition(min <= max, "Tweak \"\(name)\": min must not be greater than max.")
@@ -119,7 +120,7 @@ public extension Tweak where Value == String {
         name: String,
         options: [String],
         defaultValue: String,
-        source: TweakSourceRule? = nil,
+        from source: TweakSource? = nil,
         store: TweakStore = .shared
     ) {
         assert(options.contains(defaultValue), "Tweak \"\(name)\": defaultValue must be one of the options.")
@@ -148,6 +149,18 @@ extension Tweak: PrimitiveTweak {
     }
 
     var changeSignal: AnyPublisher<Void, Never> { store.changeSignal(for: self) }
+
+    var experimentProperty: (key: String, value: String)? {
+        guard let source, source.isExperiment else { return nil }
+        let current = primitiveCurrentValue
+        if case .default = current { return (source.key, "default") }
+        switch current.value {
+        case let .bool(value): return (source.key, String(value))
+        case let .int(value): return (source.key, String(value))
+        case let .double(value): return (source.key, String(value))
+        case let .string(value): return (source.key, value)
+        }
+    }
 
     /// A text field writes its value again when editing ends, clamped and rounded to the digits that it shows.
     /// That write must not pin a source value as an override, so it is not a change.
@@ -184,4 +197,12 @@ public struct TweakAction: AnyTweak {
 
     @MainActor
     public func callAsFunction() { run() }
+}
+
+public extension Sequence where Element == any AnyTweak {
+    /// The experiments to report to analytics, by key. Each value is the current value, or `"default"` when
+    /// no valid source value or override exists. Only `.experiment` and `.localExperiment` tweaks are in it.
+    var experimentProperties: [String: String] {
+        Dictionary(compactMap { ($0 as? any PrimitiveTweak)?.experimentProperty }) { first, _ in first }
+    }
 }

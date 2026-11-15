@@ -47,19 +47,19 @@ enum DemoTweaks {
     enum ABC: String, CaseIterable, TweakValue { case A, B, C }
     enum AB: String, CaseIterable, TweakValue { case A, B }
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "Paywall Layout", defaultValue: ABC.A, source: .remote("exp_paywall_layout"))
+    @Tweak(collection: "Experiments", group: "Remote", name: "Paywall Layout", defaultValue: ABC.A, from: .experiment("exp_paywall_layout"))
     static var paywallLayout: ABC
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "Onboarding", defaultValue: AB.A, source: .remote("exp_onboarding"))
+    @Tweak(collection: "Experiments", group: "Remote", name: "Onboarding", defaultValue: AB.A, from: .experiment("exp_onboarding"))
     static var onboarding: AB
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "Share Sheet", defaultValue: AB.A, source: .remote("exp_share_sheet"))
+    @Tweak(collection: "Experiments", group: "Remote", name: "Share Sheet", defaultValue: AB.A, from: .experiment("exp_share_sheet"))
     static var shareSheet: AB
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "iPad Sidebar", defaultValue: AB.A, source: .remote("exp_ipad_sidebar", devices: [.pad]))
+    @Tweak(collection: "Experiments", group: "Remote", name: "iPad Sidebar", defaultValue: AB.A, from: .experiment("exp_ipad_sidebar", devices: [.pad]))
     static var iPadSidebar: AB
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "Upload Limit", min: 1, max: 20, defaultValue: 5, source: .remote("upload_limit"))
+    @Tweak(collection: "Experiments", group: "Remote", name: "Upload Limit", min: 1, max: 20, defaultValue: 5, from: .config("upload_limit"))
     static var uploadLimit: Int
 
     @Tweak(collection: "Experiments", group: "Remote", name: "Fetch Remote Config")
@@ -72,10 +72,10 @@ enum DemoTweaks {
         DemoSources.clearRemoteConfig()
     }
 
-    @Tweak(collection: "Experiments", group: "Local Split", name: "Card Style", defaultValue: AB.A, source: .local("lab_card_style", .variants(["A": 50, "B": 50])))
+    @Tweak(collection: "Experiments", group: "Local Split", name: "Card Style", defaultValue: AB.A, from: .localExperiment("lab_card_style", ["A": 50, "B": 50]))
     static var cardStyle: AB
 
-    @Tweak(collection: "Experiments", group: "Local Split", name: "New Badge", defaultValue: false, source: .local("rollout_new_badge", .rollout(0.5)))
+    @Tweak(collection: "Experiments", group: "Local Split", name: "New Badge", defaultValue: false, from: .rollout("rollout_new_badge", 0.5))
     static var showsNewBadge: Bool
 
     @Tweak(collection: "Experiments", group: "Local Split", name: "Reassign Buckets")

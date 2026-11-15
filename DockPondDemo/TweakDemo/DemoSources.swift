@@ -11,7 +11,7 @@ enum DemoSources {
     ]
 
     static func fetchRemoteConfig() {
-        DemoTweaks.tweakStore.remote = InMemoryTweakSource(name: "Remote", values: fetchedValues)
+        DemoTweaks.tweakStore.remote = InMemoryValueProvider(name: "Remote", values: fetchedValues)
     }
 
     static func clearRemoteConfig() {

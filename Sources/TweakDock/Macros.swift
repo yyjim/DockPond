@@ -25,21 +25,21 @@ public macro Tweaks(store: TweakStore = .shared) = #externalMacro(module: "Tweak
 /// static var isDarkMode: Bool
 /// ```
 ///
-/// Give `source` to read the value from Remote Config or a local split, for example
-/// `source: .remote("exp_paywall")` or `source: .local("lab_card_style", .variants(["A": 1, "B": 1]))`.
+/// Give `from` to read the value from Remote Config or a local split, for example
+/// `from: .experiment("exp_paywall")` or `from: .rollout("new_badge", 0.1)`.
 @attached(accessor)
 @attached(peer, names: suffixed(Tweak))
-public macro Tweak<T>(collection: String, group: String, name: String, defaultValue: T, source: TweakSourceRule? = nil)
+public macro Tweak<T>(collection: String, group: String, name: String, defaultValue: T, from: TweakSource? = nil)
     = #externalMacro(module: "TweakDockMacros", type: "TweakMacro")
 
 @attached(accessor)
 @attached(peer, names: suffixed(Tweak))
-public macro Tweak<T>(collection: String, group: String, name: String, min: T, max: T, defaultValue: T, source: TweakSourceRule? = nil)
+public macro Tweak<T>(collection: String, group: String, name: String, min: T, max: T, defaultValue: T, from: TweakSource? = nil)
     = #externalMacro(module: "TweakDockMacros", type: "TweakMacro")
 
 @attached(accessor)
 @attached(peer, names: suffixed(Tweak))
-public macro Tweak<T>(collection: String, group: String, name: String, options: [T], defaultValue: T, source: TweakSourceRule? = nil)
+public macro Tweak<T>(collection: String, group: String, name: String, options: [T], defaultValue: T, from: TweakSource? = nil)
     = #externalMacro(module: "TweakDockMacros", type: "TweakMacro")
 
 /// Makes a static method an action tweak, which the tweaks UI runs when you tap it.

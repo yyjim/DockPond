@@ -22,7 +22,7 @@ private enum SampleTweaks {
     @Tweak(collection: "UI", group: "Appearance", name: "Integration Size", defaultValue: Size.small)
     static var size: Size
 
-    @Tweak(collection: "UI", group: "Appearance", name: "Integration Remote Size", defaultValue: Size.small, source: .remote("integration_size"))
+    @Tweak(collection: "UI", group: "Appearance", name: "Integration Remote Size", defaultValue: Size.small, from: .config("integration_size"))
     static var remoteSize: Size
 
     #if DEBUG
@@ -74,7 +74,7 @@ private enum SampleTweaks {
     @Test func readsRemoteSourceThroughTheStore() {
         defer { TweakStore.integration.remote = nil }
         #expect(SampleTweaks.remoteSize == .small)
-        TweakStore.integration.remote = InMemoryTweakSource(name: "Remote", values: ["integration_size": .string("large")])
+        TweakStore.integration.remote = InMemoryValueProvider(name: "Remote", values: ["integration_size": .string("large")])
         #expect(SampleTweaks.remoteSize == .large)
         #expect(SampleTweaks.remoteSizeTweak.currentValue == .source("Remote", .large))
         #expect(SampleTweaks.remoteSizeTweak.source?.key == "integration_size")

@@ -2,26 +2,20 @@ import Combine
 import SwiftUI
 import TweakDock
 
-/// One experiment as the app reports it to analytics.
 struct ExperimentState: Equatable {
     let value: String
     let origin: String
-    /// The analytics user property: the value, or `default` when no valid source value or override exists.
+    /// The value in `experimentProperties`, or `-` for a tweak that is not an experiment.
     let userProperty: String
 
-    init<Value: TweakValue>(_ current: TweakCurrentValue<Value>) {
+    init<Value: TweakValue>(_ current: TweakCurrentValue<Value>, key: String?) {
         value = current.value.primitive.text
         switch current {
-        case .default:
-            origin = "Default"
-            userProperty = "default"
-        case let .source(name, _):
-            origin = name
-            userProperty = value
-        case .override:
-            origin = "Override"
-            userProperty = value
+        case .default: origin = "Default"
+        case let .source(name, _): origin = name
+        case .override: origin = "Override"
         }
+        userProperty = key.flatMap { DemoTweaks.allTweaks.experimentProperties[$0] } ?? "-"
     }
 }
 
@@ -76,7 +70,7 @@ final class DemoModel: ObservableObject {
     private func track<Value>(_ name: String, _ tweak: Tweak<Value>) {
         tweak.currentValuePublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] in self?.experiments[name] = ExperimentState($0) }
+            .sink { [weak self] in self?.experiments[name] = ExperimentState($0, key: tweak.source?.key) }
             .store(in: &cancellables)
     }
 }

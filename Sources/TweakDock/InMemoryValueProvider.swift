@@ -1,8 +1,8 @@
 /// Gives fixed values. Use it for tests, previews, or a fake remote config.
-/// To change the values, set a new source on the store.
+/// To change the values, set a new provider on the store.
 ///
 /// A `.string` value converts to the kind of the tweak, as Remote Config text does.
-public final class InMemoryTweakSource: TweakSource {
+public final class InMemoryValueProvider: TweakValueProvider {
     public let name: String
     private let values: [String: TweakPrimitive]
 

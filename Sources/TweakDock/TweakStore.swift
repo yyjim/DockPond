@@ -10,7 +10,7 @@ public final class TweakStore: @unchecked Sendable {
     private let writeLock = NSLock()
     private var overrides: [String: TweakPrimitive]
     private var enabled: Bool
-    private var currentRemote: (any TweakSource)?
+    private var currentRemote: (any TweakValueProvider)?
     private var remoteSubscription: AnyCancellable?
     private var splitSeed: String
     private let launchArguments: [String: String]
@@ -48,8 +48,9 @@ public final class TweakStore: @unchecked Sendable {
         }
     }
 
-    /// Gives the values of `.remote` tweaks. Set it at launch, for example to a Firebase Remote Config adapter.
-    public var remote: (any TweakSource)? {
+    /// Gives the values of `.experiment` and `.config` tweaks. Set it at launch, for example to a Firebase
+    /// Remote Config adapter.
+    public var remote: (any TweakValueProvider)? {
         get { lock.withLock { currentRemote } }
         set {
             let subscription = newValue?.changes.sink { [weak self] in self?.changes.send(nil) }
@@ -61,7 +62,7 @@ public final class TweakStore: @unchecked Sendable {
         }
     }
 
-    /// Gives this device new values in each `.local` split.
+    /// Gives this device new values in each `.localExperiment` and `.rollout`.
     public func resetSplits() {
         let seed = UUID().uuidString
         Self.saveSplitSeed(seed, next: fileURL)
@@ -103,7 +104,7 @@ public final class TweakStore: @unchecked Sendable {
     private struct Snapshot<Value> {
         let override: Value?
         let isEnabled: Bool
-        let remote: (any TweakSource)?
+        let remote: (any TweakValueProvider)?
         let splitSeed: String
     }
 
@@ -115,24 +116,26 @@ public final class TweakStore: @unchecked Sendable {
         return Snapshot(override: override, isEnabled: isEnabled, remote: remote, splitSeed: seed)
     }
 
-    /// Uses a launch argument, then the source of the rule. A value that the tweak would change,
+    /// Uses a launch argument, then the source of the tweak. A value that the tweak would change,
     /// such as a number out of range, is not valid, and the next step is used.
     private func sourceValue<Value>(for tweak: Tweak<Value>, in state: Snapshot<Value>) -> (name: String, value: Value)? {
-        guard let rule = tweak.source else { return nil }
+        guard let source = tweak.source else { return nil }
         let kind = tweak.defaultValue.primitive.kind
         func valid(_ primitive: TweakPrimitive?) -> Value? {
             primitive.flatMap(Value.init(primitive:)).flatMap { tweak.normalize($0) == $0 ? $0 : nil }
         }
-        if state.isEnabled, let value = valid(launchArguments[rule.key].flatMap { TweakPrimitive(string: $0, as: kind) }) {
+        if state.isEnabled, let value = valid(launchArguments[source.key].flatMap { TweakPrimitive(string: $0, as: kind) }) {
             return ("Launch Argument", value)
         }
-        guard rule.devices.contains(device) else { return nil }
-        switch rule.kind {
+        guard source.devices.contains(device) else { return nil }
+        switch source.kind {
         case .remote:
-            guard let remote = state.remote, let value = valid(remote.primitive(forKey: rule.key, as: kind)) else { return nil }
+            guard let remote = state.remote, let value = valid(remote.primitive(forKey: source.key, as: kind)) else { return nil }
             return (remote.name, value)
+        case let .custom(provider):
+            return valid(provider.primitive(forKey: source.key, as: kind)).map { (provider.name, $0) }
         case let .local(split):
-            let bucket = TweakSplit.bucket(seed: state.splitSeed, key: rule.key)
+            let bucket = TweakSplit.bucket(seed: state.splitSeed, key: source.key)
             return valid(split.value(at: bucket)?.converted(to: kind)).map { ("Local Split", $0) }
         }
     }
@@ -150,10 +153,11 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     /// Sends one time when you subscribe, then each time that the tweak can have changed.
-    func changeSignal(for tweak: some AnyTweak) -> AnyPublisher<Void, Never> {
+    func changeSignal<Value>(for tweak: Tweak<Value>) -> AnyPublisher<Void, Never> {
         changes
             .filter { $0 == nil || $0 == tweak.id }
             .map { _ in }
+            .merge(with: tweak.source?.provider?.changes ?? Empty().eraseToAnyPublisher())
             .merge(with: Just(()))
             .eraseToAnyPublisher()
     }

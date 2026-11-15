@@ -88,13 +88,15 @@ final class TweakDemoUITests: XCTestCase {
 
     func testResolvesExperimentsFromSources() {
         assertExperiment("Paywall Layout", "A", origin: "Default", property: "default")
-        assertExperiment("Upload Limit", "5", origin: "Default", property: "default")
+        assertExperiment("Upload Limit", "5", origin: "Default", property: "-")
         XCTAssertEqual(app.staticTexts["origin.Card Style"].label, "Local Split")
         XCTAssertEqual(app.staticTexts["origin.New Badge"].label, "Local Split")
+        XCTAssertEqual(app.staticTexts["property.New Badge"].label, "-")
+        XCTAssertNotEqual(app.staticTexts["property.Card Style"].label, "default")
 
         app.buttons["fetchRemoteConfig"].tap()
         assertExperiment("Paywall Layout", "B", origin: "Remote", property: "B")
-        assertExperiment("Upload Limit", "12", origin: "Remote", property: "12")
+        assertExperiment("Upload Limit", "12", origin: "Remote", property: "-")
         assertExperiment("Share Sheet", "A", origin: "Default", property: "default")
         assertExperiment("Onboarding", "A", origin: "Default", property: "default")
         if UIDevice.current.userInterfaceIdiom == .pad {
