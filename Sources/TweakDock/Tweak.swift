@@ -21,8 +21,9 @@ protocol PrimitiveTweak: AnyTweak {
     var sourceKey: String? { get }
     var primitiveValue: TweakPrimitive { get nonmutating set }
     var defaultPrimitive: TweakPrimitive { get }
-    var primitiveReading: TweakReading<TweakPrimitive> { get }
-    var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> { get }
+    var primitiveCurrentValue: TweakCurrentValue<TweakPrimitive> { get }
+    var primitiveSourceValue: (name: String, value: TweakPrimitive)? { get }
+    var changeSignal: AnyPublisher<Void, Never> { get }
     func changesValue(_ primitive: TweakPrimitive, tolerance: Double) -> Bool
     func reset()
 }
@@ -83,7 +84,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
 
     /// Publishes `currentValue`, then each change. It also publishes when only the source of the value changes.
     public var currentValuePublisher: AnyPublisher<TweakCurrentValue<Value>, Never> {
-        store.readingPublisher(for: self).map(\.current).removeDuplicates().eraseToAnyPublisher()
+        store.currentValuePublisher(for: self)
     }
 
     public func reset() { store.reset(self) }
@@ -140,7 +141,13 @@ extension Tweak: PrimitiveTweak {
 
     var defaultPrimitive: TweakPrimitive { defaultValue.primitive }
 
-    var primitiveReading: TweakReading<TweakPrimitive> { store.reading(for: self).map(\.primitive) }
+    var primitiveCurrentValue: TweakCurrentValue<TweakPrimitive> { currentValue.map(\.primitive) }
+
+    var primitiveSourceValue: (name: String, value: TweakPrimitive)? {
+        store.sourceValue(for: self).map { ($0.name, $0.value.primitive) }
+    }
+
+    var changeSignal: AnyPublisher<Void, Never> { store.changeSignal(for: self) }
 
     /// A text field writes its value again when editing ends, clamped and rounded to the digits that it shows.
     /// That write must not pin a source value as an override, so it is not a change.
@@ -153,9 +160,6 @@ extension Tweak: PrimitiveTweak {
         return newValue != current
     }
 
-    var primitiveReadingPublisher: AnyPublisher<TweakReading<TweakPrimitive>, Never> {
-        store.readingPublisher(for: self).map { $0.map(\.primitive) }.eraseToAnyPublisher()
-    }
 }
 
 /// A tweak that runs a closure when you tap it in the tweaks UI.

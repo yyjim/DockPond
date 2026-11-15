@@ -38,31 +38,16 @@ public enum TweakCurrentValue<Value: Sendable & Equatable>: Sendable, Equatable 
         }
     }
 
+    var isOverride: Bool {
+        if case .override = self { true } else { false }
+    }
+
     func map<T>(_ transform: (Value) -> T) -> TweakCurrentValue<T> {
         switch self {
         case let .default(value): .default(transform(value))
         case let .source(name, value): .source(name, transform(value))
         case let .override(value): .override(transform(value))
         }
-    }
-}
-
-/// The current value, and the source value that an override hides. The tweaks UI shows both.
-struct TweakReading<Value: Sendable & Equatable>: Sendable, Equatable {
-    struct Sourced: Sendable, Equatable {
-        let name: String
-        let value: Value
-    }
-
-    let current: TweakCurrentValue<Value>
-    let source: Sourced?
-
-    var isOverride: Bool {
-        if case .override = current { true } else { false }
-    }
-
-    func map<T>(_ transform: (Value) -> T) -> TweakReading<T> {
-        TweakReading<T>(current: current.map(transform), source: source.map { .init(name: $0.name, value: transform($0.value)) })
     }
 }
 

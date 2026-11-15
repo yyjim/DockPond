@@ -67,13 +67,12 @@ public final class TweakStore: @unchecked Sendable {
     func currentValue<Value>(for tweak: Tweak<Value>) -> TweakCurrentValue<Value> {
         let (override, source) = snapshot(for: tweak)
         if let override { return .override(override) }
-        return current(sourced: sourced(for: tweak, from: source), tweak: tweak)
+        return sourceValue(for: tweak, from: source).map { .source($0.name, $0.value) } ?? .default(tweak.defaultValue)
     }
 
-    func reading<Value>(for tweak: Tweak<Value>) -> TweakReading<Value> {
-        let (override, source) = snapshot(for: tweak)
-        let sourced = sourced(for: tweak, from: source)
-        return TweakReading(current: override.map { .override($0) } ?? current(sourced: sourced, tweak: tweak), source: sourced)
+    /// The valid source value, also when an override hides it. The tweaks UI shows it.
+    func sourceValue<Value>(for tweak: Tweak<Value>) -> (name: String, value: Value)? {
+        sourceValue(for: tweak, from: source)
     }
 
     /// A tweak with a `sourceKey` keeps an override that equals its default value, because the
@@ -90,16 +89,12 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     /// A source value that the tweak would change, such as a number out of range, is not valid.
-    private func sourced<Value>(for tweak: Tweak<Value>, from source: (any TweakSource)?) -> TweakReading<Value>.Sourced? {
+    private func sourceValue<Value>(for tweak: Tweak<Value>, from source: (any TweakSource)?) -> (name: String, value: Value)? {
         guard let key = tweak.sourceKey, let source else { return nil }
         let found = source.lookup(key, as: tweak.defaultValue.primitive.kind) { primitive in
             Value(primitive: primitive).flatMap { tweak.normalize($0) == $0 ? $0 : nil }
         }
-        return found.map { TweakReading<Value>.Sourced(name: $0.sourceName, value: $0.value) }
-    }
-
-    private func current<Value>(sourced: TweakReading<Value>.Sourced?, tweak: Tweak<Value>) -> TweakCurrentValue<Value> {
-        sourced.map { .source($0.name, $0.value) } ?? .default(tweak.defaultValue)
+        return found.map { ($0.sourceName, $0.value) }
     }
 
     func reset(_ tweak: some AnyTweak) {
@@ -107,16 +102,19 @@ public final class TweakStore: @unchecked Sendable {
     }
 
     func publisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<Value, Never> {
-        readingPublisher(for: tweak).map(\.current.value).removeDuplicates().eraseToAnyPublisher()
+        changeSignal(for: tweak).map { [self] in value(for: tweak) }.removeDuplicates().eraseToAnyPublisher()
     }
 
-    func readingPublisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<TweakReading<Value>, Never> {
+    func currentValuePublisher<Value>(for tweak: Tweak<Value>) -> AnyPublisher<TweakCurrentValue<Value>, Never> {
+        changeSignal(for: tweak).map { [self] in currentValue(for: tweak) }.removeDuplicates().eraseToAnyPublisher()
+    }
+
+    /// Sends one time when you subscribe, then each time that the tweak can have changed.
+    func changeSignal(for tweak: some AnyTweak) -> AnyPublisher<Void, Never> {
         changes
             .filter { $0 == nil || $0 == tweak.id }
             .map { _ in }
             .merge(with: Just(()))
-            .map { [self] in reading(for: tweak) }
-            .removeDuplicates()
             .eraseToAnyPublisher()
     }
 

@@ -1,10 +1,8 @@
 import TweakDock
 import UIKit
 
-/// The sources of the experiment tweaks. `remote` takes the place of Firebase Remote Config.
+/// The sources of the experiment tweaks. An in-memory "Remote" source takes the place of Firebase Remote Config.
 enum DemoSources {
-    static let remote = InMemoryTweakSource(name: "Remote")
-
     static let localSplit = LocalSplitTweakSource(splits: [
         "lab_card_style": .variants(["A": 50, "B": 50]),
         "rollout_new_badge": .rollout(0.5),
@@ -19,21 +17,23 @@ enum DemoSources {
     ]
 
     @MainActor
-    static func make() -> any TweakSource {
+    static func make(remoteValues: [String: TweakPrimitive] = [:]) -> any TweakSource {
         CombinedTweakSource([
             LaunchArgumentTweakSource(),
             DeviceTweakSource(
-                CombinedTweakSource([remote, localSplit]),
+                CombinedTweakSource([InMemoryTweakSource(name: "Remote", values: remoteValues), localSplit]),
                 devices: ["exp_ipad_sidebar": [.pad]]
             ),
         ])
     }
 
+    @MainActor
     static func fetchRemoteConfig() {
-        remote.replaceValues(fetchedValues)
+        DemoTweaks.tweakStore.source = make(remoteValues: fetchedValues)
     }
 
+    @MainActor
     static func clearRemoteConfig() {
-        remote.replaceValues([:])
+        DemoTweaks.tweakStore.source = make()
     }
 }

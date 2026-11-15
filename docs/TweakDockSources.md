@@ -62,7 +62,7 @@ TweakDock has these sources. None of them need a dependency.
 | `DeviceTweakSource` | Gives the values of its base source only on the given devices. |
 | `LocalSplitTweakSource` | Puts each device in a local bucket for an experiment or a rollout that has no server. |
 | `LaunchArgumentTweakSource` | Reads `-tweak.<key> <value>` launch arguments. |
-| `InMemoryTweakSource` | Keeps values in memory, for tests, previews, or a fake remote config. |
+| `InMemoryTweakSource` | Gives fixed values, for tests, previews, or a fake remote config. To change the values, set a new source. |
 
 In the tweaks UI, a tweak with a `sourceKey` shows where its value comes from under its name.
 To remove an override, swipe the row, or select "Use <source>" in the options.

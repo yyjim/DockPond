@@ -68,22 +68,22 @@ private struct TweakCollectionView: View {
 
 private struct TweakRow: View {
     let tweak: any PrimitiveTweak
-    @State private var reading: TweakReading<TweakPrimitive>
-    @State private var changes: AnyPublisher<TweakReading<TweakPrimitive>, Never>
+    @State private var current: TweakCurrentValue<TweakPrimitive>
+    @State private var changes: AnyPublisher<Void, Never>
 
     init(tweak: any PrimitiveTweak) {
         self.tweak = tweak
-        _reading = State(initialValue: tweak.primitiveReading)
-        _changes = State(initialValue: tweak.primitiveReadingPublisher.receive(on: DispatchQueue.main).eraseToAnyPublisher())
+        _current = State(initialValue: tweak.primitiveCurrentValue)
+        _changes = State(initialValue: tweak.changeSignal.receive(on: DispatchQueue.main).eraseToAnyPublisher())
     }
 
-    private var value: TweakPrimitive { reading.current.value }
+    private var value: TweakPrimitive { current.value }
 
     var body: some View {
         content
-            .onReceive(changes) { reading = $0 }
+            .onReceive(changes) { current = tweak.primitiveCurrentValue }
             .swipeActions {
-                if tweak.sourceKey != nil, reading.isOverride {
+                if tweak.sourceKey != nil, current.isOverride {
                     Button("Reset") { tweak.reset() }
                 }
             }
@@ -146,12 +146,12 @@ private struct TweakRow: View {
     }
 
     @ViewBuilder private var label: some View {
-        if let caption = TweakCaption.text(sourceKey: tweak.sourceKey, reading: reading) {
+        if let caption = TweakCaption.text(sourceKey: tweak.sourceKey, current: current, source: tweak.primitiveSourceValue) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(tweak.name)
                 Text(caption)
                     .font(.caption)
-                    .foregroundStyle(reading.isOverride ? Color.orange : Color.secondary)
+                    .foregroundStyle(current.isOverride ? Color.orange : Color.secondary)
             }
         } else {
             Text(tweak.name)
@@ -174,7 +174,7 @@ private struct TweakRow: View {
     private func update(_ primitive: TweakPrimitive) {
         guard tweak.changesValue(primitive, tolerance: 0.5 * pow(10, -Double(Self.fractionDigits))) else { return }
         tweak.primitiveValue = primitive
-        reading = tweak.primitiveReading
+        current = tweak.primitiveCurrentValue
     }
 }
 
@@ -184,17 +184,17 @@ private struct OptionsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        let reading = tweak.primitiveReading
-        let followsSource = tweak.sourceKey != nil && !reading.isOverride
+        let current = tweak.primitiveCurrentValue
+        let followsSource = tweak.sourceKey != nil && !current.isOverride
         List {
             if tweak.sourceKey != nil {
                 Section {
-                    row(followTitle(reading), isSelected: followsSource) { tweak.reset() }
+                    row(followTitle, isSelected: followsSource) { tweak.reset() }
                 }
             }
             Section {
                 ForEach(options, id: \.self) { option in
-                    row(option, isSelected: !followsSource && reading.current.value == .string(option)) {
+                    row(option, isSelected: !followsSource && current.value == .string(option)) {
                         tweak.primitiveValue = .string(option)
                     }
                 }
@@ -205,8 +205,8 @@ private struct OptionsView: View {
         .inlineNavigationTitle()
     }
 
-    private func followTitle(_ reading: TweakReading<TweakPrimitive>) -> String {
-        if let source = reading.source {
+    private var followTitle: String {
+        if let source = tweak.primitiveSourceValue {
             return "Use \(source.name) (\(source.value.displayText))"
         }
         return "Use Default (\(tweak.defaultPrimitive.displayText))"
@@ -230,15 +230,17 @@ private struct OptionsView: View {
 
 enum TweakCaption {
     /// Describes where the value of a tweak with a `sourceKey` comes from.
-    static func text(sourceKey: String?, reading: TweakReading<TweakPrimitive>) -> String? {
+    static func text(
+        sourceKey: String?, current: TweakCurrentValue<TweakPrimitive>, source: (name: String, value: TweakPrimitive)?
+    ) -> String? {
         guard let sourceKey else { return nil }
-        switch reading.current {
+        switch current {
         case let .source(name, _):
             return "\(name) · \(sourceKey)"
         case .default:
             return "Default · \(sourceKey)"
         case .override:
-            if let source = reading.source {
+            if let source {
                 return "Override · \(source.name): \(source.value.displayText)"
             }
             return "Override · \(sourceKey)"
