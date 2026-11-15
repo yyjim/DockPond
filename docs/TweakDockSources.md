@@ -91,7 +91,7 @@ import FirebaseCore
 import FirebaseRemoteConfig
 import TweakDock
 
-// PassthroughSubject can send from any thread, so the class is safe to share.
+// PassthroughSubject is not Sendable. The class is safe to share because only the main thread calls didActivate().
 final class FirebaseValueProvider: TweakValueProvider, @unchecked Sendable {
     static let shared = FirebaseValueProvider()
     let name = "Firebase"
