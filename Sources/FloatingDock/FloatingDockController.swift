@@ -43,6 +43,8 @@ public final class FloatingDockController {
     public var tools: [DockTool] = [] { didSet { apply() } }
     /// Buttons that always appear in the panel header.
     public var actions: [FloatingDockAction] = [] { didSet { apply() } }
+    /// Starts as `configuration.panelBackground`.
+    public var panelBackground: FloatingDockPanelBackground { didSet { apply() } }
 
     private var buttonLabel: DockButtonLabel?
     private let windowController: DockWindowController
@@ -58,6 +60,7 @@ public final class FloatingDockController {
         self.systemImage = systemImage
         self.panelStyle = panelStyle
         self.tools = tools
+        self.panelBackground = configuration.panelBackground
         self.windowController = DockWindowController(configuration: configuration)
     }
 
@@ -130,7 +133,8 @@ public final class FloatingDockController {
             panelStyle: panelStyle,
             tools: tools,
             actions: AnyView(ActionButtons(actions: actions)),
-            label: buttonLabel
+            label: buttonLabel,
+            panelBackground: panelBackground
         ))
     }
 }

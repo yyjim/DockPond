@@ -6,7 +6,10 @@ struct DockPanel: View {
     let tint: Color
     let onClose: () -> Void
     let onContentHeightChange: () -> Void
+    let onHeaderDrag: (CGSize) -> Void
+    let onHeaderDragEnd: (_ releaseTranslation: CGSize?) -> Void
     @AppStorage private var selectedToolID: String
+    @GestureState private var isDraggingHeader = false
     @State private var collapsedToolIDs: Set<String> = []
 
     init(
@@ -14,13 +17,17 @@ struct DockPanel: View {
         id: String,
         tint: Color,
         onClose: @escaping () -> Void,
-        onContentHeightChange: @escaping () -> Void
+        onContentHeightChange: @escaping () -> Void,
+        onHeaderDrag: @escaping (CGSize) -> Void,
+        onHeaderDragEnd: @escaping (CGSize?) -> Void
     ) {
         self.model = model
         self.id = id
         self.tint = tint
         self.onClose = onClose
         self.onContentHeightChange = onContentHeightChange
+        self.onHeaderDrag = onHeaderDrag
+        self.onHeaderDragEnd = onHeaderDragEnd
         _selectedToolID = AppStorage(wrappedValue: "", "FloatingDock.\(id).tool")
     }
 
@@ -48,6 +55,15 @@ struct DockPanel: View {
             }
             .labelStyle(.iconOnly)
             .font(.title3)
+            .contentShape(.rect)
+            .gesture(headerDrag)
+            // A cancelled drag does not call onEnded.
+            .onChange(of: isDraggingHeader) { _, isDragging in
+                if !isDragging {
+                    onHeaderDragEnd(nil)
+                }
+            }
+            .accessibilityIdentifier("FloatingDock.\(id).header")
 
             if showsTabs {
                 Picker("Tool", selection: Binding(
@@ -79,12 +95,26 @@ struct DockPanel: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .tint(tint)
-        .background(.regularMaterial, in: .rect(cornerRadius: 22))
+        .background(content.panelBackground.style, in: .rect(cornerRadius: 22))
         .shadow(color: .black.opacity(0.25), radius: 16, y: 4)
         .environment(\.floatingDockScene, model.scene)
         .environment(\.dockPresentationCount, model.presentationCount)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("FloatingDock.\(id).panel")
+    }
+
+    // The global space stays in place while the panel moves under the finger.
+    private var headerDrag: some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .global)
+            .updating($isDraggingHeader) { _, isDragging, _ in isDragging = true }
+            .onChanged { onHeaderDrag($0.translation) }
+            .onEnded {
+                // predictedEndTranslation throws the panel much farther than the button goes.
+                onHeaderDragEnd(CGSize(
+                    width: $0.translation.width + $0.velocity.width * 0.12,
+                    height: $0.translation.height + $0.velocity.height * 0.12
+                ))
+            }
     }
 
     @ViewBuilder
