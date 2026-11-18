@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 /// Options for a floating dock. They apply when the dock is created; later changes
-/// are ignored.
+/// are ignored, except for `panelBackground`.
 public struct FloatingDockConfiguration {
     public enum Edge: String, Sendable {
         case leading, trailing, top, bottom
@@ -23,6 +23,13 @@ public struct FloatingDockConfiguration {
     /// The tint of the panel: its actions, its element controls, and the tool
     /// content. A view keeps its own tint if it sets one.
     public var tint: Color
+    /// The background of the panel. A SwiftUI dock follows later changes to this
+    /// value. In UIKit, set `panelBackground` of `FloatingDockController`.
+    public var panelBackground: FloatingDockPanelBackground
+    /// The user can always drag the panel header to move the open panel. If this
+    /// is `true`, the panel then docks to the nearest edge, as the button does.
+    /// If it is `false`, the panel stays where the user releases it.
+    public var panelSnapsToEdge: Bool
 
     public init(
         id: String = "default",
@@ -33,7 +40,9 @@ public struct FloatingDockConfiguration {
         idleOpacity: CGFloat = 0.45,
         closesOnOutsideTap: Bool = true,
         windowLevel: UIWindow.Level = .alert + 1,
-        tint: Color = .primary
+        tint: Color = .primary,
+        panelBackground: FloatingDockPanelBackground = .regular,
+        panelSnapsToEdge: Bool = true
     ) {
         self.id = id
         self.initialEdge = initialEdge
@@ -44,6 +53,54 @@ public struct FloatingDockConfiguration {
         self.closesOnOutsideTap = closesOnOutsideTap
         self.windowLevel = windowLevel
         self.tint = tint
+        self.panelBackground = panelBackground
+        self.panelSnapsToEdge = panelSnapsToEdge
+    }
+}
+
+/// How much of the app shows through the panel.
+///
+///     FloatingDockConfiguration(panelBackground: .translucent.opacity(0.7))
+public struct FloatingDockPanelBackground: Hashable, Sendable {
+    enum Fill: Hashable, Sendable {
+        case regularMaterial, ultraThinMaterial, color
+    }
+
+    var fill: Fill
+    var opacity: Double = 1
+
+    /// A blurred material that hides most of the app.
+    public static let regular = FloatingDockPanelBackground(fill: .regularMaterial)
+    /// A thin blurred material that shows more of the app.
+    public static let translucent = FloatingDockPanelBackground(fill: .ultraThinMaterial)
+    /// The system background color, with no blur. With a low opacity, the app
+    /// stays sharp behind the panel, but the controls are hard to read.
+    public static let plain = FloatingDockPanelBackground(fill: .color)
+
+    /// The same background at `opacity`, from 0 (invisible) to 1.
+    public func opacity(_ opacity: Double) -> FloatingDockPanelBackground {
+        FloatingDockPanelBackground(fill: fill, opacity: min(max(opacity, 0), 1))
+    }
+
+    var material: Material? {
+        switch fill {
+        case .regularMaterial: .regularMaterial
+        case .ultraThinMaterial: .ultraThinMaterial
+        case .color: nil
+        }
+    }
+
+    /// Vibrancy on a faded material is hard to read.
+    var vibrancyMaterial: Material? {
+        opacity >= 0.5 ? material : nil
+    }
+
+    var style: AnyShapeStyle {
+        if let material {
+            AnyShapeStyle(material.opacity(opacity))
+        } else {
+            AnyShapeStyle(Color(uiColor: .systemBackground).opacity(opacity))
+        }
     }
 }
 
@@ -301,7 +358,8 @@ extension View {
                     panelStyle: panelStyle,
                     tools: tools,
                     actions: actions,
-                    label: label
+                    label: label,
+                    panelBackground: configuration.panelBackground
                 ),
                 configuration: configuration
             )
@@ -325,6 +383,7 @@ struct DockContent {
     var tools: [DockTool] = []
     var actions = AnyView(EmptyView())
     var label: DockButtonLabel?
+    var panelBackground = FloatingDockPanelBackground.regular
 }
 
 @MainActor

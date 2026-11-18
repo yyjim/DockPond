@@ -55,6 +55,41 @@ final class FloatingDockUITests: XCTestCase {
     }
 
     @MainActor
+    func testHeaderDragMovesThePanelAndKeepsItOpen() {
+        let button = app.buttons["FloatingDock.dev-tools.button"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5))
+        button.tap()
+
+        let panel = app.descendants(matching: .any)["FloatingDock.dev-tools.panel"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 3))
+        waitForAnimations()
+        let start = panel.frame
+
+        let roomAbove = start.minY - app.frame.minY - 100
+        let roomBelow = app.frame.maxY - start.maxY - 100
+        XCTAssertGreaterThan(max(roomAbove, roomBelow), 40, "The window has room to move the panel")
+        let distance = roomAbove >= roomBelow ? -min(150, roomAbove) : min(150, roomBelow)
+
+        let header = panel.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 120, dy: 26))
+        header.press(forDuration: 0.1, thenDragTo: header.withOffset(CGVector(dx: 0, dy: distance)), withVelocity: .slow, thenHoldForDuration: 0.3)
+        waitForAnimations()
+        XCTAssertEqual(panel.frame.minY, start.minY + distance, accuracy: 25, "Panel follows the header drag")
+        XCTAssertEqual(panel.frame.minX, start.minX, accuracy: 12, "Panel keeps its horizontal position")
+        snapshot("12-panel-moved")
+
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.1)).tap()
+        waitForAnimations()
+        XCTAssertTrue(panel.isHittable, "A moved panel stays open on an outside tap")
+
+        let moved = panel.frame
+        app.buttons["Close"].tap()
+        waitForAnimations()
+        button.tap()
+        waitForAnimations()
+        XCTAssertEqual(panel.frame.minY, moved.minY, accuracy: 12, "Panel opens again where the user put it")
+    }
+
+    @MainActor
     func testHistoryActionClosesPanelAndOpensSheet() throws {
         let button = app.buttons["FloatingDock.dev-tools.button"]
         XCTAssertTrue(button.waitForExistence(timeout: 5))

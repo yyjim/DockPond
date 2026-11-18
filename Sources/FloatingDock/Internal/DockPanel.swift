@@ -5,16 +5,34 @@ struct DockPanel: View {
     let id: String
     let tint: Color
     let onClose: () -> Void
+    let onContentHeightChange: () -> Void
+    let onHeaderDrag: (CGSize) -> Void
+    let onHeaderDragEnd: (_ release: HeaderDragRelease?) -> Void
     @AppStorage private var selectedToolID: String
+    @GestureState private var isDraggingHeader = false
     @State private var collapsedToolIDs: Set<String> = []
 
-    init(model: DockModel, id: String, tint: Color, onClose: @escaping () -> Void) {
+    init(
+        model: DockModel,
+        id: String,
+        tint: Color,
+        onClose: @escaping () -> Void,
+        onContentHeightChange: @escaping () -> Void,
+        onHeaderDrag: @escaping (CGSize) -> Void,
+        onHeaderDragEnd: @escaping (HeaderDragRelease?) -> Void
+    ) {
         self.model = model
         self.id = id
         self.tint = tint
         self.onClose = onClose
+        self.onContentHeightChange = onContentHeightChange
+        self.onHeaderDrag = onHeaderDrag
+        self.onHeaderDragEnd = onHeaderDragEnd
         _selectedToolID = AppStorage(wrappedValue: "", "FloatingDock.\(id).tool")
     }
+
+    /// A shorter drag is a slip of the finger on the header.
+    static let headerDragMinimumDistance: CGFloat = 10
 
     var body: some View {
         let content = model.content
@@ -40,6 +58,14 @@ struct DockPanel: View {
             }
             .labelStyle(.iconOnly)
             .font(.title3)
+            .contentShape(.rect)
+            .gesture(headerDrag)
+            // A cancelled drag does not call onEnded.
+            .onChange(of: isDraggingHeader) { _, isDragging in
+                if !isDragging {
+                    onHeaderDragEnd(nil)
+                }
+            }
 
             if showsTabs {
                 Picker("Tool", selection: Binding(
@@ -59,6 +85,11 @@ struct DockPanel: View {
             ContentHeightLayout {
                 ScrollView {
                     toolsBody(tools: tools, showsTabs: showsTabs, selectedTool: selectedTool)
+                        // The preferred content size is the height with no width limit, so it does not
+                        // change when only the line wrap at the panel width changes.
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in
+                            onContentHeightChange()
+                        }
                 }
                 .scrollBounceBehavior(.basedOnSize)
             }
@@ -66,12 +97,22 @@ struct DockPanel: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .tint(tint)
-        .background(.regularMaterial, in: .rect(cornerRadius: 22))
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 4)
+        .background { PanelBackgroundView(background: content.panelBackground) }
+        // A material in a shape fill does not set this, and without it the
+        // secondary styles in the panel lose their vibrancy.
+        .environment(\.backgroundMaterial, content.panelBackground.vibrancyMaterial)
         .environment(\.floatingDockScene, model.scene)
         .environment(\.dockPresentationCount, model.presentationCount)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("FloatingDock.\(id).panel")
+    }
+
+    // The global space stays in place while the panel moves under the finger.
+    private var headerDrag: some Gesture {
+        DragGesture(minimumDistance: Self.headerDragMinimumDistance, coordinateSpace: .global)
+            .updating($isDraggingHeader) { _, isDragging, _ in isDragging = true }
+            .onChanged { onHeaderDrag($0.translation) }
+            .onEnded { onHeaderDragEnd(HeaderDragRelease(translation: $0.translation, velocity: $0.velocity)) }
     }
 
     @ViewBuilder
@@ -126,6 +167,39 @@ struct DockPanel: View {
                 tool.content
             }
         }
+    }
+}
+
+struct HeaderDragRelease {
+    var translation: CGSize
+    var velocity: CGSize
+}
+
+/// Draws the shadow only outside the shape, so that it does not darken a
+/// background that the app shows through.
+private struct PanelBackgroundView: View {
+    let background: FloatingDockPanelBackground
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+        ZStack {
+            shape
+                .fill(.black)
+                .shadow(color: .black.opacity(0.25), radius: 16, y: 4)
+                .mask { OutsideOf(shape: shape).fill(style: FillStyle(eoFill: true)) }
+            shape.fill(background.style)
+        }
+    }
+}
+
+private struct OutsideOf<Inner: Shape>: Shape {
+    let shape: Inner
+    let reach: CGFloat = 60
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path(rect.insetBy(dx: -reach, dy: -reach))
+        path.addPath(shape.path(in: rect))
+        return path
     }
 }
 

@@ -41,7 +41,11 @@ struct SwiftUIDemoApp: App {
                     title: "Style",
                     systemImage: "paintpalette",
                     panelStyle: .sections,
-                    configuration: FloatingDockConfiguration(id: "style", initialPosition: 0.35)
+                    configuration: FloatingDockConfiguration(
+                        id: "style",
+                        initialPosition: 0.35,
+                        panelBackground: settings.panelBackground.opacity(settings.panelOpacity)
+                    )
                 ) {
                     DockTool.selector("Fill", selection: $settings.itemStyle.fill, options: [
                         "Gradient": .gradient, "Solid": .solid, "Mono": .mono,
@@ -49,8 +53,14 @@ struct SwiftUIDemoApp: App {
                     DockTool.slider("Corners", value: $settings.itemStyle.cornerScale, in: 0...2)
                     DockTool.toggle("Summaries", isOn: $settings.itemStyle.showsSummaries)
                     DockTool.stepper("Lines", value: $settings.itemStyle.summaryLines, in: 1...4)
+                    DockTool.selector("Panel", selection: $settings.panelBackground, options: [
+                        "Regular": .regular, "Translucent": .translucent, "Plain": .plain,
+                    ])
+                    DockTool.slider("Panel opacity", value: $settings.panelOpacity, in: 0.1...1)
                     DockTool.button("Reset", systemImage: "arrow.counterclockwise") {
                         settings.itemStyle = ItemStyle()
+                        settings.panelBackground = .translucent
+                        settings.panelOpacity = 1
                     }
                 }
                 .gaugeDock(configuration: FloatingDockConfiguration(id: "gauge", initialEdge: .leading))
