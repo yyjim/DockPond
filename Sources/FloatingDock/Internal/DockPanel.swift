@@ -5,14 +5,22 @@ struct DockPanel: View {
     let id: String
     let tint: Color
     let onClose: () -> Void
+    let onContentHeightChange: () -> Void
     @AppStorage private var selectedToolID: String
     @State private var collapsedToolIDs: Set<String> = []
 
-    init(model: DockModel, id: String, tint: Color, onClose: @escaping () -> Void) {
+    init(
+        model: DockModel,
+        id: String,
+        tint: Color,
+        onClose: @escaping () -> Void,
+        onContentHeightChange: @escaping () -> Void
+    ) {
         self.model = model
         self.id = id
         self.tint = tint
         self.onClose = onClose
+        self.onContentHeightChange = onContentHeightChange
         _selectedToolID = AppStorage(wrappedValue: "", "FloatingDock.\(id).tool")
     }
 
@@ -59,6 +67,11 @@ struct DockPanel: View {
             ContentHeightLayout {
                 ScrollView {
                     toolsBody(tools: tools, showsTabs: showsTabs, selectedTool: selectedTool)
+                        // The preferred content size is the height with no width limit, so it does not
+                        // change when only the line wrap at the panel width changes.
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { _ in
+                            onContentHeightChange()
+                        }
                 }
                 .scrollBounceBehavior(.basedOnSize)
             }

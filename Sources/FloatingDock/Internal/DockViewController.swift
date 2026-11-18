@@ -9,7 +9,13 @@ final class DockViewController: UIViewController {
     private let labelModel: DockButtonLabelModel
     private var labelHost: UIHostingController<DockButtonLabelView>?
     private lazy var panelHost = UIHostingController(
-        rootView: DockPanel(model: model, id: configuration.id, tint: configuration.tint) { [weak self] in self?.setExpanded(false) }
+        rootView: DockPanel(
+            model: model,
+            id: configuration.id,
+            tint: configuration.tint,
+            onClose: { [weak self] in self?.setExpanded(false) },
+            onContentHeightChange: { [weak self] in self?.relayoutPanelForNewContentSize() }
+        )
     )
     private var position: DockPosition
     private(set) var isExpanded = false
@@ -74,6 +80,10 @@ final class DockViewController: UIViewController {
     /// collapse, or new rows.
     override func preferredContentSizeDidChange(forChildContentContainer container: any UIContentContainer) {
         super.preferredContentSizeDidChange(forChildContentContainer: container)
+        relayoutPanelForNewContentSize()
+    }
+
+    private func relayoutPanelForNewContentSize() {
         guard isExpanded else { return }
         UIView.animate(springDuration: 0.3, bounce: 0, options: .allowUserInteraction) {
             self.layoutPanel()
