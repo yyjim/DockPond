@@ -101,7 +101,7 @@ final class DockWindowController {
         window.rootViewController = viewController
         if configuration.closesOnOutsideTap {
             window.onOutsideTouch = { [weak viewController] in
-                guard let viewController, viewController.isExpanded else { return }
+                guard let viewController, viewController.isExpanded, !viewController.isPanelMoved else { return }
                 Task { @MainActor in viewController.setExpanded(false) }
             }
         }

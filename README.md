@@ -57,6 +57,7 @@ The dock shows a button in a separate window above the app, also above sheets.
 - Drag the button. When you release it, it moves to the nearest screen edge. The dock keeps this position after rotation, a fold, and a new launch.
 - After a period without use, the button fades.
 - Tap the button to open the panel. Tap outside the panel to close it. The app also receives that tap.
+- Drag the panel header to move the open panel. The panel docks to the nearest edge. A moved panel stays open when you tap outside it. It opens at the same place until you move the button. A panel that you release within 10 points of its place at the button is not a moved panel.
 - Tap a panel action to close the panel and run the action.
 
 ### SwiftUI
@@ -97,7 +98,7 @@ The content view must calculate its size with Auto Layout. You can also give a S
 
 ### Configuration
 
-Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, when you create the dock.
+Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, when you create the dock. Only `panelBackground` can change later.
 
 | Option | Default | Use |
 |---|---|---|
@@ -108,6 +109,8 @@ Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, 
 | `closesOnOutsideTap` | `true` | Closes the panel when a tap occurs outside it. |
 | `windowLevel` | `.alert + 1` | The level of the dock window. |
 | `tint` | `.primary` | The tint of the panel: its actions, its element controls, and the tool content. A view keeps its own tint if it sets one. |
+| `panelBackground` | `.regular` | How much of the app shows through the panel. `.translucent` uses a thinner blur. `.plain` uses the system background color with no blur. Add `.opacity(_:)` to any of them, for example `.translucent.opacity(0.7)`. A SwiftUI dock follows later changes to this option. In UIKit, set `panelBackground` of the controller. |
+| `panelSnapsToEdge` | `true` | Docks the panel to the nearest edge after the user moves it. If it is `false`, the panel stays where the user releases it. A drag of less than 10 points does not move the panel. |
 
 ### Tools
 

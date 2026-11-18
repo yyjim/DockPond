@@ -38,6 +38,8 @@ This file records the decisions, the current status, and the next steps for Dock
 
 - The app installs a dock at launch. There is no switch in the app to remove it.
 - The dock button moves like AssistiveTouch. It docks to the nearest edge. It saves its edge and position in `UserDefaults` (`FloatingDock.<id>.edge`, `FloatingDock.<id>.fraction`).
+- A drag on the panel header moves the open panel. The panel then docks to the nearest edge, unless `panelSnapsToEdge` is `false`. A moved panel ignores outside taps. The dock keeps the panel place in memory only, and a drag of the button clears it.
+- `panelBackground` sets how much of the app shows through the panel: `.regular`, `.translucent`, or `.plain`, each with an optional `.opacity(_:)`. It is the only configuration option that a dock follows after creation.
 - An app can have more than one dock. Only one panel is open at a time in a window scene.
 - A dock holds one or more `DockTool` values. `panelStyle` is `.tabs` or `.sections`.
 - A panel with one tool shows no tabs and no section header.

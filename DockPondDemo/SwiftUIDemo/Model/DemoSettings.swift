@@ -1,3 +1,4 @@
+import FloatingDock
 import SwiftUI
 
 @Observable
@@ -6,6 +7,8 @@ final class DemoSettings {
     var axisOverride = UserDefaults.standard.string(forKey: "FoldAxisOverride").flatMap(FoldAxis.init(rawValue:))
     var showsFoldLine = true
     var itemStyle = ItemStyle()
+    var panelBackground = FloatingDockPanelBackground.translucent
+    var panelOpacity = 1.0
     var selection: Item?
     var isShowingHistory = false
     private(set) var events: [HingeEvent] = []
