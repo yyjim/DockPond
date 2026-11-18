@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 /// Options for a floating dock. They apply when the dock is created; later changes
-/// are ignored.
+/// are ignored, except for `panelBackground`.
 public struct FloatingDockConfiguration {
     public enum Edge: String, Sendable {
         case leading, trailing, top, bottom
@@ -73,7 +73,7 @@ public struct FloatingDockPanelBackground: Hashable, Sendable {
     public static let regular = FloatingDockPanelBackground(fill: .regularMaterial)
     /// A thin blurred material that shows more of the app.
     public static let translucent = FloatingDockPanelBackground(fill: .ultraThinMaterial)
-    /// The system background colour, with no blur. With a low opacity, the app
+    /// The system background color, with no blur. With a low opacity, the app
     /// stays sharp behind the panel, but the controls are hard to read.
     public static let plain = FloatingDockPanelBackground(fill: .color)
 
@@ -82,11 +82,19 @@ public struct FloatingDockPanelBackground: Hashable, Sendable {
         FloatingDockPanelBackground(fill: fill, opacity: min(max(opacity, 0), 1))
     }
 
-    var style: AnyShapeStyle {
+    var material: Material? {
         switch fill {
-        case .regularMaterial: AnyShapeStyle(.regularMaterial.opacity(opacity))
-        case .ultraThinMaterial: AnyShapeStyle(.ultraThinMaterial.opacity(opacity))
-        case .color: AnyShapeStyle(Color(uiColor: .systemBackground).opacity(opacity))
+        case .regularMaterial: .regularMaterial
+        case .ultraThinMaterial: .ultraThinMaterial
+        case .color: nil
+        }
+    }
+
+    var style: AnyShapeStyle {
+        if let material {
+            AnyShapeStyle(material.opacity(opacity))
+        } else {
+            AnyShapeStyle(Color(uiColor: .systemBackground).opacity(opacity))
         }
     }
 }

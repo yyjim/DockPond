@@ -55,6 +55,13 @@ struct PanelPlacementTests {
         #expect(PanelPlacement.snapped(origin: CGPoint(x: 440, y: 22), size: almostAsTall, in: area).edge == .trailing)
     }
 
+    @Test func equalGapsGoToThePreferredEdge() {
+        let phone = CGRect(x: 8, y: 60, width: 340, height: 700)
+        let origin = CGPoint(x: 8, y: 300)
+        #expect(PanelPlacement.snapped(origin: origin, size: size, in: phone, preferring: .trailing).edge == .trailing)
+        #expect(PanelPlacement.snapped(origin: origin, size: size, in: phone, preferring: .top).edge == .leading)
+    }
+
     @Test func aSnappedPanelStaysOnItsEdgeWhenTheAreaChanges() {
         let placement = PanelPlacement.snapped(origin: CGPoint(x: 460, y: 100), size: size, in: area)
         let wider = CGRect(x: 0, y: 0, width: 1200, height: 600)

@@ -98,7 +98,7 @@ The content view must calculate its size with Auto Layout. You can also give a S
 
 ### Configuration
 
-Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, when you create the dock.
+Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, when you create the dock. Only `panelBackground` can change later.
 
 | Option | Default | Use |
 |---|---|---|
@@ -109,7 +109,7 @@ Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, 
 | `closesOnOutsideTap` | `true` | Closes the panel when a tap occurs outside it. |
 | `windowLevel` | `.alert + 1` | The level of the dock window. |
 | `tint` | `.primary` | The tint of the panel: its actions, its element controls, and the tool content. A view keeps its own tint if it sets one. |
-| `panelBackground` | `.regular` | How much of the app shows through the panel. `.translucent` uses a thinner blur. `.plain` uses the system background colour with no blur. Add `.opacity(_:)` to any of them, for example `.translucent.opacity(0.7)`. A SwiftUI dock follows later changes to this option. In UIKit, set `panelBackground` of the controller. |
+| `panelBackground` | `.regular` | How much of the app shows through the panel. `.translucent` uses a thinner blur. `.plain` uses the system background color with no blur. Add `.opacity(_:)` to any of them, for example `.translucent.opacity(0.7)`. A SwiftUI dock follows later changes to this option. In UIKit, set `panelBackground` of the controller. |
 | `panelSnapsToEdge` | `true` | Docks the panel to the nearest edge after the user moves it. If it is `false`, the panel stays where the user releases it. A drag of less than 10 points does not move the panel. |
 
 ### Tools

@@ -21,11 +21,7 @@ final class DockViewController: UIViewController {
     )
     private var position: DockPosition
     private var panelPlacement: PanelPlacement?
-    private var panelDragStartOrigin: CGPoint?
-    private var placementBeforeDrag: PanelPlacement?
-    /// A drag that moves the panel less than this is a slip of the finger on the
-    /// header. It must not keep the panel open on outside taps.
-    private let slipDistance: CGFloat = 10
+    private var panelDrag: PanelDrag?
     /// The user moved the panel away from the button, so it stays open while the
     /// user touches the app.
     var isPanelMoved: Bool { panelPlacement != nil }
@@ -209,13 +205,10 @@ final class DockViewController: UIViewController {
         guard isExpanded else { return }
         let size = panelHost.view.bounds.size
         let area = dockingArea
-        if panelDragStartOrigin == nil {
-            panelDragStartOrigin = panelOrigin
-            placementBeforeDrag = panelPlacement
-        }
-        guard let start = panelDragStartOrigin else { return }
+        let drag = panelDrag ?? PanelDrag(startOrigin: panelOrigin, placementBefore: panelPlacement)
+        panelDrag = drag
         let placement = PanelPlacement(
-            origin: CGPoint(x: start.x + translation.width, y: start.y + translation.height),
+            origin: CGPoint(x: drag.startOrigin.x + translation.width, y: drag.startOrigin.y + translation.height),
             size: size,
             in: area
         )
@@ -224,15 +217,14 @@ final class DockViewController: UIViewController {
     }
 
     private func endPanelDrag(release: HeaderDragRelease?) {
-        guard let start = panelDragStartOrigin else { return }
-        panelDragStartOrigin = nil
+        guard let drag = panelDrag else { return }
+        panelDrag = nil
         let size = panelHost.view.bounds.size
         let area = dockingArea
+        let start = drag.startOrigin
         let shown = panelOrigin
-        let isSlip = abs(shown.x - start.x) < slipDistance && abs(shown.y - start.y) < slipDistance
-        if isSlip {
-            panelPlacement = placementBeforeDrag
-        } else if configuration.panelSnapsToEdge {
+        var resting = panelPlacement
+        if configuration.panelSnapsToEdge {
             // A panel that closed during the drag did not follow the rest of it.
             let thrown = isExpanded ? release.map {
                 CGPoint(
@@ -240,10 +232,19 @@ final class DockViewController: UIViewController {
                     y: start.y + $0.translation.height + $0.velocity.height * releaseThrow
                 )
             } : nil
-            panelPlacement = .snapped(origin: thrown ?? shown, size: size, in: area)
-        } else {
-            return
+            resting = .snapped(origin: thrown ?? shown, size: size, in: area, preferring: position.edge)
         }
+        // A slip of the finger, or a snap back to the start, must not keep the
+        // panel open on outside taps.
+        let isAtStart = { (origin: CGPoint) in
+            abs(origin.x - start.x) < DockPanel.headerDragMinimumDistance
+                && abs(origin.y - start.y) < DockPanel.headerDragMinimumDistance
+        }
+        if isAtStart(shown) || resting.map({ isAtStart($0.origin(for: size, in: area)) }) == true {
+            resting = drag.placementBefore
+        }
+        guard resting != panelPlacement else { return }
+        panelPlacement = resting
         guard isExpanded else { return }
         UIView.animate(springDuration: 0.45, bounce: 0.25, options: .allowUserInteraction) {
             self.layoutPanel()
@@ -421,6 +422,11 @@ struct DockPosition: Equatable {
     }
 }
 
+struct PanelDrag {
+    var startOrigin: CGPoint
+    var placementBefore: PanelPlacement?
+}
+
 /// Where the user put the panel: its top centre, as a fraction of the docking
 /// area. The top edge stays in place when the content height changes, and the
 /// spot survives rotation and folding. With an `edge`, the panel also stays
@@ -441,10 +447,12 @@ struct PanelPlacement: Equatable {
     }
 
     /// Docks to the edge with the smallest gap to the panel. A panel as wide as
-    /// the area is on a side edge, so it keeps its vertical position. Without the
+    /// the area is on a side edge, so it keeps its vertical position. Equal gaps
+    /// go to the `preferred` edge, so such a panel stays on the side of the button
+    /// when the area becomes wider. Without the
     /// height check, the small top or bottom gap of a tall panel always wins, and
     /// the panel never docks to a side.
-    static func snapped(origin: CGPoint, size: CGSize, in area: CGRect) -> PanelPlacement {
+    static func snapped(origin: CGPoint, size: CGSize, in area: CGRect, preferring preferred: Edge? = nil) -> PanelPlacement {
         let origin = clamped(origin, size: size, in: area)
         var gaps: [(Edge, CGFloat)] = [
             (.leading, origin.x - area.minX),
@@ -456,7 +464,7 @@ struct PanelPlacement: Equatable {
                 (.bottom, area.maxY - origin.y - size.height),
             ]
         }
-        let edge = gaps.min { $0.1 < $1.1 }?.0
+        let edge = gaps.min { ($0.1, $0.0 == preferred ? 0 : 1) < ($1.1, $1.0 == preferred ? 0 : 1) }?.0
         return PanelPlacement(origin: origin, size: size, in: area, edge: edge)
     }
 

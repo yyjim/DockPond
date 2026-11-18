@@ -31,6 +31,9 @@ struct DockPanel: View {
         _selectedToolID = AppStorage(wrappedValue: "", "FloatingDock.\(id).tool")
     }
 
+    /// A shorter drag is a slip of the finger on the header.
+    static let headerDragMinimumDistance: CGFloat = 10
+
     var body: some View {
         let content = model.content
         let tools = DockTool.groupingElements(content.tools)
@@ -95,6 +98,9 @@ struct DockPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .tint(tint)
         .background { PanelBackgroundView(background: content.panelBackground) }
+        // A material in a shape fill does not set this, and without it the
+        // secondary styles in the panel lose their vibrancy.
+        .environment(\.backgroundMaterial, content.panelBackground.material)
         .environment(\.floatingDockScene, model.scene)
         .environment(\.dockPresentationCount, model.presentationCount)
         .accessibilityElement(children: .contain)
@@ -103,7 +109,7 @@ struct DockPanel: View {
 
     // The global space stays in place while the panel moves under the finger.
     private var headerDrag: some Gesture {
-        DragGesture(minimumDistance: 4, coordinateSpace: .global)
+        DragGesture(minimumDistance: Self.headerDragMinimumDistance, coordinateSpace: .global)
             .updating($isDraggingHeader) { _, isDragging, _ in isDragging = true }
             .onChanged { onHeaderDrag($0.translation) }
             .onEnded { onHeaderDragEnd(HeaderDragRelease(translation: $0.translation, velocity: $0.velocity)) }
