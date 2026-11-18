@@ -67,8 +67,8 @@ final class FloatingDockUITests: XCTestCase {
 
         let roomAbove = start.minY - app.frame.minY - 100
         let roomBelow = app.frame.maxY - start.maxY - 100
+        XCTAssertGreaterThan(max(roomAbove, roomBelow), 40, "The window has room to move the panel")
         let distance = roomAbove >= roomBelow ? -min(150, roomAbove) : min(150, roomBelow)
-        XCTAssertGreaterThan(abs(distance), 40, "The window has room to move the panel")
 
         let header = panel.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 120, dy: 26))
         header.press(forDuration: 0.1, thenDragTo: header.withOffset(CGVector(dx: 0, dy: distance)), withVelocity: .slow, thenHoldForDuration: 0.3)

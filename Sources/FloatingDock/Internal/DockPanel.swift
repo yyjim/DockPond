@@ -99,8 +99,9 @@ struct DockPanel: View {
         .tint(tint)
         .background { PanelBackgroundView(background: content.panelBackground) }
         // A material in a shape fill does not set this, and without it the
-        // secondary styles in the panel lose their vibrancy.
-        .environment(\.backgroundMaterial, content.panelBackground.material)
+        // secondary styles in the panel lose their vibrancy. Vibrancy on a faded
+        // material is hard to read.
+        .environment(\.backgroundMaterial, content.panelBackground.opacity == 1 ? content.panelBackground.material : nil)
         .environment(\.floatingDockScene, model.scene)
         .environment(\.dockPresentationCount, model.presentationCount)
         .accessibilityElement(children: .contain)

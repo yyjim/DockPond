@@ -60,6 +60,9 @@ struct PanelPlacementTests {
         let origin = CGPoint(x: 8, y: 300)
         #expect(PanelPlacement.snapped(origin: origin, size: size, in: phone, preferring: .trailing).edge == .trailing)
         #expect(PanelPlacement.snapped(origin: origin, size: size, in: phone, preferring: .top).edge == .leading)
+
+        let fractional = CGRect(x: 8.3, y: 60, width: 340.4, height: 700)
+        #expect(PanelPlacement.snapped(origin: origin, size: size, in: fractional, preferring: .trailing).edge == .trailing)
     }
 
     @Test func aSnappedPanelStaysOnItsEdgeWhenTheAreaChanges() {
