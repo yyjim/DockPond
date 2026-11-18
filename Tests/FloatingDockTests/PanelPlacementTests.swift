@@ -55,14 +55,6 @@ struct PanelPlacementTests {
         #expect(PanelPlacement.snapped(origin: CGPoint(x: 440, y: 22), size: almostAsTall, in: area).edge == .trailing)
     }
 
-    @Test func aSmallSlipLeavesThePanelNearItsHome() {
-        let home = CGPoint(x: 470, y: 200)
-        let slip = PanelPlacement.snapped(origin: CGPoint(x: 462, y: 205), size: size, in: area)
-        let move = PanelPlacement.snapped(origin: CGPoint(x: 462, y: 300), size: size, in: area)
-        #expect(slip.isNear(home, size: size, in: area))
-        #expect(!move.isNear(home, size: size, in: area))
-    }
-
     @Test func aSnappedPanelStaysOnItsEdgeWhenTheAreaChanges() {
         let placement = PanelPlacement.snapped(origin: CGPoint(x: 460, y: 100), size: size, in: area)
         let wider = CGRect(x: 0, y: 0, width: 1200, height: 600)

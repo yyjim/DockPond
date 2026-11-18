@@ -110,7 +110,7 @@ Use `FloatingDockConfiguration` to change the dock. The dock reads it one time, 
 | `windowLevel` | `.alert + 1` | The level of the dock window. |
 | `tint` | `.primary` | The tint of the panel: its actions, its element controls, and the tool content. A view keeps its own tint if it sets one. |
 | `panelBackground` | `.regular` | How much of the app shows through the panel. `.translucent` uses a thinner blur. `.plain` uses the system background colour with no blur. Add `.opacity(_:)` to any of them, for example `.translucent.opacity(0.7)`. A SwiftUI dock follows later changes to this option. In UIKit, set `panelBackground` of the controller. |
-| `panelSnapsToEdge` | `true` | Docks the panel to the nearest edge after the user moves it. If it is `false`, the panel stays where the user releases it. |
+| `panelSnapsToEdge` | `true` | Docks the panel to the nearest edge after the user moves it. If it is `false`, the panel stays where the user releases it. A drag of less than 10 points does not move the panel. |
 
 ### Tools
 

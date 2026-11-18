@@ -22,6 +22,10 @@ final class DockViewController: UIViewController {
     private var position: DockPosition
     private var panelPlacement: PanelPlacement?
     private var panelDragStartOrigin: CGPoint?
+    private var placementBeforeDrag: PanelPlacement?
+    /// A drag that moves the panel less than this is a slip of the finger on the
+    /// header. It must not keep the panel open on outside taps.
+    private let slipDistance: CGFloat = 10
     /// The user moved the panel away from the button, so it stays open while the
     /// user touches the app.
     var isPanelMoved: Bool { panelPlacement != nil }
@@ -205,8 +209,11 @@ final class DockViewController: UIViewController {
         guard isExpanded else { return }
         let size = panelHost.view.bounds.size
         let area = dockingArea
-        let start = panelDragStartOrigin ?? panelOrigin
-        panelDragStartOrigin = start
+        if panelDragStartOrigin == nil {
+            panelDragStartOrigin = panelOrigin
+            placementBeforeDrag = panelPlacement
+        }
+        guard let start = panelDragStartOrigin else { return }
         let placement = PanelPlacement(
             origin: CGPoint(x: start.x + translation.width, y: start.y + translation.height),
             size: size,
@@ -221,8 +228,11 @@ final class DockViewController: UIViewController {
         panelDragStartOrigin = nil
         let size = panelHost.view.bounds.size
         let area = dockingArea
-        var placement = panelPlacement
-        if configuration.panelSnapsToEdge {
+        let shown = panelOrigin
+        let isSlip = abs(shown.x - start.x) < slipDistance && abs(shown.y - start.y) < slipDistance
+        if isSlip {
+            panelPlacement = placementBeforeDrag
+        } else if configuration.panelSnapsToEdge {
             // A panel that closed during the drag did not follow the rest of it.
             let thrown = isExpanded ? release.map {
                 CGPoint(
@@ -230,14 +240,10 @@ final class DockViewController: UIViewController {
                     y: start.y + $0.translation.height + $0.velocity.height * releaseThrow
                 )
             } : nil
-            placement = .snapped(origin: thrown ?? panelOrigin, size: size, in: area)
+            panelPlacement = .snapped(origin: thrown ?? shown, size: size, in: area)
+        } else {
+            return
         }
-        let home = originAtButton(for: size, in: area)
-        if placement?.isNear(home, size: size, in: area) == true {
-            placement = nil
-        }
-        guard placement != panelPlacement else { return }
-        panelPlacement = placement
         guard isExpanded else { return }
         UIView.animate(springDuration: 0.45, bounce: 0.25, options: .allowUserInteraction) {
             self.layoutPanel()
@@ -455,13 +461,6 @@ struct PanelPlacement: Equatable {
     }
 
     private static let minimumFreeHeightForTopOrBottom: CGFloat = 44
-    private static let homeDistance: CGFloat = 16
-
-    /// A slip of the finger on the header must not count as a move.
-    func isNear(_ home: CGPoint, size: CGSize, in area: CGRect) -> Bool {
-        let origin = origin(for: size, in: area)
-        return abs(origin.x - home.x) < Self.homeDistance && abs(origin.y - home.y) < Self.homeDistance
-    }
 
     func origin(for size: CGSize, in area: CGRect) -> CGPoint {
         var origin = CGPoint(
