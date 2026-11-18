@@ -57,7 +57,7 @@ The dock shows a button in a separate window above the app, also above sheets.
 - Drag the button. When you release it, it moves to the nearest screen edge. The dock keeps this position after rotation, a fold, and a new launch.
 - After a period without use, the button fades.
 - Tap the button to open the panel. Tap outside the panel to close it. The app also receives that tap.
-- Drag the panel header to move the open panel. The panel docks to the nearest edge. A moved panel stays open when you tap outside it. It opens at the same place until you move the button.
+- Drag the panel header to move the open panel. The panel docks to the nearest edge. A moved panel stays open when you tap outside it. It opens at the same place until you move the button. A panel that you release within 10 points of its place at the button is not a moved panel.
 - Tap a panel action to close the panel and run the action.
 
 ### SwiftUI

@@ -22,6 +22,8 @@ final class DockViewController: UIViewController {
     private var position: DockPosition
     private var panelPlacement: PanelPlacement?
     private var panelDrag: PanelDrag?
+    /// A panel that rests this near to the button position is not a moved panel.
+    private let homeDistance: CGFloat = 10
     /// The user moved the panel away from the button, so it stays open while the
     /// user touches the app.
     var isPanelMoved: Bool { panelPlacement != nil }
@@ -216,28 +218,26 @@ final class DockViewController: UIViewController {
         panelOrigin = placement.origin(for: size, in: area)
     }
 
-    private func endPanelDrag(release: HeaderDragRelease?) {
+    private func endPanelDrag(release dragRelease: HeaderDragRelease?) {
         guard let drag = panelDrag else { return }
         panelDrag = nil
         let size = panelHost.view.bounds.size
         let area = dockingArea
-        let shown = panelOrigin
+        var release = panelOrigin
+        // A panel that closed during the drag did not follow the rest of it.
+        if configuration.panelSnapsToEdge, isExpanded, let dragRelease {
+            release = drag.origin(at: dragRelease.translation, thrownBy: dragRelease.velocity, for: releaseThrow)
+        }
         var resting = panelPlacement
-        if hypot(shown.x - drag.startOrigin.x, shown.y - drag.startOrigin.y) < 1 {
+        if release.distance(to: drag.startOrigin) < 1 {
             resting = drag.placementBefore
         } else {
             if configuration.panelSnapsToEdge {
-                // A panel that closed during the drag did not follow the rest of it.
-                let thrown = isExpanded ? release.map {
-                    let end = drag.origin(at: $0.translation)
-                    return CGPoint(x: end.x + $0.velocity.width * releaseThrow, y: end.y + $0.velocity.height * releaseThrow)
-                } : nil
-                resting = .snapped(origin: thrown ?? shown, size: size, in: area, preferring: position.edge)
+                resting = .snapped(origin: release, size: size, in: area, preferring: position.edge)
             }
             // A panel back at the button must close on outside taps again.
             let home = originAtButton(for: size, in: area)
-            if let origin = resting?.origin(for: size, in: area),
-               hypot(origin.x - home.x, origin.y - home.y) < DockPanel.headerDragMinimumDistance {
+            if let origin = resting?.origin(for: size, in: area), origin.distance(to: home) < homeDistance {
                 resting = nil
             }
         }
@@ -427,11 +427,17 @@ struct PanelDrag {
     /// this, the panel jumps that far at the start.
     var firstTranslation: CGSize
 
-    func origin(at translation: CGSize) -> CGPoint {
+    func origin(at translation: CGSize, thrownBy velocity: CGSize = .zero, for seconds: CGFloat = 0) -> CGPoint {
         CGPoint(
-            x: startOrigin.x + translation.width - firstTranslation.width,
-            y: startOrigin.y + translation.height - firstTranslation.height
+            x: startOrigin.x + translation.width - firstTranslation.width + velocity.width * seconds,
+            y: startOrigin.y + translation.height - firstTranslation.height + velocity.height * seconds
         )
+    }
+}
+
+private extension CGPoint {
+    func distance(to other: CGPoint) -> CGFloat {
+        hypot(x - other.x, y - other.y)
     }
 }
 
@@ -455,11 +461,12 @@ struct PanelPlacement: Equatable {
     }
 
     /// Docks to the edge with the smallest gap to the panel. A panel as wide as
-    /// the area is on a side edge, so it keeps its vertical position. Equal gaps
-    /// go to a `preferred` side edge, so such a panel stays on the side of the
-    /// button when the area becomes wider. Without the
-    /// height check, the small top or bottom gap of a tall panel always wins, and
-    /// the panel never docks to a side.
+    /// the area is on a side edge, so it keeps its vertical position. Gaps within
+    /// one point of the smallest gap go to a `preferred` side edge, so such a
+    /// panel stays on the side of the button when the area becomes wider.
+    ///
+    /// Without the height check, the small top or bottom gap of a tall panel
+    /// always wins, and the panel never docks to a side.
     static func snapped(origin: CGPoint, size: CGSize, in area: CGRect, preferring preferred: Edge? = nil) -> PanelPlacement {
         let origin = clamped(origin, size: size, in: area)
         var gaps: [(Edge, CGFloat)] = [
@@ -473,10 +480,9 @@ struct PanelPlacement: Equatable {
             ]
         }
         let preferredSide = preferred == .leading || preferred == .trailing ? preferred : nil
-        let rank = { (gap: (Edge, CGFloat)) in
-            (max(0, gap.1).rounded(), gap.0 == preferredSide ? 0 : 1)
-        }
-        let edge = gaps.min { rank($0) < rank($1) }?.0
+        let smallest = gaps.map(\.1).min() ?? 0
+        let nearest = gaps.filter { $0.1 - smallest < 1 }.map(\.0)
+        let edge = nearest.first { $0 == preferredSide } ?? nearest.first
         return PanelPlacement(origin: origin, size: size, in: area, edge: edge)
     }
 

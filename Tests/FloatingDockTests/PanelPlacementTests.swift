@@ -61,8 +61,20 @@ struct PanelPlacementTests {
         #expect(PanelPlacement.snapped(origin: origin, size: size, in: phone, preferring: .trailing).edge == .trailing)
         #expect(PanelPlacement.snapped(origin: origin, size: size, in: phone, preferring: .top).edge == .leading)
 
-        let fractional = CGRect(x: 8.3, y: 60, width: 340.4, height: 700)
+        let fractional = CGRect(x: 8.3, y: 60, width: 340.6, height: 700)
         #expect(PanelPlacement.snapped(origin: origin, size: size, in: fractional, preferring: .trailing).edge == .trailing)
+    }
+
+    @Test func aDragStartsAtThePanelOriginAndThrowsWithTheVelocity() {
+        let drag = PanelDrag(
+            startOrigin: CGPoint(x: 100, y: 150),
+            placementBefore: nil,
+            firstTranslation: CGSize(width: 0, height: 10)
+        )
+        #expect(drag.origin(at: CGSize(width: 0, height: 10)) == CGPoint(x: 100, y: 150))
+        #expect(drag.origin(at: CGSize(width: 30, height: 50)) == CGPoint(x: 130, y: 190))
+        let thrown = drag.origin(at: CGSize(width: 30, height: 50), thrownBy: CGSize(width: 100, height: 0), for: 0.5)
+        #expect(thrown == CGPoint(x: 180, y: 190))
     }
 
     @Test func aSnappedPanelStaysOnItsEdgeWhenTheAreaChanges() {

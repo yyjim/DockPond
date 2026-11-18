@@ -90,6 +90,11 @@ public struct FloatingDockPanelBackground: Hashable, Sendable {
         }
     }
 
+    /// Vibrancy on a faded material is hard to read.
+    var vibrancyMaterial: Material? {
+        opacity >= 0.5 ? material : nil
+    }
+
     var style: AnyShapeStyle {
         if let material {
             AnyShapeStyle(material.opacity(opacity))

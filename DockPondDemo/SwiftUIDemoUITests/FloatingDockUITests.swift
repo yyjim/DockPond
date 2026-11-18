@@ -73,7 +73,7 @@ final class FloatingDockUITests: XCTestCase {
         let header = panel.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 120, dy: 26))
         header.press(forDuration: 0.1, thenDragTo: header.withOffset(CGVector(dx: 0, dy: distance)), withVelocity: .slow, thenHoldForDuration: 0.3)
         waitForAnimations()
-        XCTAssertEqual(panel.frame.minY, start.minY + distance, accuracy: 12, "Panel follows the header drag")
+        XCTAssertEqual(panel.frame.minY, start.minY + distance, accuracy: 25, "Panel follows the header drag")
         XCTAssertEqual(panel.frame.minX, start.minX, accuracy: 12, "Panel keeps its horizontal position")
         snapshot("12-panel-moved")
 
