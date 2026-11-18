@@ -45,6 +45,13 @@ struct PanelPlacementTests {
         #expect(placement.origin(for: size, in: phone) == CGPoint(x: 8, y: 300))
     }
 
+    @Test func aPanelAsTallAsTheAreaDocksToASideEdge() {
+        let tall = CGSize(width: 340, height: 600)
+        let placement = PanelPlacement.snapped(origin: CGPoint(x: 440, y: 20), size: tall, in: area)
+        #expect(placement.edge == .trailing)
+        #expect(placement.origin(for: tall, in: area) == CGPoint(x: 470, y: 20))
+    }
+
     @Test func aSnappedPanelStaysOnItsEdgeWhenTheAreaChanges() {
         let placement = PanelPlacement.snapped(origin: CGPoint(x: 460, y: 100), size: size, in: area)
         let wider = CGRect(x: 0, y: 0, width: 1200, height: 600)

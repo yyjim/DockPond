@@ -16,7 +16,7 @@ final class DockViewController: UIViewController {
             onClose: { [weak self] in self?.setExpanded(false) },
             onContentHeightChange: { [weak self] in self?.relayoutPanelForNewContentSize() },
             onHeaderDrag: { [weak self] in self?.movePanel(by: $0) },
-            onHeaderDragEnd: { [weak self] in self?.endPanelDrag(releaseTranslation: $0) }
+            onHeaderDragEnd: { [weak self] in self?.endPanelDrag(release: $0) }
         )
     )
     private var position: DockPosition
@@ -31,6 +31,8 @@ final class DockViewController: UIViewController {
     private var idleTask: Task<Void, Never>?
 
     private let margin: CGFloat = 8
+    /// How far a release velocity throws the button or the panel, in seconds.
+    private let releaseThrow: CGFloat = 0.12
     private let panelMaxWidth: CGFloat = 340
     private var buttonSize: CGSize { CGSize(width: configuration.buttonSize, height: configuration.buttonSize) }
 
@@ -169,7 +171,18 @@ final class DockViewController: UIViewController {
 
         let origin = panelPlacement?.origin(for: size, in: area) ?? originAtButton(for: size, in: area)
         panelHost.view.bounds.size = size
-        panelHost.view.center = CGPoint(x: origin.x + size.width / 2, y: origin.y + size.height / 2)
+        panelOrigin = origin
+    }
+
+    private var panelOrigin: CGPoint {
+        get {
+            let panel = panelHost.view!
+            return CGPoint(x: panel.center.x - panel.bounds.width / 2, y: panel.center.y - panel.bounds.height / 2)
+        }
+        set {
+            let panel = panelHost.view!
+            panel.center = CGPoint(x: newValue.x + panel.bounds.width / 2, y: newValue.y + panel.bounds.height / 2)
+        }
     }
 
     private func originAtButton(for size: CGSize, in area: CGRect) -> CGPoint {
@@ -184,35 +197,42 @@ final class DockViewController: UIViewController {
         case .bottom:
             origin = CGPoint(x: button.center.x - size.width / 2, y: area.maxY - size.height)
         }
-        origin.x = min(max(origin.x, area.minX), area.maxX - size.width)
-        origin.y = min(max(origin.y, area.minY), area.maxY - size.height)
-        return origin
+        return PanelPlacement.clamped(origin, size: size, in: area)
     }
 
     private func movePanel(by translation: CGSize) {
         guard isExpanded else { return }
-        let panel = panelHost.view!
-        let size = panel.bounds.size
-        let start = panelDragStartOrigin
-            ?? CGPoint(x: panel.center.x - size.width / 2, y: panel.center.y - size.height / 2)
+        let size = panelHost.view.bounds.size
+        let area = dockingArea
+        let start = panelDragStartOrigin ?? panelOrigin
         panelDragStartOrigin = start
-        panelPlacement = PanelPlacement(
+        let placement = PanelPlacement(
             origin: CGPoint(x: start.x + translation.width, y: start.y + translation.height),
             size: size,
-            in: dockingArea
+            in: area
         )
-        layoutPanel()
+        panelPlacement = placement
+        panelOrigin = placement.origin(for: size, in: area)
     }
 
-    private func endPanelDrag(releaseTranslation: CGSize?) {
+    private func endPanelDrag(release: HeaderDragRelease?) {
         guard let start = panelDragStartOrigin else { return }
         panelDragStartOrigin = nil
-        guard isExpanded, configuration.panelSnapsToEdge else { return }
-        let panel = panelHost.view!
-        let size = panel.bounds.size
-        let release = releaseTranslation.map { CGPoint(x: start.x + $0.width, y: start.y + $0.height) }
-            ?? CGPoint(x: panel.center.x - size.width / 2, y: panel.center.y - size.height / 2)
-        panelPlacement = .snapped(origin: release, size: size, in: dockingArea)
+        guard configuration.panelSnapsToEdge else { return }
+        let size = panelHost.view.bounds.size
+        let area = dockingArea
+        let thrown = release.map {
+            CGPoint(
+                x: start.x + $0.translation.width + $0.velocity.width * releaseThrow,
+                y: start.y + $0.translation.height + $0.velocity.height * releaseThrow
+            )
+        }
+        let placement = PanelPlacement.snapped(origin: thrown ?? panelOrigin, size: size, in: area)
+        let home = originAtButton(for: size, in: area)
+        let snapped = placement.origin(for: size, in: area)
+        let isHome = abs(snapped.x - home.x) < 1 && abs(snapped.y - home.y) < 1
+        panelPlacement = isHome ? nil : placement
+        guard isExpanded else { return }
         UIView.animate(springDuration: 0.45, bounce: 0.25, options: .allowUserInteraction) {
             self.layoutPanel()
         }
@@ -256,7 +276,7 @@ final class DockViewController: UIViewController {
 
     private func releasePosition(for gesture: UIPanGestureRecognizer) -> DockPosition {
         let velocity = gesture.velocity(in: view)
-        let projected = CGPoint(x: button.center.x + velocity.x * 0.12, y: button.center.y + velocity.y * 0.12)
+        let projected = CGPoint(x: button.center.x + velocity.x * releaseThrow, y: button.center.y + velocity.y * releaseThrow)
         return DockPosition.nearest(to: clamped(projected), in: dockingArea, itemSize: buttonSize)
     }
 
@@ -409,15 +429,20 @@ struct PanelPlacement: Equatable {
     }
 
     /// Docks to the edge with the smallest gap to the panel. A panel as wide as
-    /// the area is on a side edge, so it keeps its vertical position.
+    /// the area is on a side edge, so it keeps its vertical position. A panel as
+    /// tall as the area docks only to a side edge.
     static func snapped(origin: CGPoint, size: CGSize, in area: CGRect) -> PanelPlacement {
         let origin = clamped(origin, size: size, in: area)
-        let gaps: [(Edge, CGFloat)] = [
+        var gaps: [(Edge, CGFloat)] = [
             (.leading, origin.x - area.minX),
             (.trailing, area.maxX - origin.x - size.width),
-            (.top, origin.y - area.minY),
-            (.bottom, area.maxY - origin.y - size.height),
         ]
+        if area.height - size.height >= 1 {
+            gaps += [
+                (.top, origin.y - area.minY),
+                (.bottom, area.maxY - origin.y - size.height),
+            ]
+        }
         let edge = gaps.min { $0.1 < $1.1 }?.0
         return PanelPlacement(origin: origin, size: size, in: area, edge: edge)
     }
@@ -437,7 +462,7 @@ struct PanelPlacement: Equatable {
         return Self.clamped(origin, size: size, in: area)
     }
 
-    private static func clamped(_ origin: CGPoint, size: CGSize, in area: CGRect) -> CGPoint {
+    static func clamped(_ origin: CGPoint, size: CGSize, in area: CGRect) -> CGPoint {
         CGPoint(
             x: max(area.minX, min(origin.x, area.maxX - size.width)),
             y: max(area.minY, min(origin.y, area.maxY - size.height))
