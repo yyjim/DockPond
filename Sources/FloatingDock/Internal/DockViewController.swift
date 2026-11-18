@@ -32,6 +32,7 @@ final class DockViewController: UIViewController {
 
     private let margin: CGFloat = 8
     /// How far a release velocity throws the button or the panel, in seconds.
+    /// SwiftUI's `predictedEndTranslation` throws the panel much farther.
     private let releaseThrow: CGFloat = 0.12
     private let panelMaxWidth: CGFloat = 340
     private var buttonSize: CGSize { CGSize(width: configuration.buttonSize, height: configuration.buttonSize) }
@@ -218,20 +219,25 @@ final class DockViewController: UIViewController {
     private func endPanelDrag(release: HeaderDragRelease?) {
         guard let start = panelDragStartOrigin else { return }
         panelDragStartOrigin = nil
-        guard configuration.panelSnapsToEdge else { return }
         let size = panelHost.view.bounds.size
         let area = dockingArea
-        let thrown = release.map {
-            CGPoint(
-                x: start.x + $0.translation.width + $0.velocity.width * releaseThrow,
-                y: start.y + $0.translation.height + $0.velocity.height * releaseThrow
-            )
+        var placement = panelPlacement
+        if configuration.panelSnapsToEdge {
+            // A panel that closed during the drag did not follow the rest of it.
+            let thrown = isExpanded ? release.map {
+                CGPoint(
+                    x: start.x + $0.translation.width + $0.velocity.width * releaseThrow,
+                    y: start.y + $0.translation.height + $0.velocity.height * releaseThrow
+                )
+            } : nil
+            placement = .snapped(origin: thrown ?? panelOrigin, size: size, in: area)
         }
-        let placement = PanelPlacement.snapped(origin: thrown ?? panelOrigin, size: size, in: area)
         let home = originAtButton(for: size, in: area)
-        let snapped = placement.origin(for: size, in: area)
-        let isHome = abs(snapped.x - home.x) < 1 && abs(snapped.y - home.y) < 1
-        panelPlacement = isHome ? nil : placement
+        if placement?.isNear(home, size: size, in: area) == true {
+            placement = nil
+        }
+        guard placement != panelPlacement else { return }
+        panelPlacement = placement
         guard isExpanded else { return }
         UIView.animate(springDuration: 0.45, bounce: 0.25, options: .allowUserInteraction) {
             self.layoutPanel()
@@ -429,15 +435,16 @@ struct PanelPlacement: Equatable {
     }
 
     /// Docks to the edge with the smallest gap to the panel. A panel as wide as
-    /// the area is on a side edge, so it keeps its vertical position. A panel as
-    /// tall as the area docks only to a side edge.
+    /// the area is on a side edge, so it keeps its vertical position. Without the
+    /// height check, the small top or bottom gap of a tall panel always wins, and
+    /// the panel never docks to a side.
     static func snapped(origin: CGPoint, size: CGSize, in area: CGRect) -> PanelPlacement {
         let origin = clamped(origin, size: size, in: area)
         var gaps: [(Edge, CGFloat)] = [
             (.leading, origin.x - area.minX),
             (.trailing, area.maxX - origin.x - size.width),
         ]
-        if area.height - size.height >= 1 {
+        if area.height - size.height >= minimumFreeHeightForTopOrBottom {
             gaps += [
                 (.top, origin.y - area.minY),
                 (.bottom, area.maxY - origin.y - size.height),
@@ -445,6 +452,15 @@ struct PanelPlacement: Equatable {
         }
         let edge = gaps.min { $0.1 < $1.1 }?.0
         return PanelPlacement(origin: origin, size: size, in: area, edge: edge)
+    }
+
+    private static let minimumFreeHeightForTopOrBottom: CGFloat = 44
+    private static let homeDistance: CGFloat = 16
+
+    /// A slip of the finger on the header must not count as a move.
+    func isNear(_ home: CGPoint, size: CGSize, in area: CGRect) -> Bool {
+        let origin = origin(for: size, in: area)
+        return abs(origin.x - home.x) < Self.homeDistance && abs(origin.y - home.y) < Self.homeDistance
     }
 
     func origin(for size: CGSize, in area: CGRect) -> CGPoint {

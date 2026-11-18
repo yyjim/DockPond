@@ -175,18 +175,25 @@ private struct PanelBackgroundView: View {
     let background: FloatingDockPanelBackground
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 22)
+        let shape = RoundedRectangle(cornerRadius: 22, style: .continuous)
         ZStack {
             shape
+                .fill(.black)
                 .shadow(color: .black.opacity(0.25), radius: 16, y: 4)
-                .mask {
-                    Rectangle()
-                        .padding(-60)
-                        .overlay { shape.blendMode(.destinationOut) }
-                        .compositingGroup()
-                }
+                .mask { OutsideOf(shape: shape).fill(style: FillStyle(eoFill: true)) }
             shape.fill(background.style)
         }
+    }
+}
+
+private struct OutsideOf<Inner: Shape>: Shape {
+    let shape: Inner
+    let reach: CGFloat = 60
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path(rect.insetBy(dx: -reach, dy: -reach))
+        path.addPath(shape.path(in: rect))
+        return path
     }
 }
 
