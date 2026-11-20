@@ -118,6 +118,7 @@ included:
 - Sources
 - Tests
 - DockPondDemo
+- Package.swift
 excluded:
 - build
 - docs
