@@ -195,7 +195,7 @@ final class DockViewController: UIViewController {
     }
 
     private func originAtButton(for size: CGSize, in area: CGRect) -> CGPoint {
-        var origin: CGPoint = switch position.edge {
+        let origin: CGPoint = switch position.edge {
         case .leading:
             CGPoint(x: area.minX, y: button.center.y - size.height / 2)
 
