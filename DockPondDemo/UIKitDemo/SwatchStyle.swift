@@ -19,9 +19,14 @@ struct SwatchStyle: Equatable {
 
     func color(for swatch: Swatch) -> UIColor {
         switch fill {
-        case .solid: swatch.color
-        case .soft: swatch.color.withAlphaComponent(0.45)
-        case .mono: .systemGray
+        case .solid:
+            swatch.color
+
+        case .soft:
+            swatch.color.withAlphaComponent(0.45)
+
+        case .mono:
+            .systemGray
         }
     }
 }

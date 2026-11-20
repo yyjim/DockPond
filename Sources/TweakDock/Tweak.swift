@@ -106,9 +106,9 @@ public extension Tweak where Value: Comparable & Numeric {
         store: TweakStore = .shared
     ) {
         precondition(min <= max, "Tweak \"\(name)\": min must not be greater than max.")
-        assert((min ... max).contains(defaultValue), "Tweak \"\(name)\": defaultValue must be in min...max.")
+        assert((min...max).contains(defaultValue), "Tweak \"\(name)\": defaultValue must be in min...max.")
         let range = min.primitive.doubleValue.flatMap { lower in
-            max.primitive.doubleValue.map { lower ... $0 }
+            max.primitive.doubleValue.map { lower...$0 }
         }
         self.init(collection, group, name, defaultValue, source, .number(range: range), store) {
             Swift.min(Swift.max($0, min), max)

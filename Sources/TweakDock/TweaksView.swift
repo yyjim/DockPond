@@ -27,7 +27,11 @@ public struct TweaksView: View {
                     Button("Reset All") { confirmsReset = true }
                 }
             }
-            .confirmationDialog("Reset all tweaks? Each tweak goes back to its source value or its default value.", isPresented: $confirmsReset, titleVisibility: .visible) {
+            .confirmationDialog(
+                "Reset all tweaks? Each tweak goes back to its source value or its default value.",
+                isPresented: $confirmsReset,
+                titleVisibility: .visible
+            ) {
                 Button("Reset All Tweaks", role: .destructive) {
                     tweaks.forEach { ($0 as? any PrimitiveTweak)?.reset() }
                 }
@@ -96,8 +100,10 @@ private struct TweakRow: View {
         switch (tweak.control, value) {
         case (.toggle, .bool):
             Toggle(isOn: binding(Bool.self)) { label }
+
         case let (.number(range), .int), let (.number(range), .double):
             numberRow(range: range)
+
         case (.text, .string):
             HStack {
                 label
@@ -105,12 +111,14 @@ private struct TweakRow: View {
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(.secondary)
             }
+
         case let (.picker(options), .string(current)):
             NavigationLink {
                 OptionsView(tweak: tweak, options: options)
             } label: {
                 LabeledContent { Text(current) } label: { label }
             }
+
         default:
             LabeledContent(tweak.name, value: "Unsupported")
         }
@@ -255,8 +263,10 @@ enum TweakCaption {
         switch current {
         case let .source(name, _):
             return "\(name) · \(key)"
+
         case .default:
             return "Default · \(key)"
+
         case .override:
             if let source = source() {
                 return "Override · \(source.name): \(source.value.displayText)"
@@ -341,7 +351,7 @@ private extension Array where Element == any AnyTweak {
 }
 
 enum TweakNumberField {
-    static let format = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0 ... 3))
+    static let format = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0...3))
 
     /// The value that the text field gives back for `value` when editing ends.
     static func shown(_ value: Double) -> Double {
@@ -353,7 +363,7 @@ enum TweakStepper {
     /// Uses the SwiftTweaks rule: 0.01 for fractions between 0 and 1, else 1. A
     /// fractional range gets a smaller step when the rule gives fewer than 5 steps.
     static func stepSize(defaultValue: Double, isInteger: Bool, range: ClosedRange<Double>?) -> Double {
-        let isSmall = (0 ..< 1).contains(defaultValue) && (range?.upperBound ?? 0) <= 1
+        let isSmall = (0..<1).contains(defaultValue) && (range?.upperBound ?? 0) <= 1
         let step = !isInteger && isSmall ? 0.01 : 1
         guard !isInteger, let range else { return step }
         let span = range.upperBound - range.lowerBound

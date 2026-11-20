@@ -21,7 +21,7 @@ public struct TweakMacro: AccessorMacro, PeerMacro {
         let property = try TweakProperty(declaration)
         return [
             "get { \(raw: property.name)Tweak.value }",
-            "set { \(raw: property.name)Tweak.value = newValue }",
+            "set { \(raw: property.name)Tweak.value = newValue }"
         ]
     }
 
@@ -68,11 +68,14 @@ public struct TweaksMacro: MemberMacro {
         let access = declaration.modifiers.memberAccessPrefix
             ?? context.lexicalContext.first?.as(ExtensionDeclSyntax.self)?.modifiers.memberAccessPrefix
             ?? ""
-        let store = node.arguments?.as(LabeledExprListSyntax.self)?
-            .first { $0.label?.text == "store" }?.expression.trimmedDescription ?? ".shared"
+        let store = node.arguments?
+            .as(LabeledExprListSyntax.self)?
+            .first { $0.label?.text == "store" }?
+            .expression
+            .trimmedDescription ?? ".shared"
         return [
             "\(raw: access)static let tweakStore: TweakStore = \(raw: store)",
-            "\(raw: access)static let allTweaks: [any AnyTweak] = \(raw: TweakEntry.listExpression(entries))",
+            "\(raw: access)static let allTweaks: [any AnyTweak] = \(raw: TweakEntry.listExpression(entries))"
         ]
     }
 }
@@ -86,7 +89,8 @@ private enum TweakEntry {
             if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
                 let clauses = ifConfig.clauses.map { clause in
                     let header = [clause.poundKeyword.text, clause.condition?.trimmedDescription]
-                        .compactMap { $0 }.joined(separator: " ")
+                        .compactMap { $0 }
+                        .joined(separator: " ")
                     guard case let .decls(members) = clause.elements else { return (header, [TweakEntry]()) }
                     return (header, entries(in: members))
                 }
@@ -121,6 +125,7 @@ private enum TweakEntry {
         switch entry {
         case let .tweak(name):
             ["tweaks.append(\(name))"]
+
         case let .conditional(clauses):
             clauses.flatMap { [$0.header] + $0.entries.flatMap(appendLines) } + ["#endif"]
         }
@@ -162,10 +167,17 @@ private extension DeclModifierListSyntax {
     var memberAccessPrefix: String? {
         for modifier in self {
             switch modifier.name.tokenKind {
-            case .keyword(.public), .keyword(.open): return "public "
-            case .keyword(.package): return "package "
-            case .keyword(.internal), .keyword(.fileprivate), .keyword(.private): return ""
-            default: continue
+            case .keyword(.public), .keyword(.open):
+                return "public "
+
+            case .keyword(.package):
+                return "package "
+
+            case .keyword(.internal), .keyword(.fileprivate), .keyword(.private):
+                return ""
+
+            default:
+                continue
             }
         }
         return nil

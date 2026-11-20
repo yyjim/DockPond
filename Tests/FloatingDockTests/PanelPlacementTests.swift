@@ -1,6 +1,6 @@
 import CoreGraphics
-import Testing
 @testable import FloatingDock
+import Testing
 
 struct PanelPlacementTests {
     let area = CGRect(x: 10, y: 20, width: 800, height: 600)

@@ -31,6 +31,7 @@ final class DockViewController: UIViewController {
     private var isDragging = false
     private var dragStartCenter = CGPoint.zero
     private var idleTask: Task<Void, Never>?
+    private var expansionChangeCount = 0
 
     private let margin: CGFloat = 8
     /// How far a release velocity throws the button or the panel, in seconds.
@@ -128,6 +129,8 @@ final class DockViewController: UIViewController {
     func setExpanded(_ expanded: Bool, animated: Bool = true) {
         guard isViewLoaded, expanded != isExpanded else { return }
         isExpanded = expanded
+        expansionChangeCount += 1
+        let change = expansionChangeCount
         updateLabelState { $0.isExpanded = expanded; $0.isIdle = false }
         idleTask?.cancel()
         let panel = panelHost.view!
@@ -148,14 +151,21 @@ final class DockViewController: UIViewController {
             self.button.alpha = expanded ? 0 : 1
             self.button.transform = expanded ? CGAffineTransform(scaleX: 0.6, y: 0.6) : .identity
         }
+        // UIKit runs the completion of an earlier animation while a later one is in progress.
         let completion = { (_: Bool) in
-            guard !self.isExpanded else { return }
+            if expanded || change != self.expansionChangeCount { return }
             panel.isHidden = true
             panel.transform = .identity
             self.scheduleIdleFade()
         }
         if animated {
-            UIView.animate(springDuration: 0.4, bounce: expanded ? 0.2 : 0, options: .allowUserInteraction, animations: changes, completion: completion)
+            UIView.animate(
+                springDuration: 0.4,
+                bounce: expanded ? 0.2 : 0,
+                options: .allowUserInteraction,
+                animations: changes,
+                completion: completion
+            )
         } else {
             changes()
             completion(true)
@@ -189,16 +199,18 @@ final class DockViewController: UIViewController {
     }
 
     private func originAtButton(for size: CGSize, in area: CGRect) -> CGPoint {
-        var origin: CGPoint
-        switch position.edge {
+        let origin: CGPoint = switch position.edge {
         case .leading:
-            origin = CGPoint(x: area.minX, y: button.center.y - size.height / 2)
+            CGPoint(x: area.minX, y: button.center.y - size.height / 2)
+
         case .trailing:
-            origin = CGPoint(x: area.maxX - size.width, y: button.center.y - size.height / 2)
+            CGPoint(x: area.maxX - size.width, y: button.center.y - size.height / 2)
+
         case .top:
-            origin = CGPoint(x: button.center.x - size.width / 2, y: area.minY)
+            CGPoint(x: button.center.x - size.width / 2, y: area.minY)
+
         case .bottom:
-            origin = CGPoint(x: button.center.x - size.width / 2, y: area.maxY - size.height)
+            CGPoint(x: button.center.x - size.width / 2, y: area.maxY - size.height)
         }
         return PanelPlacement.clamped(origin, size: size, in: area)
     }
@@ -265,11 +277,13 @@ final class DockViewController: UIViewController {
             dragStartCenter = button.center
             updateLabelState { $0.isDragging = true }
             wake()
+
         case .changed:
             let translation = gesture.translation(in: view)
             button.center = clamped(CGPoint(x: dragStartCenter.x + translation.x, y: dragStartCenter.y + translation.y))
             let edge = releasePosition(for: gesture).edge
             updateLabelState { $0.edge = edge }
+
         case .ended, .cancelled, .failed:
             position = releasePosition(for: gesture)
             position.save(id: configuration.id)
@@ -280,6 +294,7 @@ final class DockViewController: UIViewController {
                 self.button.center = self.position.center(in: self.dockingArea, itemSize: self.buttonSize)
             }
             scheduleIdleFade()
+
         default:
             break
         }
@@ -364,7 +379,9 @@ struct DockPosition: Equatable {
         guard let edge = defaults.string(forKey: edgeKey(id)).flatMap(Edge.init(rawValue:)) else {
             return defaultPosition
         }
-        let fraction = defaults.object(forKey: fractionKey(id)) as? Double ?? defaultPosition.fraction
+        let key = fractionKey(id)
+        // A launch argument gives the value as a String, which `as? Double` rejects.
+        let fraction = defaults.object(forKey: key) == nil ? defaultPosition.fraction : CGFloat(defaults.double(forKey: key))
         return DockPosition(edge: edge, fraction: fraction)
     }
 
@@ -382,10 +399,17 @@ struct DockPosition: Equatable {
         let minY = area.minY + itemSize.height / 2
         let maxY = max(minY, area.maxY - itemSize.height / 2)
         switch edge {
-        case .leading: return CGPoint(x: minX, y: minY + (maxY - minY) * fraction)
-        case .trailing: return CGPoint(x: maxX, y: minY + (maxY - minY) * fraction)
-        case .top: return CGPoint(x: minX + (maxX - minX) * fraction, y: minY)
-        case .bottom: return CGPoint(x: minX + (maxX - minX) * fraction, y: maxY)
+        case .leading:
+            return CGPoint(x: minX, y: minY + (maxY - minY) * fraction)
+
+        case .trailing:
+            return CGPoint(x: maxX, y: minY + (maxY - minY) * fraction)
+
+        case .top:
+            return CGPoint(x: minX + (maxX - minX) * fraction, y: minY)
+
+        case .bottom:
+            return CGPoint(x: minX + (maxX - minX) * fraction, y: maxY)
         }
     }
 
@@ -398,13 +422,12 @@ struct DockPosition: Equatable {
         let side = min(left, right)
         let verticalThreshold = itemSize.height * 1.5
 
-        let edge: Edge
-        if top < verticalThreshold && top < side {
-            edge = .top
+        let edge: Edge = if top < verticalThreshold && top < side {
+            .top
         } else if bottom < verticalThreshold && bottom < side {
-            edge = .bottom
+            .bottom
         } else {
-            edge = left < right ? .leading : .trailing
+            left < right ? .leading : .trailing
         }
 
         let fraction: CGFloat
@@ -412,6 +435,7 @@ struct DockPosition: Equatable {
         case .leading, .trailing:
             let span = max(1, area.height - itemSize.height)
             fraction = (point.y - area.minY - itemSize.height / 2) / span
+
         case .top, .bottom:
             let span = max(1, area.width - itemSize.width)
             fraction = (point.x - area.minX - itemSize.width / 2) / span
@@ -471,12 +495,12 @@ struct PanelPlacement: Equatable {
         let origin = clamped(origin, size: size, in: area)
         var gaps: [(Edge, CGFloat)] = [
             (.leading, origin.x - area.minX),
-            (.trailing, area.maxX - origin.x - size.width),
+            (.trailing, area.maxX - origin.x - size.width)
         ]
         if area.height - size.height >= minimumFreeHeightForTopOrBottom {
             gaps += [
                 (.top, origin.y - area.minY),
-                (.bottom, area.maxY - origin.y - size.height),
+                (.bottom, area.maxY - origin.y - size.height)
             ]
         }
         let preferredSide = preferred == .leading || preferred == .trailing ? preferred : nil
@@ -494,11 +518,20 @@ struct PanelPlacement: Equatable {
             y: area.minY + topCenter.y * area.height
         )
         switch edge {
-        case .leading: origin.x = area.minX
-        case .trailing: origin.x = area.maxX - size.width
-        case .top: origin.y = area.minY
-        case .bottom: origin.y = area.maxY - size.height
-        case nil: break
+        case .leading:
+            origin.x = area.minX
+
+        case .trailing:
+            origin.x = area.maxX - size.width
+
+        case .top:
+            origin.y = area.minY
+
+        case .bottom:
+            origin.y = area.maxY - size.height
+
+        case nil:
+            break
         }
         return Self.clamped(origin, size: size, in: area)
     }

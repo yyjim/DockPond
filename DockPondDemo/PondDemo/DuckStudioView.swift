@@ -183,7 +183,7 @@ private struct PartyLights: View {
     }
 }
 
-nonisolated private struct Beam: Shape {
+private nonisolated struct Beam: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: rect.midX - 8, y: rect.minY))

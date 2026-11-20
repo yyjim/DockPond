@@ -18,7 +18,7 @@ open class TweaksWindow: UIWindow {
         fatalError("init(coder:) is not supported")
     }
 
-    override open func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+    open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         guard motion == .motionShake, tweaks.hasEnabledStore else {
             return super.motionEnded(motion, with: event)
         }

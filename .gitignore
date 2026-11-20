@@ -10,3 +10,7 @@ DerivedData/
 *.xcuserstate
 build/
 /Package.resolved
+
+# Node tooling for Git hooks
+node_modules/
+.husky/_/

@@ -1,7 +1,7 @@
+@testable import FloatingDock
 import SwiftUI
 import Testing
 import UIKit
-@testable import FloatingDock
 
 @MainActor
 struct DockButtonTests {

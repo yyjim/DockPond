@@ -140,7 +140,13 @@ private struct AboutSheet: View {
                 .accessibilityHidden(true)
             Text("About the pond")
                 .font(.pond(28, weight: .bold))
-            Text("Each island uses one DockPond library. The lifeguard float shows on every screen. It combines all three: a FloatingDock with the GaugeDock rows, the appearance switch, and a button that opens the TweakDock screen.")
+            Text(
+                """
+                Each island uses one DockPond library. The lifeguard float shows on every screen. It combines all \
+                three: a FloatingDock with the GaugeDock rows, the appearance switch, and a button that opens the \
+                TweakDock screen.
+                """
+            )
             Text("Shake the device on any screen to open the Duck Studio tweaks. In Simulator, press Control-Command-Z.")
             Button("Back to the water") { dismiss() }
                 .buttonStyle(StickerButtonStyle())
