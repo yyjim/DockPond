@@ -1,7 +1,7 @@
 import CoreGraphics
+@testable import FloatingDock
 import Foundation
 import Testing
-@testable import FloatingDock
 
 struct DockPositionTests {
     let area = CGRect(x: 0, y: 0, width: 400, height: 800)

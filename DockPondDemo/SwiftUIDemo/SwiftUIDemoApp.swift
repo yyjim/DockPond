@@ -19,10 +19,10 @@ struct SwiftUIDemoApp: App {
                 ) {
                     if diagnostics.hasHinge {
                         DockTool.selector("Hinge", selection: $settings.stateOverride, options: [
-                            "Live": nil, "Closed": .closed, "Half": .partiallyOpen, "Flat": .fullyOpen,
+                            "Live": nil, "Closed": .closed, "Half": .partiallyOpen, "Flat": .fullyOpen
                         ])
                         DockTool.selector("Fold axis", selection: $settings.axisOverride, options: [
-                            "Auto": nil, "Vertical": .vertical, "Horizontal": .horizontal,
+                            "Auto": nil, "Vertical": .vertical, "Horizontal": .horizontal
                         ])
                         DockTool.toggle("Fold line", isOn: $settings.showsFoldLine)
                     }
@@ -48,13 +48,13 @@ struct SwiftUIDemoApp: App {
                     )
                 ) {
                     DockTool.selector("Fill", selection: $settings.itemStyle.fill, options: [
-                        "Gradient": .gradient, "Solid": .solid, "Mono": .mono,
+                        "Gradient": .gradient, "Solid": .solid, "Mono": .mono
                     ])
                     DockTool.slider("Corners", value: $settings.itemStyle.cornerScale, in: 0...2)
                     DockTool.toggle("Summaries", isOn: $settings.itemStyle.showsSummaries)
                     DockTool.stepper("Lines", value: $settings.itemStyle.summaryLines, in: 1...4)
                     DockTool.selector("Panel", selection: $settings.panelBackground, options: [
-                        "Regular": .regular, "Translucent": .translucent, "Plain": .plain,
+                        "Regular": .regular, "Translucent": .translucent, "Plain": .plain
                     ])
                     DockTool.slider("Panel opacity", value: $settings.panelOpacity, in: 0.1...1)
                     DockTool.button("Reset", systemImage: "arrow.counterclockwise") {

@@ -17,7 +17,7 @@ final class PartyModel {
     var ducks: [PartyDuck] = [
         PartyDuck(position: CGPoint(x: 0.25, y: 0.3), pose: .chill, phase: 0),
         PartyDuck(position: CGPoint(x: 0.68, y: 0.48), pose: .paddle, phase: 1.3),
-        PartyDuck(position: CGPoint(x: 0.3, y: 0.66), pose: .sleep, phase: 2.6),
+        PartyDuck(position: CGPoint(x: 0.3, y: 0.66), pose: .sleep, phase: 2.6)
     ]
     var waveHeight = 1.0
     var showsBubbles = true
@@ -53,7 +53,13 @@ struct PoolPartyView: View {
             title: "Pool Toys",
             systemImage: "figure.pool.swim",
             panelStyle: .tabs,
-            configuration: FloatingDockConfiguration(id: "pool-toys", initialEdge: .trailing, initialPosition: 0.4, buttonSize: 64, tint: .bill)
+            configuration: FloatingDockConfiguration(
+                id: "pool-toys",
+                initialEdge: .trailing,
+                initialPosition: 0.4,
+                buttonSize: 64,
+                tint: .bill
+            )
         ) {
             DockTool("Toys", systemImage: "bird.fill") {
                 ToysPanel(model: model)
@@ -72,9 +78,14 @@ struct PoolPartyView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Two floats, one pool")
                 .font(.pond(17, weight: .bold))
-            Text("Tap the water to drop a duck. Drag a float and let go: it docks to the nearest edge. Pool Toys lives only on this screen. The lifeguard float follows you everywhere.")
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                """
+                Tap the water to drop a duck. Drag a float and let go: it docks to the nearest edge. Pool Toys lives \
+                only on this screen. The lifeguard float follows you everywhere.
+                """
+            )
+            .font(.system(size: 14, weight: .semibold, design: .rounded))
+            .fixedSize(horizontal: false, vertical: true)
         }
         .foregroundStyle(Color.navy)
         .frame(maxWidth: 560, alignment: .leading)
@@ -91,7 +102,7 @@ private struct PoolScene: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                (model.isNightSwim ? Color(hex: 0x15124A) : Color.pond)
+                model.isNightSwim ? Color(hex: 0x15124A) : Color.pond
                 ripples(in: proxy.size)
                 if model.showsBubbles {
                     Bubbles()

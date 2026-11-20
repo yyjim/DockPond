@@ -10,6 +10,7 @@ struct FoldLineOverlay: View {
             case .vertical:
                 path.move(to: CGPoint(x: size.width / 2, y: 0))
                 path.addLine(to: CGPoint(x: size.width / 2, y: size.height))
+
             case .horizontal:
                 path.move(to: CGPoint(x: 0, y: size.height / 2))
                 path.addLine(to: CGPoint(x: size.width, y: size.height / 2))

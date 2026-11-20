@@ -20,7 +20,7 @@ public final class LayoutGaugeUIView: UIView {
             stack.topAnchor.constraint(equalTo: topAnchor),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor),
             stack.leadingAnchor.constraint(equalTo: leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor)
         ])
         observation = gauge.observe { [weak self] in self?.render($0) }
     }
@@ -66,7 +66,7 @@ extension FloatingDockController {
         dock.tools = [
             DockTool(dock.title, systemImage: dock.systemImage) {
                 GaugeDockContent(gauge: gauge, sections: sections, observation: observation)
-            },
+            }
         ]
         return dock
     }
@@ -106,7 +106,7 @@ private final class GaugeRowView: UIView {
             stack.topAnchor.constraint(equalTo: topAnchor),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor),
             stack.leadingAnchor.constraint(equalTo: leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor)
         ])
     }
 
