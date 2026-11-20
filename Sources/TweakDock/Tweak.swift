@@ -18,6 +18,7 @@ public extension AnyTweak {
 
 /// The UI edits value tweaks through their primitive form.
 protocol PrimitiveTweak: AnyTweak {
+    var store: TweakStore { get }
     var source: TweakSource? { get }
     var primitiveValue: TweakPrimitive { get nonmutating set }
     var defaultPrimitive: TweakPrimitive { get }
@@ -186,5 +187,11 @@ public extension Sequence where Element == any AnyTweak {
     /// no valid source value or override exists. Only tweaks with `from: .experiment(...)` are in it.
     var experimentProperties: [String: String] {
         Dictionary(compactMap { ($0 as? any PrimitiveTweak)?.experimentProperty }) { first, _ in first }
+    }
+
+    /// `true` when the store of a tweak is enabled. Action tweaks have no store, so a list of only actions uses `TweakStore.shared`.
+    internal var hasEnabledStore: Bool {
+        let stores = compactMap { ($0 as? any PrimitiveTweak)?.store }
+        return stores.isEmpty ? TweakStore.shared.isEnabled : stores.contains { $0.isEnabled }
     }
 }

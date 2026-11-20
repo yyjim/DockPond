@@ -24,7 +24,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             DemoTweaks.tweakStore.resetAll()
             DemoSources.clearRemoteConfig()
         }
-        let window = TweaksWindow(windowScene: windowScene, tweaks: DemoTweaks.allTweaks, store: DemoTweaks.tweakStore)
+        let window = TweaksWindow(windowScene: windowScene, tweaks: DemoTweaks.allTweaks)
         window.rootViewController = UIHostingController(rootView: DemoView())
         window.makeKeyAndVisible()
         self.window = window
