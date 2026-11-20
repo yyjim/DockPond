@@ -438,7 +438,7 @@ xcodebuild test -scheme TweakDockMacros -destination 'platform=macOS' -skipMacro
 
 The [swift-style](https://github.com/yyjim/swift-style) gem runs SwiftLint and SwiftFormat. The gem sets the tool versions, and mise installs them on the first run.
 
-The tools need [mise](https://mise.jdx.dev), Ruby 3.1 or later with Bundler, and Node 18 or later.
+The tools need [mise](https://mise.jdx.dev), Ruby 3.2 or later with Bundler, and Node 18 or later.
 
 After you clone the repo, install the gem and the Husky hooks. Run `npm install` in each new git worktree too, because the worktree has no hooks before that.
 
