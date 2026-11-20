@@ -65,7 +65,10 @@ struct Swatch: Hashable {
         [
             "\(name) is one of the colors in this sample. \(summary)",
             "Fold the device, turn it, or open it flat. The same color stays selected while the layout changes around it.",
-            "Half open with a vertical fold, the app shows a two-page spread. With a horizontal fold, it shows a viewer above the controls. Nothing is placed on the fold.",
+            """
+            Half open with a vertical fold, the app shows a two-page spread. With a horizontal fold, it shows a \
+            viewer above the controls. Nothing is placed on the fold.
+            """
         ].joined(separator: "\n\n")
     }
 
@@ -85,6 +88,6 @@ struct Swatch: Hashable {
         Swatch(name: "Indigo", color: .systemIndigo, summary: "A deep blue near violet."),
         Swatch(name: "Purple", color: .systemPurple, summary: "Rich and cool, between blue and red."),
         Swatch(name: "Pink", color: .systemPink, summary: "A light, warm red."),
-        Swatch(name: "Brown", color: .systemBrown, summary: "Dark orange with low saturation."),
+        Swatch(name: "Brown", color: .systemBrown, summary: "Dark orange with low saturation.")
     ]
 }

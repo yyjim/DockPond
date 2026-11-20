@@ -39,10 +39,17 @@ struct PoolSurveyView: View {
 
     private var poolName: String {
         switch snapshot.fold?.posture {
-        case .book: return "Twin pools"
-        case .tabletop: return "Lounge"
-        case .flat: return "Lagoon"
-        case .closed, nil: break
+        case .book:
+            return "Twin pools"
+
+        case .tabletop:
+            return "Lounge"
+
+        case .flat:
+            return "Lagoon"
+
+        case .closed, nil:
+            break
         }
         return snapshot.horizontalSizeClass == .regular ? "Olympic" : "Kiddie pool"
     }
@@ -173,9 +180,14 @@ private struct PoolMap: View {
 
     private func name(_ sizeClass: UIUserInterfaceSizeClass) -> String {
         switch sizeClass {
-        case .compact: "compact"
-        case .regular: "regular"
-        default: "unknown"
+        case .compact:
+            "compact"
+
+        case .regular:
+            "regular"
+
+        default:
+            "unknown"
         }
     }
 }

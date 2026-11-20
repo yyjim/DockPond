@@ -1,6 +1,6 @@
+@testable import FloatingDock
 import Testing
 import UIKit
-@testable import FloatingDock
 
 @MainActor
 struct HostedContentViewTests {
@@ -37,7 +37,7 @@ struct HostedContentViewTests {
             content.topAnchor.constraint(equalTo: container.topAnchor),
             content.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             content.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            content.trailingAnchor.constraint(equalTo: container.trailingAnchor)
         ])
         return container
     }

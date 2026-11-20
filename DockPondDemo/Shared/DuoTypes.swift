@@ -21,10 +21,17 @@ enum Posture {
 
     init(state: HingeState, foldAxis: FoldAxis, isRegularWidth: Bool) {
         switch state {
-        case .closed: self = .outer
-        case .fullyOpen: self = .flat
-        case .partiallyOpen: self = foldAxis == .vertical ? .book : .tabletop
-        case .unavailable: self = isRegularWidth ? .regular : .compact
+        case .closed:
+            self = .outer
+
+        case .fullyOpen:
+            self = .flat
+
+        case .partiallyOpen:
+            self = foldAxis == .vertical ? .book : .tabletop
+
+        case .unavailable:
+            self = isRegularWidth ? .regular : .compact
         }
     }
 }

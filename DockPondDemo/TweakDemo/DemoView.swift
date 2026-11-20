@@ -114,15 +114,23 @@ struct DemoView: View {
 
     private var accentColor: Color {
         switch model.accent {
-        case .blue: .blue
-        case .orange: .orange
-        case .purple: .purple
-        case .green: .green
+        case .blue:
+            .blue
+
+        case .orange:
+            .orange
+
+        case .purple:
+            .purple
+
+        case .green:
+            .green
         }
     }
 
     private var tweaksWindow: TweaksWindow? {
-        UIApplication.shared.connectedScenes
+        UIApplication.shared
+            .connectedScenes
             .compactMap { ($0 as? UIWindowScene)?.keyWindow as? TweaksWindow }
             .first
     }

@@ -84,9 +84,14 @@ public struct FloatingDockPanelBackground: Hashable, Sendable {
 
     var material: Material? {
         switch fill {
-        case .regularMaterial: .regularMaterial
-        case .ultraThinMaterial: .ultraThinMaterial
-        case .color: nil
+        case .regularMaterial:
+            .regularMaterial
+
+        case .ultraThinMaterial:
+            .ultraThinMaterial
+
+        case .color:
+            nil
         }
     }
 

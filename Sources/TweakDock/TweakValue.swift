@@ -9,9 +9,14 @@ public enum TweakPrimitive: Codable, Hashable, Sendable {
 
     var doubleValue: Double? {
         switch self {
-        case let .int(value): Double(value)
-        case let .double(value): value
-        case .bool, .string: nil
+        case let .int(value):
+            Double(value)
+
+        case let .double(value):
+            value
+
+        case .bool, .string:
+            nil
         }
     }
 }

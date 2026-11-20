@@ -10,7 +10,8 @@ import Testing
     let store: TweakStore
 
     init() {
-        fileURL = FileManager.default.temporaryDirectory
+        fileURL = FileManager.default
+            .temporaryDirectory
             .appending(components: "TweakDockTests", "\(UUID().uuidString).json")
         store = TweakStore(fileURL: fileURL)
     }
@@ -39,13 +40,13 @@ import Testing
     }
 
     @Test func keepsConcurrentChangesFromOtherStoresOfTheSameFile() {
-        let stores = (0 ..< 16).map { _ in TweakStore(fileURL: fileURL) }
+        let stores = (0..<16).map { _ in TweakStore(fileURL: fileURL) }
         DispatchQueue.concurrentPerform(iterations: stores.count) { index in
             Tweak(collection: "C", group: "G", name: "\(index)", defaultValue: 0, store: stores[index]).value = index + 1
         }
         let reloaded = TweakStore(fileURL: fileURL)
-        let values = (0 ..< 16).map { Tweak(collection: "C", group: "G", name: "\($0)", defaultValue: 0, store: reloaded).value }
-        #expect(values == Array(1 ... 16))
+        let values = (0..<16).map { Tweak(collection: "C", group: "G", name: "\($0)", defaultValue: 0, store: reloaded).value }
+        #expect(values == Array(1...16))
     }
 
     @Test func clampsValuesToRange() {
@@ -56,7 +57,7 @@ import Testing
         #expect(tweak.value == 20)
         tweak.value = -5
         #expect(tweak.value == 10)
-        #expect(tweak.control == .number(range: 10 ... 20))
+        #expect(tweak.control == .number(range: 10...20))
     }
 
     @Test func clampsStoredValueAfterRangeShrinks() {
@@ -120,7 +121,8 @@ import Testing
         let widget = Tweak(collection: "C", group: "G", name: "B", defaultValue: 0, store: extensionStore)
         var received: [Int] = []
         let subscription = Tweak(collection: "C", group: "G", name: "B", defaultValue: 0, store: store)
-            .publisher.sink { received.append($0) }
+            .publisher
+            .sink { received.append($0) }
 
         app.value = 1
         widget.value = 2

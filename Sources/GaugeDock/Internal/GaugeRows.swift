@@ -63,9 +63,14 @@ extension LayoutGauge.Snapshot {
 extension UIUserInterfaceSizeClass {
     var name: String {
         switch self {
-        case .compact: "compact"
-        case .regular: "regular"
-        default: "unknown"
+        case .compact:
+            "compact"
+
+        case .regular:
+            "regular"
+
+        default:
+            "unknown"
         }
     }
 }
@@ -73,11 +78,20 @@ extension UIUserInterfaceSizeClass {
 private extension UIInterfaceOrientation {
     var side: String? {
         switch self {
-        case .portrait: "upright"
-        case .portraitUpsideDown: "upside down"
-        case .landscapeLeft: "left"
-        case .landscapeRight: "right"
-        default: nil
+        case .portrait:
+            "upright"
+
+        case .portraitUpsideDown:
+            "upside down"
+
+        case .landscapeLeft:
+            "left"
+
+        case .landscapeRight:
+            "right"
+
+        default:
+            nil
         }
     }
 }

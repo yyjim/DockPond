@@ -85,8 +85,10 @@ private struct TweakRow: View {
         switch (tweak.control, value) {
         case (.toggle, .bool):
             Toggle(tweak.name, isOn: binding(Bool.self))
+
         case let (.number(range), .int), let (.number(range), .double):
             numberRow(range: range)
+
         case (.text, .string):
             HStack {
                 Text(tweak.name)
@@ -94,12 +96,14 @@ private struct TweakRow: View {
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(.secondary)
             }
+
         case let (.picker(options), .string(current)):
             NavigationLink {
                 OptionsView(tweak: tweak, options: options)
             } label: {
                 LabeledContent(tweak.name, value: current)
             }
+
         default:
             LabeledContent(tweak.name, value: "Unsupported")
         }
@@ -124,7 +128,7 @@ private struct TweakRow: View {
         return HStack {
             Text(tweak.name)
             Spacer()
-            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0 ... 3)))
+            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0...3)))
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
@@ -252,7 +256,7 @@ enum TweakStepper {
     /// Uses the SwiftTweaks rule: 0.01 for fractions between 0 and 1, else 1. A
     /// fractional range gets a smaller step when the rule gives fewer than 5 steps.
     static func stepSize(defaultValue: Double, isInteger: Bool, range: ClosedRange<Double>?) -> Double {
-        let isSmall = (0 ..< 1).contains(defaultValue) && (range?.upperBound ?? 0) <= 1
+        let isSmall = (0..<1).contains(defaultValue) && (range?.upperBound ?? 0) <= 1
         let step = !isInteger && isSmall ? 0.01 : 1
         guard !isInteger, let range else { return step }
         let span = range.upperBound - range.lowerBound

@@ -30,7 +30,13 @@ enum DemoTweaks {
     @Tweak(collection: "App", group: "Appearance", name: "Dark Mode", defaultValue: false)
     static var isDarkMode: Bool
 
-    @Tweak(collection: "App", group: "Network", name: "Environment", options: ["production", "staging", "local"], defaultValue: "production")
+    @Tweak(
+        collection: "App",
+        group: "Network",
+        name: "Environment",
+        options: ["production", "staging", "local"],
+        defaultValue: "production"
+    )
     static var environment: String
 
     @Tweak(collection: "App", group: "Network", name: "Max Retries", defaultValue: 3)
