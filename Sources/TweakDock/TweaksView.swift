@@ -132,7 +132,7 @@ private struct TweakRow: View {
             set: { typed in
                 // The text field writes its shown value again when editing ends. That write must not pin a source value as an override.
                 let typed = isInteger ? typed.rounded() : typed
-                guard typed != TweakStepper.shown(number.wrappedValue) else { return }
+                guard typed != TweakNumberField.shown(number.wrappedValue) else { return }
                 number.wrappedValue = typed
             }
         )
@@ -144,7 +144,7 @@ private struct TweakRow: View {
         return HStack {
             label
             Spacer()
-            TextField(tweak.name, value: typed, format: TweakStepper.numberFormat)
+            TextField(tweak.name, value: typed, format: TweakNumberField.format)
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
@@ -178,7 +178,6 @@ private struct TweakRow: View {
             set: { update($0.primitive) }
         )
     }
-
 
     private func update(_ primitive: TweakPrimitive) {
         tweak.primitiveValue = primitive
@@ -341,14 +340,16 @@ private extension Array where Element == any AnyTweak {
     }
 }
 
-enum TweakStepper {
-    static let numberFormat = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0 ... 3))
+enum TweakNumberField {
+    static let format = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0 ... 3))
 
     /// The value that the text field gives back for `value` when editing ends.
     static func shown(_ value: Double) -> Double {
-        (try? numberFormat.parseStrategy.parse(numberFormat.format(value))) ?? value
+        (try? format.parseStrategy.parse(format.format(value))) ?? value
     }
+}
 
+enum TweakStepper {
     /// Uses the SwiftTweaks rule: 0.01 for fractions between 0 and 1, else 1. A
     /// fractional range gets a smaller step when the rule gives fewer than 5 steps.
     static func stepSize(defaultValue: Double, isInteger: Bool, range: ClosedRange<Double>?) -> Double {
