@@ -459,6 +459,8 @@ The Husky pre-push hook runs `bundle exec swift-style check` on the outgoing Swi
 
 After Claude Code edits a Swift file, a hook in `.claude/settings.json` formats the file and fixes it.
 
+`.git-blame-ignore-revs` lists the commits that only format code. GitHub ignores them in the blame view. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` to ignore them locally too.
+
 ## Licence
 
 MIT. Refer to [LICENSE](LICENSE).
