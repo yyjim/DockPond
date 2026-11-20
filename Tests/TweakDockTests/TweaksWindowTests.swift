@@ -31,8 +31,13 @@ import Testing
         #expect(![tweak(in: experiments)].hasEnabledStore)
     }
 
-    @Test func usesSharedStoreForOnlyActions() {
-        let actions: [any AnyTweak] = [TweakAction(collection: "C", group: "G", name: "Run") {}]
-        #expect(actions.hasEnabledStore == TweakStore.shared.isEnabled)
+    @Test func usesTheStoreOfActions() {
+        let custom = store()
+        let actions: [any AnyTweak] = [TweakAction(collection: "C", group: "G", name: "Run", store: custom) {}]
+        #expect(actions.hasEnabledStore)
+
+        custom.isEnabled = false
+        #expect(TweakStore.shared.isEnabled)
+        #expect(!actions.hasEnabledStore)
     }
 }

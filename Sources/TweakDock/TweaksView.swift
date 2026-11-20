@@ -130,9 +130,9 @@ private struct TweakRow: View {
         let typed = Binding(
             get: { number.wrappedValue },
             set: { typed in
-                // The text field writes its rounded value again when editing ends. That write must not pin a source value as an override.
+                // The text field writes its shown value again when editing ends. That write must not pin a source value as an override.
                 let typed = isInteger ? typed.rounded() : typed
-                guard abs(typed - number.wrappedValue) >= 0.5 * pow(10, -Double(Self.fractionDigits)) else { return }
+                guard typed != TweakStepper.shown(number.wrappedValue) else { return }
                 number.wrappedValue = typed
             }
         )
@@ -144,7 +144,7 @@ private struct TweakRow: View {
         return HStack {
             label
             Spacer()
-            TextField(tweak.name, value: typed, format: .number.precision(.fractionLength(0 ... Self.fractionDigits)))
+            TextField(tweak.name, value: typed, format: TweakStepper.numberFormat)
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
@@ -179,7 +179,6 @@ private struct TweakRow: View {
         )
     }
 
-    private static let fractionDigits = 3
 
     private func update(_ primitive: TweakPrimitive) {
         tweak.primitiveValue = primitive
@@ -343,6 +342,13 @@ private extension Array where Element == any AnyTweak {
 }
 
 enum TweakStepper {
+    static let numberFormat = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0 ... 3))
+
+    /// The value that the text field gives back for `value` when editing ends.
+    static func shown(_ value: Double) -> Double {
+        (try? numberFormat.parseStrategy.parse(numberFormat.format(value))) ?? value
+    }
+
     /// Uses the SwiftTweaks rule: 0.01 for fractions between 0 and 1, else 1. A
     /// fractional range gets a smaller step when the rule gives fewer than 5 steps.
     static func stepSize(defaultValue: Double, isInteger: Bool, range: ClosedRange<Double>?) -> Double {

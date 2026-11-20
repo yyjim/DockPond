@@ -16,9 +16,12 @@ public extension AnyTweak {
     }
 }
 
-/// The UI edits value tweaks through their primitive form.
-protocol PrimitiveTweak: AnyTweak {
+protocol StoredTweak: AnyTweak {
     var store: TweakStore { get }
+}
+
+/// The UI edits value tweaks through their primitive form.
+protocol PrimitiveTweak: StoredTweak {
     var source: TweakSource? { get }
     var primitiveValue: TweakPrimitive { get nonmutating set }
     var defaultPrimitive: TweakPrimitive { get }
@@ -159,22 +162,25 @@ extension Tweak: PrimitiveTweak {
 }
 
 /// A tweak that runs a closure when you tap it in the tweaks UI.
-public struct TweakAction: AnyTweak {
+public struct TweakAction: StoredTweak {
     public let collection: String
     public let group: String
     public let name: String
     public var control: TweakControl { .action }
+    let store: TweakStore
     private let run: @MainActor @Sendable () -> Void
 
     public init(
         collection: String,
         group: String,
         name: String,
+        store: TweakStore = .shared,
         run: @escaping @MainActor @Sendable () -> Void
     ) {
         self.collection = collection
         self.group = group
         self.name = name
+        self.store = store
         self.run = run
     }
 
@@ -188,10 +194,10 @@ public extension Sequence where Element == any AnyTweak {
     var experimentProperties: [String: String] {
         Dictionary(compactMap { ($0 as? any PrimitiveTweak)?.experimentProperty }) { first, _ in first }
     }
+}
 
-    /// `true` when the store of a tweak is enabled. Action tweaks have no store, so a list of only actions uses `TweakStore.shared`.
-    internal var hasEnabledStore: Bool {
-        let stores = compactMap { ($0 as? any PrimitiveTweak)?.store }
-        return stores.isEmpty ? TweakStore.shared.isEnabled : stores.contains { $0.isEnabled }
+extension Sequence where Element == any AnyTweak {
+    var hasEnabledStore: Bool {
+        contains { ($0 as? any StoredTweak)?.store.isEnabled == true }
     }
 }

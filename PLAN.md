@@ -63,7 +63,7 @@ This file records the decisions, the current status, and the next steps for Dock
 - `defaultValue` stays on `@Tweak`, because each tweak needs it, and the macro uses it to check the type.
 - The order is override, then a launch argument (`-tweak.<key>`), then the provider, then the default value. A value that is not valid goes to the next step.
 - `devices` applies to the provider. Launch arguments and overrides apply on all devices.
-- `isEnabled = false` turns off overrides and launch arguments. Provider values still apply, so an experiment tweak is also the release read path.
+- `isEnabled = false` disables overrides and launch arguments. Provider values still apply, so an experiment tweak is also the release read path.
 - An invalid provider value gives `currentValue == .default(defaultValue)`. The store does not clamp or correct it. This keeps the analytics rule: `.default` reports `"default"`.
 - The device comes from the model identifier, because `UIDevice` can be read only on the main thread.
 - `.phone` is `[.standardPhone, .foldablePhone]`, so existing `.phone` experiments include iPhone Duo. The foldable model identifiers are copied from DeviceKit, so DockPond does not depend on it. `UIHingeInteraction` needs a view and the main thread, so the store cannot use it.

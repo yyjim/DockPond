@@ -2,6 +2,15 @@ import Testing
 @testable import TweakDock
 
 struct TweakStepperTests {
+    @Test func givesTheValueThatTheTextFieldShows() {
+        for value in [0.0015, 0.1235, 2.0004, 0.5, 3] {
+            let shown = TweakStepper.shown(value)
+            #expect(shown == TweakStepper.shown(shown))
+            #expect(abs(shown - value) <= 0.0005 + 1e-12)
+        }
+        #expect(TweakStepper.shown(2.0004) == 2)
+    }
+
     @Test func keepsTheSwiftTweaksRule() {
         #expect(TweakStepper.stepSize(defaultValue: 0.5, isInteger: false, range: 0 ... 1) == 0.01)
         #expect(TweakStepper.stepSize(defaultValue: 12, isInteger: false, range: 10 ... 20) == 1)
