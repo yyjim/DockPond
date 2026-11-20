@@ -1,0 +1,20 @@
+GIT
+  remote: https://github.com/yyjim/swift-style
+  revision: 73ec1b6c95216ab8e7dcf4956fe93276811c50d6
+  tag: 0.1.2
+  specs:
+    swift-style (0.1.2)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  arm64-darwin-24
+  ruby
+
+DEPENDENCIES
+  swift-style!
+
+BUNDLED WITH
+   2.7.0

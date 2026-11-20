@@ -1,0 +1,12 @@
+base_branch: main
+include:
+  - Sources
+  - Tests
+  - DockPondDemo
+exclude:
+  - build
+  - docs
+  - DerivedData
+swiftformat:
+  exclude:
+    - "**/.build"

@@ -434,6 +434,29 @@ The TweakDock macro tests run only on macOS:
 xcodebuild test -scheme TweakDockMacros -destination 'platform=macOS' -skipMacroValidation
 ```
 
+### Swift tooling
+
+The [swift-style](https://github.com/yyjim/swift-style) gem runs SwiftLint and SwiftFormat. The gem sets the tool versions, and mise installs them on the first run.
+
+After you clone the repo, install the gem and the Husky hooks:
+
+```sh
+bundle install
+npm install
+```
+
+```sh
+bundle exec swift-style check --all   # report the findings in all files
+bundle exec swift-style fix           # fix the changed Swift files
+bundle exec swift-style fix --all     # fix all Swift files
+```
+
+Edit the rules in `.swift-style.yml`, then run `bundle exec swift-style sync`. Do not edit `.swiftlint.yml` or `.swiftformat`, because `sync` writes them.
+
+The Husky pre-push hook runs `bundle exec swift-style check` on the outgoing Swift files. It changes no files. Use `git push --no-verify` when you need to bypass the hook.
+
+After Claude Code edits a Swift file, a hook in `.claude/settings.json` formats the file and fixes it.
+
 ## Licence
 
 MIT. Refer to [LICENSE](LICENSE).
