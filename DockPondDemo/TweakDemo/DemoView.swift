@@ -11,9 +11,14 @@ struct ExperimentState: Equatable {
         self.key = key
         value = current.value.primitive.text
         switch current {
-        case .default: origin = "Default"
-        case let .source(name, _): origin = name
-        case .override: origin = "Override"
+        case .default:
+            origin = "Default"
+
+        case let .source(name, _):
+            origin = name
+
+        case .override:
+            origin = "Override"
         }
     }
 }
@@ -21,10 +26,17 @@ struct ExperimentState: Equatable {
 private extension TweakPrimitive {
     var text: String {
         switch self {
-        case let .bool(value): "\(value)"
-        case let .int(value): "\(value)"
-        case let .double(value): value.formatted()
-        case let .string(value): value
+        case let .bool(value):
+            "\(value)"
+
+        case let .int(value):
+            "\(value)"
+
+        case let .double(value):
+            value.formatted()
+
+        case let .string(value):
+            value
         }
     }
 }

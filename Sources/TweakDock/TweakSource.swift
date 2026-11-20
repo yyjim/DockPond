@@ -65,6 +65,6 @@ public struct TweakDevices: OptionSet, Sendable {
     private static func machineIdentifier() -> String {
         var info = utsname()
         uname(&info)
-        return withUnsafeBytes(of: &info.machine) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+        return withUnsafeBytes(of: &info.machine) { String(bytes: $0.prefix { $0 != 0 }, encoding: .utf8) ?? "" }
     }
 }

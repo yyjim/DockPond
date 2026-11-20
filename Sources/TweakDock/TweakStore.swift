@@ -29,7 +29,8 @@ public final class TweakStore: @unchecked Sendable {
         experimentProvider: (any TweakValueProvider)? = nil
     ) {
         self.init(
-            fileURL: Self.fileURL(name: name, appGroup: appGroup), isEnabled: isEnabled,
+            fileURL: Self.fileURL(name: name, appGroup: appGroup),
+            isEnabled: isEnabled,
             experimentProvider: experimentProvider
         )
     }
@@ -40,7 +41,10 @@ public final class TweakStore: @unchecked Sendable {
         experimentProvider: (any TweakValueProvider)? = nil
     ) {
         self.init(
-            fileURL: fileURL, isEnabled: isEnabled, arguments: ProcessInfo.processInfo.arguments, device: .current,
+            fileURL: fileURL,
+            isEnabled: isEnabled,
+            arguments: ProcessInfo.processInfo.arguments,
+            device: .current,
             experimentProvider: experimentProvider
         )
     }

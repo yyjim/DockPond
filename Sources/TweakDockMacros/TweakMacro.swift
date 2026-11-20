@@ -35,7 +35,9 @@ public struct TweakMacro: AccessorMacro, PeerMacro {
         if let function = declaration.as(FunctionDeclSyntax.self) {
             try validateAction(function)
             let modifiers = function.modifiers.prefixDescription
-            return ["\(raw: modifiers)let \(raw: function.name.text)Tweak = TweakAction(\(arguments), store: tweakStore) { \(raw: function.name.text)() }"]
+            return [
+                "\(raw: modifiers)let \(raw: function.name.text)Tweak = TweakAction(\(arguments), store: tweakStore) { \(raw: function.name.text)() }"
+            ]
         }
 
         // The accessor role reports invalid properties, so this role does not report them again.

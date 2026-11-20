@@ -27,7 +27,7 @@ enum DemoSources {
     static let fetchedValues = [
         "exp_paywall_layout": "B",
         "exp_onboarding": "Z",
-        "exp_ipad_sidebar": "B",
+        "exp_ipad_sidebar": "B"
     ]
 
     static func fetchRemoteConfig() {

@@ -62,7 +62,13 @@ enum DemoTweaks {
     @Tweak(collection: "Experiments", group: "Remote", name: "Share Sheet", defaultValue: AB.A, from: .experiment("exp_share_sheet"))
     static var shareSheet: AB
 
-    @Tweak(collection: "Experiments", group: "Remote", name: "iPad Sidebar", defaultValue: AB.A, from: .experiment("exp_ipad_sidebar", devices: [.pad]))
+    @Tweak(
+        collection: "Experiments",
+        group: "Remote",
+        name: "iPad Sidebar",
+        defaultValue: AB.A,
+        from: .experiment("exp_ipad_sidebar", devices: [.pad])
+    )
     static var iPadSidebar: AB
 
     @Tweak(collection: "Experiments", group: "Remote", name: "Fetch Remote Config")

@@ -14,10 +14,17 @@ public enum TweakPrimitive: Codable, Hashable, Sendable {
 
     public var kind: Kind {
         switch self {
-        case .bool: .bool
-        case .int: .int
-        case .double: .double
-        case .string: .string
+        case .bool:
+            .bool
+
+        case .int:
+            .int
+
+        case .double:
+            .double
+
+        case .string:
+            .string
         }
     }
 
@@ -28,16 +35,24 @@ public enum TweakPrimitive: Codable, Hashable, Sendable {
         switch kind {
         case .bool:
             switch trimmed.lowercased() {
-            case "true", "yes", "1": self = .bool(true)
-            case "false", "no", "0": self = .bool(false)
-            default: return nil
+            case "true", "yes", "1":
+                self = .bool(true)
+
+            case "false", "no", "0":
+                self = .bool(false)
+
+            default:
+                return nil
             }
+
         case .int:
             guard let value = Int(trimmed) else { return nil }
             self = .int(value)
+
         case .double:
             guard let value = Double(trimmed), value.isFinite else { return nil }
             self = .double(value)
+
         case .string:
             self = .string(string)
         }
@@ -46,10 +61,17 @@ public enum TweakPrimitive: Codable, Hashable, Sendable {
     /// The text of the value, the same in each locale.
     var text: String {
         switch self {
-        case let .bool(value): String(value)
-        case let .int(value): String(value)
-        case let .double(value): String(value)
-        case let .string(value): value
+        case let .bool(value):
+            String(value)
+
+        case let .int(value):
+            String(value)
+
+        case let .double(value):
+            String(value)
+
+        case let .string(value):
+            value
         }
     }
 

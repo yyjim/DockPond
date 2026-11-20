@@ -131,8 +131,12 @@ final class TweakDemoUITests: XCTestCase {
     }
 
     private func assertExperiment(
-        _ name: String, _ value: String, origin: String, property: String,
-        file: StaticString = #filePath, line: UInt = #line
+        _ name: String,
+        _ value: String,
+        origin: String,
+        property: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
     ) {
         assertValue(name, value, file: file, line: line)
         XCTAssertEqual(app.staticTexts["origin.\(name)"].label, origin, "\(name) origin", file: file, line: line)

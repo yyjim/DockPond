@@ -9,7 +9,8 @@ import Testing
     let fileURL = FileManager.default.temporaryDirectory.appending(components: "TweakDockTests", "\(UUID().uuidString).json")
 
     private func makeStore(
-        arguments: [String] = [], device: TweakDevices = .phone,
+        arguments: [String] = [],
+        device: TweakDevices = .phone,
         remote: [String: TweakPrimitive]? = nil
     ) -> TweakStore {
         let provider = remote.map { InMemoryValueProvider(name: "Remote", values: $0) }
@@ -44,8 +45,25 @@ import Testing
     @Test func usesDefaultForValueOutsideRangeOrOptions() {
         let remote = TestProvider(values: ["retries": .string("99"), "theme": .string("blue"), "flag": .string("maybe")])
         let store = makeStore(provider: remote)
-        let retries = Tweak(collection: "C", group: "G", name: "Retries", min: 0, max: 5, defaultValue: 3, from: .experiment("retries"), store: store)
-        let theme = Tweak(collection: "C", group: "G", name: "Theme", options: ["light", "dark"], defaultValue: "light", from: .experiment("theme"), store: store)
+        let retries = Tweak(
+            collection: "C",
+            group: "G",
+            name: "Retries",
+            min: 0,
+            max: 5,
+            defaultValue: 3,
+            from: .experiment("retries"),
+            store: store
+        )
+        let theme = Tweak(
+            collection: "C",
+            group: "G",
+            name: "Theme",
+            options: ["light", "dark"],
+            defaultValue: "light",
+            from: .experiment("theme"),
+            store: store
+        )
         let flag = Tweak(collection: "C", group: "G", name: "Flag", defaultValue: false, from: .experiment("flag"), store: store)
         #expect(retries.currentValue == .default(3))
         #expect(theme.currentValue == .default("light"))
@@ -98,7 +116,7 @@ import Testing
 
     @Test func parsesLaunchArguments() {
         let values = TweakStore.tweakArguments(in: [
-            "app", "-tweak.flag", "YES", "-tweak.empty", "-tweak.last", "L", "-other", "x",
+            "app", "-tweak.flag", "YES", "-tweak.empty", "-tweak.last", "L", "-other", "x"
         ])
         #expect(values == ["flag": "YES", "last": "L"])
     }
@@ -144,7 +162,10 @@ import Testing
     }
 
     @Test func listsExperimentProperties() {
-        let store = makeStore(device: .standardPhone, remote: ["exp_paywall": .string("B"), "exp_pad": .string("B"), "exp_limit": .string("12")])
+        let store = makeStore(
+            device: .standardPhone,
+            remote: ["exp_paywall": .string("B"), "exp_pad": .string("B"), "exp_limit": .string("12")]
+        )
         let pinned = experiment(store, .experiment("exp_pinned"))
         pinned.value = .C
         let tweaks: [any AnyTweak] = [
@@ -152,19 +173,21 @@ import Testing
             experiment(store, .experiment("exp_pad", devices: [.pad])),
             pinned,
             Tweak(collection: "C", group: "G", name: "Limit", defaultValue: 5, from: .experiment("exp_limit"), store: store),
-            Tweak(collection: "C", group: "G", name: "Plain", defaultValue: 1, store: store),
+            Tweak(collection: "C", group: "G", name: "Plain", defaultValue: 1, store: store)
         ]
         #expect(tweaks.experimentProperties == [
-            "exp_paywall": "B", "exp_pad": "default", "exp_pinned": "C", "exp_limit": "12",
+            "exp_paywall": "B", "exp_pad": "default", "exp_pinned": "C", "exp_limit": "12"
         ])
     }
 
     @Test func describesSourceInCaption() {
         let store = makeStore(remote: ["exp_paywall": .string("B")])
         let tweak = experiment(store)
-        #expect(TweakCaption.text(key: "exp_paywall", current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue) == "Remote · exp_paywall")
+        #expect(TweakCaption
+            .text(key: "exp_paywall", current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue) == "Remote · exp_paywall")
         tweak.value = .C
-        #expect(TweakCaption.text(key: "exp_paywall", current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue) == "Override · Remote: B")
+        #expect(TweakCaption
+            .text(key: "exp_paywall", current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue) == "Override · Remote: B")
         #expect(TweakCaption.text(key: nil, current: tweak.primitiveCurrentValue, source: tweak.primitiveSourceValue) == nil)
     }
 }

@@ -11,7 +11,8 @@ public enum TweakCurrentValue<Value: Sendable & Equatable>: Sendable, Equatable 
 
     public var value: Value {
         switch self {
-        case let .default(value), let .source(_, value), let .override(value): value
+        case let .default(value), let .source(_, value), let .override(value):
+            value
         }
     }
 
@@ -21,9 +22,14 @@ public enum TweakCurrentValue<Value: Sendable & Equatable>: Sendable, Equatable 
 
     func map<T>(_ transform: (Value) -> T) -> TweakCurrentValue<T> {
         switch self {
-        case let .default(value): .default(transform(value))
-        case let .source(name, value): .source(name, transform(value))
-        case let .override(value): .override(transform(value))
+        case let .default(value):
+            .default(transform(value))
+
+        case let .source(name, value):
+            .source(name, transform(value))
+
+        case let .override(value):
+            .override(transform(value))
         }
     }
 }

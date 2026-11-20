@@ -4,7 +4,8 @@ import Testing
 
 @Suite struct TweaksWindowTests {
     private func store() -> TweakStore {
-        TweakStore(fileURL: FileManager.default.temporaryDirectory
+        TweakStore(fileURL: FileManager.default
+            .temporaryDirectory
             .appending(components: "TweakDockTests", "\(UUID().uuidString).json"))
     }
 
