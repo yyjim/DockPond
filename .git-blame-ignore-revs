@@ -1,0 +1,4 @@
+# Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` to use this file locally.
+
+# style: format and lint with SwiftFormat 0.64.6 and SwiftLint 0.65.1
+b6786619681a8734951d325ca8a449d4ae2b0e34
