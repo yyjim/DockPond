@@ -31,6 +31,7 @@ final class DockViewController: UIViewController {
     private var isDragging = false
     private var dragStartCenter = CGPoint.zero
     private var idleTask: Task<Void, Never>?
+    private var expansionChangeCount = 0
 
     private let margin: CGFloat = 8
     /// How far a release velocity throws the button or the panel, in seconds.
@@ -128,6 +129,8 @@ final class DockViewController: UIViewController {
     func setExpanded(_ expanded: Bool, animated: Bool = true) {
         guard isViewLoaded, expanded != isExpanded else { return }
         isExpanded = expanded
+        expansionChangeCount += 1
+        let change = expansionChangeCount
         updateLabelState { $0.isExpanded = expanded; $0.isIdle = false }
         idleTask?.cancel()
         let panel = panelHost.view!
@@ -148,8 +151,9 @@ final class DockViewController: UIViewController {
             self.button.alpha = expanded ? 0 : 1
             self.button.transform = expanded ? CGAffineTransform(scaleX: 0.6, y: 0.6) : .identity
         }
+        // UIKit runs the completion of an earlier animation while a later one is in progress.
         let completion = { (_: Bool) in
-            if self.isExpanded { return }
+            if expanded || change != self.expansionChangeCount { return }
             panel.isHidden = true
             panel.transform = .identity
             self.scheduleIdleFade()
@@ -375,7 +379,9 @@ struct DockPosition: Equatable {
         guard let edge = defaults.string(forKey: edgeKey(id)).flatMap(Edge.init(rawValue:)) else {
             return defaultPosition
         }
-        let fraction = defaults.object(forKey: fractionKey(id)) as? Double ?? defaultPosition.fraction
+        let key = fractionKey(id)
+        // A launch argument gives the value as a String, which `as? Double` rejects.
+        let fraction = defaults.object(forKey: key) == nil ? defaultPosition.fraction : CGFloat(defaults.double(forKey: key))
         return DockPosition(edge: edge, fraction: fraction)
     }
 

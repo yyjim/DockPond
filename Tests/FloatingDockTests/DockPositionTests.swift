@@ -42,4 +42,14 @@ struct DockPositionTests {
         #expect(DockPosition.load(id: "a", default: fallback, defaults: defaults) == DockPosition(edge: .top, fraction: 0.25))
         #expect(DockPosition.load(id: "b", default: fallback, defaults: defaults) == fallback)
     }
+
+    @Test func loadsAFractionGivenAsAString() throws {
+        let defaults = try #require(UserDefaults(suiteName: "DockPositionStringTests"))
+        defaults.removePersistentDomain(forName: "DockPositionStringTests")
+        defaults.set("leading", forKey: "FloatingDock.a.edge")
+        defaults.set("0.2", forKey: "FloatingDock.a.fraction")
+        let fallback = DockPosition(edge: .trailing, fraction: 0.7)
+
+        #expect(DockPosition.load(id: "a", default: fallback, defaults: defaults) == DockPosition(edge: .leading, fraction: 0.2))
+    }
 }

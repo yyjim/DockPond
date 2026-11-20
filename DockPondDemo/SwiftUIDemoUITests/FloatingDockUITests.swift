@@ -15,6 +15,17 @@ final class FloatingDockUITests: XCTestCase {
     }
 
     @MainActor
+    func testLaunchArgumentSetsTheButtonPosition() {
+        app.terminate()
+        app.launchArguments = ["-FloatingDock.dev-tools.edge", "trailing", "-FloatingDock.dev-tools.fraction", "0.2"]
+        app.launch()
+
+        let button = app.buttons["FloatingDock.dev-tools.button"]
+        XCTAssertTrue(button.waitForExistence(timeout: 5))
+        XCTAssertLessThan(button.frame.midY, app.frame.height * 0.4, "Button starts near the top of the trailing edge")
+    }
+
+    @MainActor
     func testButtonDocksToNearestEdgeAfterDrag() {
         let button = app.buttons["FloatingDock.dev-tools.button"]
         XCTAssertTrue(button.waitForExistence(timeout: 5))
