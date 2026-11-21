@@ -398,11 +398,18 @@ An extension sees the changes of the app only when it makes a store or changes a
 
 ```swift
 #if !DEBUG
-AppTweaks.tweakStore.isEnabled = false   // The store ignores overrides. Each tweak returns its source value or its default value.
+TweakStore.shared.isEnabled = false        // The store of each @Tweaks type without store:
+TweakStore.experiments.isEnabled = false   // A custom store. Refer to "Use more than one store".
 #endif
 ```
 
+`isEnabled` is a property of the store, not of a `@Tweaks` type.
+A disabled store ignores overrides and launch arguments.
+Each tweak in the store returns its source value or its default value.
+
 Set `isEnabled` on each store that the app uses.
+All `@Tweaks` types that use the same store are disabled together.
+`AppTweaks.tweakStore` is the same object as `TweakStore.shared` when `AppTweaks` has no `store:`.
 
 ### Experiments
 
