@@ -58,10 +58,10 @@ module TweakDock
       def parse(data)
         fail!("write the settings as a map.") unless data.is_a?(Hash)
         unknown!(data.keys - SETTINGS, "settings")
+        %w[output type store collection group access].each { |setting| boolean!(setting, data[setting]) }
 
         output = data["output"]
         fail!("add output, the path of the Swift file.") unless output.is_a?(String) && !output.empty?
-        %w[output type store collection group access].each { |setting| boolean!(setting, data[setting]) }
         type_name = data.fetch("type", "Experiments").to_s
         unless Naming.identifier?(type_name) && !Naming::SWIFT_KEYWORDS.include?(type_name) &&
                !RESERVED_TYPE_NAMES.include?(type_name)

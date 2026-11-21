@@ -65,6 +65,7 @@ class SpecTest < Minitest::Test
     assert_spec_error("output: E.swift\nexperiments:\n  exp: {variants: [A], group: no}\n", "exp.group: put quotes")
     assert_spec_error("output: E.swift\nexperiments:\n  exp: {variants: [A], devices: off}\n", "exp.devices: put quotes")
     assert_spec_error("output: E.swift\naccess: yes\nexperiments:\n  exp: [A]\n", "access: put quotes")
+    assert_spec_error("output: yes\nexperiments:\n  exp: [A]\n", "output: put quotes")
   end
 
   def test_uses_the_default_names_for_empty_values
