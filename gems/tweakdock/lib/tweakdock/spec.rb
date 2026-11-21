@@ -19,16 +19,17 @@ module TweakDock
     EXPERIMENT_SETTINGS = %w[variants default devices group].freeze
     KEY = /\A[A-Za-z][A-Za-z0-9_]*\z/
 
-    # Swift does not allow the first four as type names. The generated code refers to the others,
-    # so a nested type with one of these names would hide the real type.
+    # Swift does not allow a nested type named Any, Protocol, Self, or Type. The generated code refers to
+    # String, CaseIterable, and the TweakDock types, so a type with one of these names would hide the real one.
     RESERVED_TYPE_NAMES = %w[
       Any Protocol Self Type String CaseIterable
       AnyTweak Tweak TweakAction TweakControl TweakCurrentValue TweakDevices TweakPrimitive TweakSource
       TweakStore TweakValue TweakValueProvider Tweaks
     ].freeze
     RESERVED_PROPERTY_NAMES = %w[allTweaks tweakStore].freeze
-    # Static members of each variant type, and names that Swift does not allow after a dot.
-    RESERVED_VARIANTS = %w[allCases tweakControl _ Self Type].freeze
+    # Members that each variant type already has, the metatype names Type and Protocol, which Swift reads
+    # differently after a dot, and _, which the generator does not escape.
+    RESERVED_VARIANTS = %w[allCases tweakControl AllCases RawValue Type Protocol _].freeze
 
     def self.load(path)
       document = Psych.parse_file(path)
@@ -60,6 +61,7 @@ module TweakDock
 
         output = data["output"]
         fail!("add output, the path of the Swift file.") unless output.is_a?(String) && !output.empty?
+        %w[type group collection].each { |setting| boolean!(setting, data[setting]) }
         type_name = data.fetch("type", "Experiments").to_s
         unless Naming.identifier?(type_name) && !Naming::SWIFT_KEYWORDS.include?(type_name) &&
                !RESERVED_TYPE_NAMES.include?(type_name)
@@ -97,6 +99,7 @@ module TweakDock
         variants = variants(key, entry["variants"])
         default = entry.fetch("default", variants.first)
         boolean!(key, default)
+        boolean!(key, entry["group"])
         fail!("#{key}: the default #{default} is not in variants.") unless variants.include?(default)
 
         Experiment.new(key: key, variants: variants, default: default,

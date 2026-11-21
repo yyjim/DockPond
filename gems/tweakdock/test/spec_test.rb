@@ -59,6 +59,12 @@ class SpecTest < Minitest::Test
     assert_spec_error("output: E.swift\nexperiments:\n  on: [A]\n", "experiments: put quotes around on, off")
   end
 
+  def test_rejects_unquoted_boolean_names
+    assert_spec_error("output: E.swift\ngroup: yes\nexperiments:\n  exp: [A]\n", "group: put quotes around on, off")
+    assert_spec_error("output: E.swift\ncollection: on\nexperiments:\n  exp: [A]\n", "collection: put quotes")
+    assert_spec_error("output: E.swift\nexperiments:\n  exp: {variants: [A], group: no}\n", "exp: put quotes")
+  end
+
   def test_rejects_an_empty_file
     assert_spec_error("", "write the settings as a map")
     assert_spec_error("# only a comment\n", "write the settings as a map")
@@ -71,8 +77,8 @@ class SpecTest < Minitest::Test
     assert_spec_error("output: E.swift\ntype: String\nexperiments:\n  exp: [A]\n", "type String is not available")
   end
 
-  def test_rejects_variants_that_swift_does_not_allow_after_a_dot
-    %w[_ Self Type].each do |variant|
+  def test_rejects_variants_that_the_variant_type_already_uses
+    %w[_ Type Protocol RawValue AllCases].each do |variant|
       assert_spec_error("output: E.swift\nexperiments:\n  exp: [A, #{variant}]\n", "rename the variant #{variant}")
     end
   end
