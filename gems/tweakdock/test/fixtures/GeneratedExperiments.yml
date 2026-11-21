@@ -1,0 +1,17 @@
+output: ../../../../Tests/TweakDockTests/GeneratedExperiments.swift
+type: GeneratedExperiments
+store: .generated
+collection: Generated
+
+experiments:
+  gen_paywall: [A, B, C]
+  gen_ipad_sidebar:
+    variants: [A, B]
+    default: B
+    devices: [pad]
+  gen_magic_erase:
+    variants: ["on", "off"]
+    default: "off"
+  gen_keyword:
+    variants: [control, default]
+    group: Lab
