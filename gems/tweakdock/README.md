@@ -5,10 +5,10 @@ Each experiment in the file becomes a variant enum and a `@Tweak` property.
 
 ## Install
 
-Add the gem to the `Gemfile` of the app. Replace `x.y.z` with the version of the DockPond package that the app uses.
+Add the gem to the `Gemfile` of the app. Use the tag of the DockPond version that the app uses.
 
 ```ruby
-gem "tweakdock", git: "https://github.com/yyjim/DockPond", tag: "x.y.z", glob: "gems/tweakdock/*.gemspec"
+gem "tweakdock", git: "https://github.com/yyjim/DockPond", tag: "0.6.0", glob: "gems/tweakdock/*.gemspec"
 ```
 
 Then run `bundle install`.
