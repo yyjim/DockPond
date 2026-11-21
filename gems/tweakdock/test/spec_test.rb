@@ -55,6 +55,33 @@ class SpecTest < Minitest::Test
                       "put quotes around on, off")
   end
 
+  def test_rejects_unquoted_boolean_keys
+    assert_spec_error("output: E.swift\nexperiments:\n  on: [A]\n", "experiments: put quotes around on, off")
+  end
+
+  def test_rejects_an_empty_file
+    assert_spec_error("", "write the settings as a map")
+    assert_spec_error("# only a comment\n", "write the settings as a map")
+  end
+
+  def test_rejects_type_names_that_swift_or_the_generated_code_uses
+    assert_spec_error("output: E.swift\nexperiments:\n  type: [A]\n", "uses the type name Type")
+    assert_spec_error("output: E.swift\nexperiments:\n  string: [A]\n", "uses the type name String")
+    assert_spec_error("output: E.swift\ntype: class\nexperiments:\n  exp: [A]\n", "type class is not available")
+    assert_spec_error("output: E.swift\ntype: String\nexperiments:\n  exp: [A]\n", "type String is not available")
+  end
+
+  def test_rejects_variants_that_swift_does_not_allow_after_a_dot
+    %w[_ Self Type].each do |variant|
+      assert_spec_error("output: E.swift\nexperiments:\n  exp: [A, #{variant}]\n", "rename the variant #{variant}")
+    end
+  end
+
+  def test_rejects_a_store_that_is_not_an_expression
+    assert_spec_error("output: E.swift\nstore: 5\nexperiments:\n  exp: [A]\n", "store must be a Swift expression")
+    assert_spec_error("output: E.swift\nstore: ''\nexperiments:\n  exp: [A]\n", "store must be a Swift expression")
+  end
+
   def test_rejects_a_default_that_is_not_a_variant
     assert_spec_error("output: E.swift\nexperiments:\n  exp: {variants: [A, B], default: C}\n",
                       "the default C is not in variants")

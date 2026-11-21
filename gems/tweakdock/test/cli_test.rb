@@ -41,6 +41,16 @@ class CLITest < Minitest::Test
     assert_equal false, File.read(output).empty?
   end
 
+  def test_continues_after_a_file_with_an_error
+    broken = write_spec("output: Broken.swift\nexperiments:\n  exp: [A, A]\n", name: "Broken.yml")
+    valid = write_spec("output: Valid.swift\nexperiments:\n  exp: [A, B]\n", name: "Valid.yml")
+
+    status, out, err = run_cli("generate", broken, valid)
+    assert_equal 1, status
+    assert_includes err, "duplicate variants A"
+    assert_includes out, "Wrote #{File.join(@dir, 'Valid.swift')}."
+  end
+
   def test_reports_spec_errors
     path = write_spec("output: Out.swift\nexperiments:\n  exp: [A, A]\n")
 

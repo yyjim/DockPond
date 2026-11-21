@@ -9,7 +9,6 @@ module TweakDock
     def all_devices? = devices == Spec::DEVICES
   end
 
-  # The contents of an experiments YAML file.
   Spec = Struct.new(:path, :output, :type_name, :store, :collection, :access, :experiments, keyword_init: true) do
     def output_path = File.expand_path(output, File.dirname(path))
   end
@@ -20,18 +19,20 @@ module TweakDock
     EXPERIMENT_SETTINGS = %w[variants default devices group].freeze
     KEY = /\A[A-Za-z][A-Za-z0-9_]*\z/
 
-    # Names that TweakDock or the @Tweaks macro already use in the generated type.
+    # Swift does not allow the first four as type names. The generated code refers to the others,
+    # so a nested type with one of these names would hide the real type.
     RESERVED_TYPE_NAMES = %w[
+      Any Protocol Self Type String CaseIterable
       AnyTweak Tweak TweakAction TweakControl TweakCurrentValue TweakDevices TweakPrimitive TweakSource
       TweakStore TweakValue TweakValueProvider Tweaks
     ].freeze
     RESERVED_PROPERTY_NAMES = %w[allTweaks tweakStore].freeze
-    # Static members of each variant type.
-    RESERVED_VARIANTS = %w[allCases tweakControl].freeze
+    # Static members of each variant type, and names that Swift does not allow after a dot.
+    RESERVED_VARIANTS = %w[allCases tweakControl _ Self Type].freeze
 
     def self.load(path)
       document = Psych.parse_file(path)
-      check_duplicate_keys(document, path)
+      check_duplicate_keys(document, path) if document
       Parser.new(path).parse(YAML.safe_load_file(path))
     rescue Psych::Exception => e
       raise Error, "#{path}: #{e.message}"
@@ -60,7 +61,14 @@ module TweakDock
         output = data["output"]
         fail!("add output, the path of the Swift file.") unless output.is_a?(String) && !output.empty?
         type_name = data.fetch("type", "Experiments").to_s
-        fail!("type must be a Swift type name.") unless Naming.identifier?(type_name)
+        unless Naming.identifier?(type_name) && !Naming::SWIFT_KEYWORDS.include?(type_name) &&
+               !RESERVED_TYPE_NAMES.include?(type_name)
+          fail!("type #{type_name} is not available. Use a Swift type name that Swift and TweakDock do not use.")
+        end
+        store = data["store"]
+        unless store.nil? || (store.is_a?(String) && !store.strip.empty?)
+          fail!("store must be a Swift expression, for example .experiments.")
+        end
         access = data["access"]
         fail!("access can only be public.") unless access.nil? || access == "public"
 
@@ -68,9 +76,12 @@ module TweakDock
         entries = data["experiments"]
         fail!("add experiments as a map from each key to its variants.") unless entries.is_a?(Hash) && !entries.empty?
 
-        experiments = entries.map { |key, entry| experiment(key.to_s, entry, group) }
+        experiments = entries.map do |key, entry|
+          boolean!("experiments", key)
+          experiment(key.to_s, entry, group)
+        end
         check_names(experiments)
-        Spec.new(path: @path, output: output, type_name: type_name, store: data["store"],
+        Spec.new(path: @path, output: output, type_name: type_name, store: store,
                  collection: data.fetch("collection", "Experiments").to_s, access: access, experiments: experiments)
       end
 
@@ -118,7 +129,7 @@ module TweakDock
       def check_names(experiments)
         experiments.each do |experiment|
           if RESERVED_TYPE_NAMES.include?(experiment.type_name)
-            fail!("#{experiment.key}: rename it. TweakDock uses the type name #{experiment.type_name}.")
+            fail!("#{experiment.key}: rename it. Swift or TweakDock uses the type name #{experiment.type_name}.")
           end
           if RESERVED_PROPERTY_NAMES.include?(experiment.property_name)
             fail!("#{experiment.key}: rename it. @Tweaks uses the name #{experiment.property_name}.")

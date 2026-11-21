@@ -1,6 +1,7 @@
 module TweakDock
-  # Writes the Swift code of a `Spec`.
   class Generator
+    STRING_ESCAPES = { "\\" => "\\\\", "\"" => "\\\"", "\n" => "\\n", "\r" => "\\r", "\t" => "\\t" }.freeze
+
     def initialize(spec)
       @spec = spec
     end
@@ -54,7 +55,8 @@ module TweakDock
     end
 
     def string(text)
-      "\"#{text.gsub(/[\\"]/) { |character| "\\#{character}" }}\""
+      escaped = text.gsub(/[\\"[:cntrl:]]/) { |character| STRING_ESCAPES[character] || format("\\u{%X}", character.ord) }
+      "\"#{escaped}\""
     end
 
     def indent(text)

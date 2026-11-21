@@ -55,4 +55,17 @@ enum GeneratedExperiments {
         from: .experiment("gen_keyword")
     )
     static var genKeyword: GenKeyword
+
+    enum Default: String, CaseIterable, TweakValue {
+        case A, B
+    }
+
+    @Tweak(
+        collection: "Generated",
+        group: "A/B Tests",
+        name: "default",
+        defaultValue: Default.A,
+        from: .experiment("default")
+    )
+    static var `default`: Default
 }

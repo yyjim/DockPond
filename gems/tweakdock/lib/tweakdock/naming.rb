@@ -3,8 +3,8 @@ module TweakDock
     SWIFT_KEYWORDS = %w[
       Any Protocol Self Type actor as associatedtype async await break case catch class continue default defer
       deinit do else enum extension fallthrough false fileprivate for func guard if import in init inout internal
-      is let nil open operator private protocol public repeat rethrows return self some static struct subscript
-      super switch throw throws true try typealias var where while
+      is let nil open operator precedencegroup private protocol public repeat rethrows return self some static
+      struct subscript super switch throw throws true try typealias var where while
     ].freeze
 
     IDENTIFIER = /\A[A-Za-z_][A-Za-z0-9_]*\z/

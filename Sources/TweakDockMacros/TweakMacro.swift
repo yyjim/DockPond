@@ -36,7 +36,7 @@ public struct TweakMacro: AccessorMacro, PeerMacro {
             try validateAction(function)
             let modifiers = function.modifiers.prefixDescription
             return [
-                "\(raw: modifiers)let \(raw: function.name.text)Tweak = TweakAction(\(arguments), store: tweakStore) { \(raw: function.name.text)() }"
+                "\(raw: modifiers)let \(raw: function.name.unescaped)Tweak = TweakAction(\(arguments), store: tweakStore) { \(raw: function.name.text)() }"
             ]
         }
 
@@ -109,7 +109,7 @@ private enum TweakEntry {
         }
         if let function = declaration.as(FunctionDeclSyntax.self), function.attributes.hasTweak,
            (try? TweakMacro.validateAction(function)) != nil {
-            return function.name.text
+            return function.name.unescaped
         }
         return nil
     }
@@ -143,7 +143,7 @@ private struct TweakProperty {
         guard let variable = declaration.as(VariableDeclSyntax.self),
               variable.bindings.count == 1,
               let binding = variable.bindings.first,
-              let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text
+              let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.unescaped
         else {
             throw MacroError("@Tweak applies only to one 'static var' or a 'static func'.")
         }
@@ -160,6 +160,11 @@ private struct TweakProperty {
         self.type = type
         modifiers = variable.modifiers.filter { $0.detail == nil }.prefixDescription
     }
+}
+
+private extension TokenSyntax {
+    /// `default` for `` `default` ``, so that the peer is `defaultTweak`.
+    var unescaped: String { identifier?.name ?? text }
 }
 
 private extension DeclModifierListSyntax {

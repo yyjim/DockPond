@@ -71,4 +71,11 @@ class GeneratorTest < Minitest::Test
     assert_includes swift, "defaultValue: Exp.`default`"
     assert_includes swift, 'group: "Say \"hi\" \\\\ bye"'
   end
+
+  def test_escapes_line_breaks_and_control_characters
+    swift = generate("output: E.swift\ngroup: \"Lab\\nTests\\t\\u0001\"\nexperiments:\n  exp: [precedencegroup]\n")
+
+    assert_includes swift, 'group: "Lab\\nTests\\t\\u{1}"'
+    assert_includes swift, "case `precedencegroup`"
+  end
 end

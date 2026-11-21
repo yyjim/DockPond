@@ -23,7 +23,7 @@ module TweakDock
       when "generate", "check"
         return usage(2, "give at least one YAML file.") if files.empty?
 
-        results = files.map { |file| send(command, Spec.load(file)) }
+        results = files.map { |file| process(command, file) }
         results.all? ? 0 : 1
       when "--version", "-v"
         @out.puts(VERSION)
@@ -33,33 +33,38 @@ module TweakDock
       else
         usage(2, "unknown command #{command}.")
       end
-    rescue Error, SystemCallError => e
-      @err.puts("error: #{e.message}")
-      1
     end
 
     private
 
+    def process(command, file)
+      send(command, Spec.load(file))
+    rescue Error, SystemCallError => e
+      @err.puts("error: #{e.message}")
+      false
+    end
+
     def generate(spec)
       path = spec.output_path
-      if up_to_date?(spec)
+      swift = Generator.new(spec).swift
+      if up_to_date?(path, swift)
         @out.puts("#{path} is up to date.")
       else
-        File.write(path, Generator.new(spec).swift)
+        File.write(path, swift)
         @out.puts("Wrote #{path}.")
       end
       true
     end
 
     def check(spec)
-      return true if up_to_date?(spec)
+      return true if up_to_date?(spec.output_path, Generator.new(spec).swift)
 
       @err.puts("error: #{spec.output_path} is not up to date. Run: tweakdock generate #{spec.path}")
       false
     end
 
-    def up_to_date?(spec)
-      File.exist?(spec.output_path) && File.read(spec.output_path) == Generator.new(spec).swift
+    def up_to_date?(path, swift)
+      File.exist?(path) && File.read(path) == swift
     end
 
     def usage(status, message = nil)

@@ -18,14 +18,19 @@ extension TweakStore {
 @Suite struct GeneratedExperimentsTests {
     @Test func listsTheExperimentsInFileOrder() {
         #expect(GeneratedExperiments.allTweaks.map(\.name) == [
-            "gen_paywall", "gen_ipad_sidebar", "gen_magic_erase", "gen_keyword"
+            "gen_paywall", "gen_ipad_sidebar", "gen_magic_erase", "gen_keyword", "default"
         ])
-        #expect(GeneratedExperiments.allTweaks.map(\.group) == ["A/B Tests", "A/B Tests", "A/B Tests", "Lab"])
+        #expect(GeneratedExperiments.allTweaks.map(\.group) == ["A/B Tests", "A/B Tests", "A/B Tests", "Lab", "A/B Tests"])
     }
 
     @Test func readsTheRemoteValues() {
         #expect(GeneratedExperiments.genPaywall == .B)
         #expect(GeneratedExperiments.genKeyword == .default)
+    }
+
+    @Test func compilesAKeywordKey() {
+        #expect(GeneratedExperiments.`default` == .A)
+        #expect(GeneratedExperiments.defaultTweak.name == "default")
     }
 
     @Test func usesTheDefaultOnOtherDevices() {
@@ -42,7 +47,8 @@ extension TweakStore {
             "gen_paywall": "B",
             "gen_ipad_sidebar": "default",
             "gen_magic_erase": "default",
-            "gen_keyword": "default"
+            "gen_keyword": "default",
+            "default": "default"
         ])
     }
 }
