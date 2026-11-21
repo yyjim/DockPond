@@ -1,0 +1,12 @@
+{
+  "name": "dockpond",
+  "version": "0.6.0",
+  "description": "Teaches agents to add and use FloatingDock, GaugeDock, and TweakDock in an iOS app.",
+  "author": {
+    "name": "yyjim"
+  },
+  "homepage": "https://github.com/yyjim/DockPond",
+  "repository": "https://github.com/yyjim/DockPond",
+  "license": "MIT",
+  "keywords": ["ios", "swift", "swiftui", "uikit", "debug", "tweaks", "layout"]
+}

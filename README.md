@@ -50,6 +50,16 @@ Then add the products that you need to your target:
 
 In Xcode, select **File > Add Package Dependencies**, and enter the repository URL.
 
+### Agent skill
+
+The `dockpond` plugin teaches coding agents to add and use the three libraries. To install it in Claude Code, run:
+
+```
+/plugin install dockpond --marketplace yyjim/DockPond
+```
+
+Other agents can read the skill in [`plugins/dockpond/skills/dockpond`](plugins/dockpond/skills/dockpond/SKILL.md).
+
 ## FloatingDock
 
 The dock shows a button in a separate window above the app, also above sheets.

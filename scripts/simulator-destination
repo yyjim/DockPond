@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# Prints an xcodebuild destination for an iPhone simulator on the newest iOS runtime.
+# It selects iPhone Duo when it is available, because the hinge features need it.
+# It skips device-specific runtimes, such as iOS-27-2-iPhone19-4, because xcodebuild test can crash on them.
+require "json"
+
+devices = JSON.parse(`xcrun simctl list devices available --json`)["devices"]
+candidates = devices.flat_map do |runtime, list|
+  version = runtime[/\.iOS-(\d+(?:-\d+)*)\z/, 1] or next []
+  list.select { |device| device["name"].start_with?("iPhone") }
+      .map { |device| [Gem::Version.new(version.tr("-", ".")), device] }
+end
+abort "No available iPhone simulator. Install an iOS runtime in Xcode." if candidates.empty?
+
+newest = candidates.map(&:first).max
+device = candidates.select { |version, _| version == newest }.map(&:last)
+                   .min_by { |d| [d["name"] == "iPhone Duo" ? 0 : 1, d["name"]] }
+puts "platform=iOS Simulator,id=#{device["udid"]}"
