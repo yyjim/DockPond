@@ -3,14 +3,13 @@ import SwiftUI
 import UIKit
 
 /// A window that shows the tweaks UI when you shake the device.
+/// A shake shows the tweaks only when the store of one of the tweaks is enabled.
 open class TweaksWindow: UIWindow {
     private let tweaks: [any AnyTweak]
-    private let store: TweakStore
     private weak var presentedTweaks: UIViewController?
 
-    public init(windowScene: UIWindowScene, tweaks: [any AnyTweak], store: TweakStore = .shared) {
+    public init(windowScene: UIWindowScene, tweaks: [any AnyTweak]) {
         self.tweaks = tweaks
-        self.store = store
         super.init(windowScene: windowScene)
     }
 
@@ -20,7 +19,7 @@ open class TweaksWindow: UIWindow {
     }
 
     open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-        guard motion == .motionShake, store.isEnabled else {
+        guard motion == .motionShake, tweaks.hasEnabledStore else {
             return super.motionEnded(motion, with: event)
         }
         if !presentTweaks() {

@@ -24,19 +24,21 @@ public macro Tweaks(store: TweakStore = .shared) = #externalMacro(module: "Tweak
 /// @Tweak(collection: "UI", group: "Theme", name: "Dark Mode", defaultValue: true)
 /// static var isDarkMode: Bool
 /// ```
+///
+/// Give `from` to read the value from an experiment, for example `from: .experiment("exp_paywall")`.
 @attached(accessor)
 @attached(peer, names: suffixed(Tweak))
-public macro Tweak<T>(collection: String, group: String, name: String, defaultValue: T)
+public macro Tweak<T>(collection: String, group: String, name: String, defaultValue: T, from: TweakSource? = nil)
     = #externalMacro(module: "TweakDockMacros", type: "TweakMacro")
 
 @attached(accessor)
 @attached(peer, names: suffixed(Tweak))
-public macro Tweak<T>(collection: String, group: String, name: String, min: T, max: T, defaultValue: T)
+public macro Tweak<T>(collection: String, group: String, name: String, min: T, max: T, defaultValue: T, from: TweakSource? = nil)
     = #externalMacro(module: "TweakDockMacros", type: "TweakMacro")
 
 @attached(accessor)
 @attached(peer, names: suffixed(Tweak))
-public macro Tweak<T>(collection: String, group: String, name: String, options: [T], defaultValue: T)
+public macro Tweak<T>(collection: String, group: String, name: String, options: [T], defaultValue: T, from: TweakSource? = nil)
     = #externalMacro(module: "TweakDockMacros", type: "TweakMacro")
 
 /// Makes a static method an action tweak, which the tweaks UI runs when you tap it.

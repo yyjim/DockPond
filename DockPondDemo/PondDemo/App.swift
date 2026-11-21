@@ -23,7 +23,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if ProcessInfo.processInfo.arguments.contains("-resetTweaks") {
             StudioTweaks.tweakStore.resetAll()
         }
-        let window = TweaksWindow(windowScene: windowScene, tweaks: StudioTweaks.allTweaks, store: StudioTweaks.tweakStore)
+        let window = TweaksWindow(windowScene: windowScene, tweaks: StudioTweaks.allTweaks)
         window.rootViewController = UIHostingController(rootView: PondRoot { [weak window] in window?.presentTweaks() })
         window.makeKeyAndVisible()
         self.window = window

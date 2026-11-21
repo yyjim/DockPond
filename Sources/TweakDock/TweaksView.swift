@@ -27,7 +27,11 @@ public struct TweaksView: View {
                     Button("Reset All") { confirmsReset = true }
                 }
             }
-            .confirmationDialog("Reset all tweaks to their default values?", isPresented: $confirmsReset, titleVisibility: .visible) {
+            .confirmationDialog(
+                "Reset all tweaks? Each tweak goes back to its source value or its default value.",
+                isPresented: $confirmsReset,
+                titleVisibility: .visible
+            ) {
                 Button("Reset All Tweaks", role: .destructive) {
                     tweaks.forEach { ($0 as? any PrimitiveTweak)?.reset() }
                 }
@@ -68,30 +72,41 @@ private struct TweakCollectionView: View {
 
 private struct TweakRow: View {
     let tweak: any PrimitiveTweak
-    @State private var value: TweakPrimitive
-    @State private var changes: AnyPublisher<TweakPrimitive, Never>
+    @State private var current: TweakCurrentValue<TweakPrimitive>
+    @State private var caption: String?
+    @State private var changes: AnyPublisher<Void, Never>
 
     init(tweak: any PrimitiveTweak) {
         self.tweak = tweak
-        _value = State(initialValue: tweak.primitiveValue)
-        _changes = State(initialValue: tweak.primitivePublisher.receive(on: DispatchQueue.main).eraseToAnyPublisher())
+        let current = tweak.primitiveCurrentValue
+        _current = State(initialValue: current)
+        _caption = State(initialValue: Self.caption(for: tweak, current: current))
+        _changes = State(initialValue: tweak.changeSignal.receive(on: DispatchQueue.main).eraseToAnyPublisher())
     }
 
+    private var value: TweakPrimitive { current.value }
+
     var body: some View {
-        content.onReceive(changes) { value = $0 }
+        content
+            .onReceive(changes) { refresh() }
+            .swipeActions {
+                if tweak.source != nil, current.isOverride {
+                    Button("Reset") { tweak.reset() }
+                }
+            }
     }
 
     @ViewBuilder private var content: some View {
         switch (tweak.control, value) {
         case (.toggle, .bool):
-            Toggle(tweak.name, isOn: binding(Bool.self))
+            Toggle(isOn: binding(Bool.self)) { label }
 
         case let (.number(range), .int), let (.number(range), .double):
             numberRow(range: range)
 
         case (.text, .string):
             HStack {
-                Text(tweak.name)
+                label
                 TextField(tweak.name, text: binding(String.self))
                     .multilineTextAlignment(.trailing)
                     .foregroundStyle(.secondary)
@@ -101,7 +116,7 @@ private struct TweakRow: View {
             NavigationLink {
                 OptionsView(tweak: tweak, options: options)
             } label: {
-                LabeledContent(tweak.name, value: current)
+                LabeledContent { Text(current) } label: { label }
             }
 
         default:
@@ -120,15 +135,24 @@ private struct TweakRow: View {
                 }
             }
         )
+        let typed = Binding(
+            get: { number.wrappedValue },
+            set: { typed in
+                // The text field writes its shown value again when editing ends. That write must not pin a source value as an override.
+                let typed = isInteger ? typed.rounded() : typed
+                guard typed != TweakNumberField.shown(number.wrappedValue) else { return }
+                number.wrappedValue = typed
+            }
+        )
         let step = TweakStepper.stepSize(defaultValue: tweak.defaultPrimitive.doubleValue ?? 0, isInteger: isInteger, range: range)
         let stepped = Binding(
             get: { number.wrappedValue },
             set: { number.wrappedValue = TweakStepper.trimmed($0, step: step) }
         )
         return HStack {
-            Text(tweak.name)
+            label
             Spacer()
-            TextField(tweak.name, value: number, format: .number.precision(.fractionLength(0...3)))
+            TextField(tweak.name, value: typed, format: TweakNumberField.format)
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 80)
@@ -141,9 +165,20 @@ private struct TweakRow: View {
         }
     }
 
-    private var isInteger: Bool {
-        if case .int = tweak.defaultPrimitive { true } else { false }
+    @ViewBuilder private var label: some View {
+        if let caption {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(tweak.name)
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(current.isOverride ? Color.orange : Color.secondary)
+            }
+        } else {
+            Text(tweak.name)
+        }
     }
+
+    private var isInteger: Bool { tweak.defaultPrimitive.kind == .int }
 
     private func binding<Value: TweakValue>(_: Value.Type) -> Binding<Value> {
         Binding(
@@ -154,7 +189,18 @@ private struct TweakRow: View {
 
     private func update(_ primitive: TweakPrimitive) {
         tweak.primitiveValue = primitive
-        value = tweak.primitiveValue
+        refresh()
+    }
+
+    private func refresh() {
+        let newCurrent = tweak.primitiveCurrentValue
+        let newCaption = Self.caption(for: tweak, current: newCurrent)
+        if newCurrent != current { current = newCurrent }
+        if newCaption != caption { caption = newCaption }
+    }
+
+    private static func caption(for tweak: any PrimitiveTweak, current: TweakCurrentValue<TweakPrimitive>) -> String? {
+        TweakCaption.text(key: tweak.source?.key, current: current, source: tweak.primitiveSourceValue)
     }
 }
 
@@ -164,16 +210,18 @@ private struct OptionsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        List(options, id: \.self) { option in
-            Button {
-                tweak.primitiveValue = .string(option)
-                dismiss()
-            } label: {
-                HStack {
-                    Text(option).foregroundStyle(Color.primary)
-                    Spacer()
-                    if tweak.primitiveValue == .string(option) {
-                        Image(systemName: "checkmark")
+        let current = tweak.primitiveCurrentValue
+        let followsSource = tweak.source != nil && !current.isOverride
+        List {
+            if tweak.source != nil {
+                Section {
+                    row(followTitle, isSelected: followsSource) { tweak.reset() }
+                }
+            }
+            Section {
+                ForEach(options, id: \.self) { option in
+                    row(option, isSelected: !followsSource && current.value == .string(option)) {
+                        tweak.primitiveValue = .string(option)
                     }
                 }
             }
@@ -181,6 +229,56 @@ private struct OptionsView: View {
         .groupedListStyle()
         .navigationTitle(tweak.name)
         .inlineNavigationTitle()
+    }
+
+    private var followTitle: String {
+        if let source = tweak.primitiveSourceValue {
+            return "Use \(source.name) (\(source.value.displayText))"
+        }
+        return "Use Default (\(tweak.defaultPrimitive.displayText))"
+    }
+
+    private func row(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            dismiss()
+        } label: {
+            HStack {
+                Text(title).foregroundStyle(Color.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                }
+            }
+        }
+    }
+}
+
+enum TweakCaption {
+    /// Describes where the value of a tweak with a source comes from.
+    static func text(
+        key: String?, current: TweakCurrentValue<TweakPrimitive>, source: @autoclosure () -> (name: String, value: TweakPrimitive)?
+    ) -> String? {
+        guard let key else { return nil }
+        switch current {
+        case let .source(name, _):
+            return "\(name) · \(key)"
+
+        case .default:
+            return "Default · \(key)"
+
+        case .override:
+            if let source = source() {
+                return "Override · \(source.name): \(source.value.displayText)"
+            }
+            return "Override · \(key)"
+        }
+    }
+}
+
+extension TweakPrimitive {
+    var displayText: String {
+        if case let .double(value) = self { value.formatted() } else { text }
     }
 }
 
@@ -249,6 +347,15 @@ private extension Array where Element == any AnyTweak {
             }
         }
         return groups
+    }
+}
+
+enum TweakNumberField {
+    static let format = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0...3))
+
+    /// The value that the text field gives back for `value` when editing ends.
+    static func shown(_ value: Double) -> Double {
+        (try? format.parseStrategy.parse(format.format(value))) ?? value
     }
 }
 

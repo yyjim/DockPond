@@ -5,7 +5,8 @@ import TweakDock
 
 private extension TweakStore {
     static let integration = TweakStore(
-        fileURL: FileManager.default.temporaryDirectory.appending(components: "TweakDockTests", "\(UUID().uuidString).json")
+        fileURL: FileManager.default.temporaryDirectory.appending(components: "TweakDockTests", "\(UUID().uuidString).json"),
+        experimentProvider: InMemoryValueProvider(name: "Remote", values: ["integration_size": .string("large")])
     )
 }
 
@@ -21,6 +22,15 @@ private enum SampleTweaks {
 
     @Tweak(collection: "UI", group: "Appearance", name: "Integration Size", defaultValue: Size.small)
     static var size: Size
+
+    @Tweak(
+        collection: "UI",
+        group: "Appearance",
+        name: "Integration Remote Size",
+        defaultValue: Size.small,
+        from: .experiment("integration_size")
+    )
+    static var remoteSize: Size
 
     #if DEBUG
     @Tweak(collection: "Debug", group: "Flags", name: "Integration Debug Flag", defaultValue: false)
@@ -38,7 +48,7 @@ private enum SampleTweaks {
 @Suite(.serialized) struct MacroIntegrationTests {
     @Test func listsTweaksInDeclarationOrder() {
         #expect(SampleTweaks.allTweaks.map(\.name) == [
-            "Integration Dark Mode", "Integration Font Size", "Integration Size", "Integration Debug Flag",
+            "Integration Dark Mode", "Integration Font Size", "Integration Size", "Integration Remote Size", "Integration Debug Flag",
             "Integration Clear Cache"
         ])
     }
@@ -69,6 +79,12 @@ private enum SampleTweaks {
         defer { SampleTweaks.sizeTweak.reset() }
         SampleTweaks.size = .large
         #expect(SampleTweaks.size == .large)
+    }
+
+    @Test func readsRemoteSourceThroughTheStore() {
+        #expect(SampleTweaks.remoteSize == .large)
+        #expect(SampleTweaks.remoteSizeTweak.currentValue == .source("Remote", .large))
+        #expect(SampleTweaks.remoteSizeTweak.source?.key == "integration_size")
     }
 
     @Test @MainActor func runsActionTweaks() {

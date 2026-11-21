@@ -33,7 +33,7 @@ final class TweakMacroTests: XCTestCase {
                 public static let fontSizeTweak = Tweak<CGFloat>(collection: "UI", group: "Font", name: "Size", min: 10, max: 40, defaultValue: 14, store: tweakStore)
                 static func clearCache() {}
 
-                static let clearCacheTweak = TweakAction(collection: "Debug", group: "Session", name: "Clear Cache") {
+                static let clearCacheTweak = TweakAction(collection: "Debug", group: "Session", name: "Clear Cache", store: tweakStore) {
                     clearCache()
                 }
 

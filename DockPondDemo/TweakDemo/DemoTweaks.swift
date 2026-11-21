@@ -5,7 +5,7 @@ extension Notification.Name {
     static let demoCacheCleared = Notification.Name("demoCacheCleared")
 }
 
-@Tweaks
+@Tweaks(store: TweakStore(experimentProvider: DemoSources.remoteConfig))
 enum DemoTweaks {
     enum Accent: String, CaseIterable, TweakValue { case blue, orange, purple, green }
 
@@ -48,5 +48,36 @@ enum DemoTweaks {
     @Tweak(collection: "App", group: "Debug", name: "Clear Cache")
     static func clearCache() {
         NotificationCenter.default.post(name: .demoCacheCleared, object: nil)
+    }
+
+    enum ABC: String, CaseIterable, TweakValue { case A, B, C }
+    enum AB: String, CaseIterable, TweakValue { case A, B }
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Paywall Layout", defaultValue: ABC.A, from: .experiment("exp_paywall_layout"))
+    static var paywallLayout: ABC
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Onboarding", defaultValue: AB.A, from: .experiment("exp_onboarding"))
+    static var onboarding: AB
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Share Sheet", defaultValue: AB.A, from: .experiment("exp_share_sheet"))
+    static var shareSheet: AB
+
+    @Tweak(
+        collection: "Experiments",
+        group: "Remote",
+        name: "iPad Sidebar",
+        defaultValue: AB.A,
+        from: .experiment("exp_ipad_sidebar", devices: [.pad])
+    )
+    static var iPadSidebar: AB
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Fetch Remote Config")
+    static func fetchRemoteConfig() {
+        DemoSources.fetchRemoteConfig()
+    }
+
+    @Tweak(collection: "Experiments", group: "Remote", name: "Clear Remote Config")
+    static func clearRemoteConfig() {
+        DemoSources.clearRemoteConfig()
     }
 }

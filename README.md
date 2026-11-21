@@ -369,7 +369,7 @@ Each `@Tweak` adds a `<name>Tweak` peer. `@Tweaks` adds `allTweaks`, which the U
 .sheet(isPresented: $showsTweaks) { TweaksView(AppTweaks.allTweaks) }
 
 // UIKit: shake the device to show the tweaks.
-window = TweaksWindow(windowScene: scene, tweaks: AppTweaks.allTweaks, store: AppTweaks.tweakStore)
+window = TweaksWindow(windowScene: scene, tweaks: AppTweaks.allTweaks)
 ```
 
 To show the tweaks without a shake, for example from a dock action, call `presentTweaks()` on the window. Give `onDismiss` to `TweaksView` to show a close button.
@@ -398,9 +398,69 @@ An extension sees the changes of the app only when it makes a store or changes a
 
 ```swift
 #if !DEBUG
-AppTweaks.tweakStore.isEnabled = false   // Each tweak returns its default value.
+TweakStore.shared.isEnabled = false        // The store of each @Tweaks type without store:
+TweakStore.experiments.isEnabled = false   // A custom store. Refer to "Use more than one store".
 #endif
 ```
+
+`isEnabled` is a property of the store, not of a `@Tweaks` type.
+A disabled store ignores overrides and launch arguments.
+Each tweak in the store returns its source value or its default value.
+
+Set `isEnabled` on each store that the app uses.
+All `@Tweaks` types that use the same store are disabled together.
+`AppTweaks.tweakStore` is the same object as `TweakStore.shared` when `AppTweaks` has no `store:`.
+
+### Experiments
+
+Give `from: .experiment(key)` to read the value of a tweak from an A/B test service, such as Firebase Remote Config.
+The store uses the override, then a valid experiment value, then the default value.
+
+```swift
+// Give the store its own name, so that it does not share Tweaks.json with TweakStore.shared.
+@Tweaks(store: TweakStore(name: "Experiments", experimentProvider: FirebaseValueProvider.shared))
+enum Experiments {
+    @Tweak(collection: "Experiments", group: "Paywall", name: "Layout",
+           defaultValue: Paywall.A, from: .experiment("exp_paywall"))
+    static var paywall: Paywall
+}
+
+Experiments.paywall                    // The remote value when it is valid, else .A.
+Experiments.paywallTweak.currentValue  // .default(.A), .source("Firebase", .B), or .override(.C)
+```
+
+For devices, launch arguments, `experimentProperties` for analytics, and a Firebase adapter, see [TweakDock experiments](docs/TweakDockSources.md).
+
+### Use more than one store
+
+Each `@Tweaks` type uses one store. Without `store:`, it uses `TweakStore.shared`, which saves to `Tweaks.json`.
+Use a different store for a different set of tweaks, for example the experiments:
+
+```swift
+extension TweakStore {
+    static let experiments = TweakStore(name: "Experiments", experimentProvider: FirebaseValueProvider.shared)
+}
+
+@Tweaks                        // TweakStore.shared
+enum AppTweaks { ... }
+
+@Tweaks(store: .experiments)   // Experiments.json
+enum Experiments { ... }
+```
+
+- Give each store a different name. Two stores with the same name use the same file, but they do not publish the changes of each other.
+- Declare each store one time, as a `static let`.
+- Only a store with `experimentProvider` reads experiment values. In a store without it, each experiment uses its default value.
+- `isEnabled` and `resetAll()` apply only to their store.
+
+Each tweak keeps its store, so one `TweaksView` can show the tweaks of all stores:
+
+```swift
+TweaksView(AppTweaks.allTweaks + Experiments.allTweaks)
+TweaksWindow(windowScene: scene, tweaks: AppTweaks.allTweaks + Experiments.allTweaks)
+```
+
+A shake shows the tweaks when the store of one of the tweaks is enabled.
 
 ### Supported types
 

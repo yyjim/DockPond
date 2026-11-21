@@ -55,6 +55,22 @@ This file records the decisions, the current status, and the next steps for Dock
 - iOS does not give the fold position. GaugeDock estimates it: the fold crosses the middle of the longer screen edge. The UI labels it "estimated".
 - The fold section shows only on a device with a hinge.
 
+### TweakDock experiments
+
+- Each `@Tweak` declares its whole experiment in `from: .experiment(key, devices:)`, as one YAML entry does in PicCollage.
+- The first version has only `.experiment`. Config values, local splits, rollouts, and custom providers can come later.
+- The store gets `experimentProvider` in `init`, and it does not change. The store needs no lock for it.
+- `defaultValue` stays on `@Tweak`, because each tweak needs it, and the macro uses it to check the type.
+- The order is override, then a launch argument (`-tweak.<key>`), then the provider, then the default value. A value that is not valid goes to the next step.
+- `devices` applies to the provider. Launch arguments and overrides apply on all devices.
+- `isEnabled = false` disables overrides and launch arguments. Provider values still apply, so an experiment tweak is also the release read path.
+- An invalid provider value gives `currentValue == .default(defaultValue)`. The store does not clamp or correct it. This keeps the analytics rule: `.default` reports `"default"`.
+- The device comes from the model identifier, because `UIDevice` can be read only on the main thread.
+- `.phone` is `[.standardPhone, .foldablePhone]`, so existing `.phone` experiments include iPhone Duo. The foldable model identifiers are copied from DeviceKit, so DockPond does not depend on it. `UIHingeInteraction` needs a view and the main thread, so the store cannot use it.
+- `TweakCurrentValue` is one enum (`.default`, `.source`, `.override`), and each case holds its value. The provider value that an override hides is internal. Only the tweaks UI shows it.
+- TweakDock does not depend on Firebase. The app adds the Firebase adapter (see `docs/TweakDockSources.md`). A Firebase product in DockPond would add Firebase to the dependency graph of each DockPond user, and tie DockPond releases to Firebase versions.
+- The TweakDock demo uses `DemoRemoteConfig` as a fake remote config. It keeps the activated values in `UserDefaults` and sends `changes`.
+
 ### Demo apps
 
 - SwiftUI demo: three docks. "Dev Tools" (tabs: General, Controls, Appearance), "Style" (element tools only), and the gauge dock.
