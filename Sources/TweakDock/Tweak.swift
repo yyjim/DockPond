@@ -52,7 +52,7 @@ public struct Tweak<Value: TweakValue>: AnyTweak {
         from source: TweakSource? = nil,
         store: TweakStore = .shared
     ) {
-        self.init(collection, group, name, defaultValue, source, Value.control, store) { $0 }
+        self.init(collection, group, name, defaultValue, source, Value.tweakControl, store) { $0 }
     }
 
     private init(

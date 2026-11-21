@@ -110,7 +110,7 @@ public enum TweakControl: Sendable, Equatable {
 public protocol TweakValue: Sendable, Equatable {
     init?(primitive: TweakPrimitive)
     var primitive: TweakPrimitive { get }
-    static var control: TweakControl { get }
+    static var tweakControl: TweakControl { get }
 }
 
 extension Bool: TweakValue {
@@ -120,7 +120,7 @@ extension Bool: TweakValue {
     }
 
     public var primitive: TweakPrimitive { .bool(self) }
-    public static var control: TweakControl { .toggle }
+    public static var tweakControl: TweakControl { .toggle }
 }
 
 extension Int: TweakValue {
@@ -130,7 +130,7 @@ extension Int: TweakValue {
     }
 
     public var primitive: TweakPrimitive { .int(self) }
-    public static var control: TweakControl { .number(range: nil) }
+    public static var tweakControl: TweakControl { .number(range: nil) }
 }
 
 extension Double: TweakValue {
@@ -140,7 +140,7 @@ extension Double: TweakValue {
     }
 
     public var primitive: TweakPrimitive { .double(self) }
-    public static var control: TweakControl { .number(range: nil) }
+    public static var tweakControl: TweakControl { .number(range: nil) }
 }
 
 extension CGFloat: TweakValue {
@@ -150,7 +150,7 @@ extension CGFloat: TweakValue {
     }
 
     public var primitive: TweakPrimitive { .double(Double(self)) }
-    public static var control: TweakControl { .number(range: nil) }
+    public static var tweakControl: TweakControl { .number(range: nil) }
 }
 
 extension String: TweakValue {
@@ -160,7 +160,7 @@ extension String: TweakValue {
     }
 
     public var primitive: TweakPrimitive { .string(self) }
-    public static var control: TweakControl { .text }
+    public static var tweakControl: TweakControl { .text }
 }
 
 public extension TweakValue where Self: RawRepresentable & CaseIterable, RawValue == String {
@@ -170,5 +170,5 @@ public extension TweakValue where Self: RawRepresentable & CaseIterable, RawValu
     }
 
     var primitive: TweakPrimitive { .string(rawValue) }
-    static var control: TweakControl { .picker(options: allCases.map(\.rawValue)) }
+    static var tweakControl: TweakControl { .picker(options: allCases.map(\.rawValue)) }
 }
