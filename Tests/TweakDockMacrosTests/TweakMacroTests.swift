@@ -46,6 +46,58 @@ final class TweakMacroTests: XCTestCase {
         )
     }
 
+    func testRemovesBackticksFromPeerNames() {
+        assertMacroExpansion(
+            """
+            @Tweaks
+            enum AppTweaks {
+                @Tweak(collection: "C", group: "G", name: "Default", defaultValue: true)
+                static var `default`: Bool
+
+                @Tweak(collection: "C", group: "G", name: "Return")
+                static func `return`() {}
+
+                @Tweak(collection: "C", group: "G", name: "Dark Mode", defaultValue: false)
+                static var `dark mode`: Bool
+            }
+            """,
+            expandedSource: """
+            enum AppTweaks {
+                static var `default`: Bool {
+                    get {
+                        defaultTweak.value
+                    }
+                    set {
+                        defaultTweak.value = newValue
+                    }
+                }
+
+                static let defaultTweak = Tweak<Bool>(collection: "C", group: "G", name: "Default", defaultValue: true, store: tweakStore)
+                static func `return`() {}
+
+                static let returnTweak = TweakAction(collection: "C", group: "G", name: "Return", store: tweakStore) {
+                    `return`()
+                }
+                static var `dark mode`: Bool {
+                    get {
+                        `dark modeTweak`.value
+                    }
+                    set {
+                        `dark modeTweak`.value = newValue
+                    }
+                }
+
+                static let `dark modeTweak` = Tweak<Bool>(collection: "C", group: "G", name: "Dark Mode", defaultValue: false, store: tweakStore)
+
+                static let tweakStore: TweakStore = .shared
+
+                static let allTweaks: [any AnyTweak] = [defaultTweak, returnTweak, `dark modeTweak`]
+            }
+            """,
+            macros: macros
+        )
+    }
+
     func testUsesGivenStore() {
         assertMacroExpansion(
             """

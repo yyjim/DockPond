@@ -420,6 +420,8 @@ The store uses the override, then a valid experiment value, then the default val
 // Give the store its own name, so that it does not share Tweaks.json with TweakStore.shared.
 @Tweaks(store: TweakStore(name: "Experiments", experimentProvider: FirebaseValueProvider.shared))
 enum Experiments {
+    enum Paywall: String, CaseIterable, TweakValue { case A, B, C }
+
     @Tweak(collection: "Experiments", group: "Paywall", name: "Layout",
            defaultValue: Paywall.A, from: .experiment("exp_paywall"))
     static var paywall: Paywall
@@ -429,7 +431,19 @@ Experiments.paywall                    // The remote value when it is valid, els
 Experiments.paywallTweak.currentValue  // .default(.A), .source("Firebase", .B), or .override(.C)
 ```
 
+The tweaks UI shows each case of `Paywall` in a picker.
+An experiment value is valid only when it is equal to a raw value, for example `"B"`.
+
 For devices, launch arguments, `experimentProperties` for analytics, and a Firebase adapter, see [TweakDock experiments](docs/TweakDockSources.md).
+
+To write the experiments from a YAML file, use the [tweakdock gem](gems/tweakdock/README.md):
+
+```yaml
+output: Experiments.swift
+store: .experiments
+experiments:
+  exp_paywall: [A, B, C]
+```
 
 ### Use more than one store
 

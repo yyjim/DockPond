@@ -20,8 +20,8 @@ public struct TweakMacro: AccessorMacro, PeerMacro {
     ) throws -> [AccessorDeclSyntax] {
         let property = try TweakProperty(declaration)
         return [
-            "get { \(raw: property.name)Tweak.value }",
-            "set { \(raw: property.name)Tweak.value = newValue }"
+            "get { \(raw: property.peerName).value }",
+            "set { \(raw: property.peerName).value = newValue }"
         ]
     }
 
@@ -36,13 +36,13 @@ public struct TweakMacro: AccessorMacro, PeerMacro {
             try validateAction(function)
             let modifiers = function.modifiers.prefixDescription
             return [
-                "\(raw: modifiers)let \(raw: function.name.text)Tweak = TweakAction(\(arguments), store: tweakStore) { \(raw: function.name.text)() }"
+                "\(raw: modifiers)let \(raw: function.name.peerName) = TweakAction(\(arguments), store: tweakStore) { \(raw: function.name.text)() }"
             ]
         }
 
         // The accessor role reports invalid properties, so this role does not report them again.
         guard let property = try? TweakProperty(declaration) else { return [] }
-        return ["\(raw: property.modifiers)let \(raw: property.name)Tweak = Tweak<\(property.type)>(\(arguments), store: tweakStore)"]
+        return ["\(raw: property.modifiers)let \(raw: property.peerName) = Tweak<\(property.type)>(\(arguments), store: tweakStore)"]
     }
 
     static func validateAction(_ function: FunctionDeclSyntax) throws {
@@ -98,18 +98,18 @@ private enum TweakEntry {
                 }
                 return clauses.allSatisfy(\.1.isEmpty) ? nil : .conditional(clauses)
             }
-            return tweakName(member.decl).map { .tweak("\($0)Tweak") }
+            return peerName(member.decl).map { .tweak($0) }
         }
     }
 
     /// Returns only declarations that the peer role expands, so `allTweaks` never names a missing peer.
-    private static func tweakName(_ declaration: DeclSyntax) -> String? {
+    private static func peerName(_ declaration: DeclSyntax) -> String? {
         if let variable = declaration.as(VariableDeclSyntax.self), variable.attributes.hasTweak {
-            return (try? TweakProperty(variable))?.name
+            return (try? TweakProperty(variable))?.peerName
         }
         if let function = declaration.as(FunctionDeclSyntax.self), function.attributes.hasTweak,
            (try? TweakMacro.validateAction(function)) != nil {
-            return function.name.text
+            return function.name.peerName
         }
         return nil
     }
@@ -135,7 +135,7 @@ private enum TweakEntry {
 }
 
 private struct TweakProperty {
-    let name: String
+    let peerName: String
     let type: TypeSyntax
     let modifiers: String
 
@@ -143,10 +143,11 @@ private struct TweakProperty {
         guard let variable = declaration.as(VariableDeclSyntax.self),
               variable.bindings.count == 1,
               let binding = variable.bindings.first,
-              let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text
+              let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier
         else {
             throw MacroError("@Tweak applies only to one 'static var' or a 'static func'.")
         }
+        let name = identifier.text
         guard variable.modifiers.isStatic else {
             throw MacroError("@Tweak property '\(name)' must be static.")
         }
@@ -156,9 +157,19 @@ private struct TweakProperty {
         guard let type = binding.typeAnnotation?.type.trimmed else {
             throw MacroError("@Tweak property '\(name)' must have a type annotation.")
         }
-        self.name = name
+        peerName = identifier.peerName
         self.type = type
         modifiers = variable.modifiers.filter { $0.detail == nil }.prefixDescription
+    }
+}
+
+private extension TokenSyntax {
+    /// `` `default`Tweak `` is not valid Swift, so the backticks go. A raw identifier needs them.
+    var peerName: String {
+        let name = (identifier?.name ?? text) + "Tweak"
+        let isPlain = name.first.map { $0.isLetter || $0 == "_" } == true
+            && name.allSatisfy { $0.isLetter || $0.isNumber || $0 == "_" }
+        return isPlain ? name : "`\(name)`"
     }
 }
 

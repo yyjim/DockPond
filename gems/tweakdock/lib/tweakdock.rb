@@ -1,0 +1,5 @@
+require_relative "tweakdock/version"
+require_relative "tweakdock/naming"
+require_relative "tweakdock/spec"
+require_relative "tweakdock/generator"
+require_relative "tweakdock/cli"
