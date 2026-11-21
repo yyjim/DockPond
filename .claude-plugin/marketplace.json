@@ -1,0 +1,16 @@
+{
+  "name": "dockpond",
+  "owner": {
+    "name": "yyjim"
+  },
+  "metadata": {
+    "description": "Agent skills for DockPond, the floating docks for iOS layout work."
+  },
+  "plugins": [
+    {
+      "name": "dockpond",
+      "source": "./plugins/dockpond",
+      "description": "Teaches agents to add and use FloatingDock, GaugeDock, and TweakDock in an iOS app."
+    }
+  ]
+}
