@@ -62,7 +62,15 @@ class SpecTest < Minitest::Test
   def test_rejects_unquoted_boolean_names
     assert_spec_error("output: E.swift\ngroup: yes\nexperiments:\n  exp: [A]\n", "group: put quotes around on, off")
     assert_spec_error("output: E.swift\ncollection: on\nexperiments:\n  exp: [A]\n", "collection: put quotes")
-    assert_spec_error("output: E.swift\nexperiments:\n  exp: {variants: [A], group: no}\n", "exp: put quotes")
+    assert_spec_error("output: E.swift\nexperiments:\n  exp: {variants: [A], group: no}\n", "exp.group: put quotes")
+    assert_spec_error("output: E.swift\nexperiments:\n  exp: {variants: [A], devices: off}\n", "exp.devices: put quotes")
+    assert_spec_error("output: E.swift\naccess: yes\nexperiments:\n  exp: [A]\n", "access: put quotes")
+  end
+
+  def test_uses_the_default_names_for_empty_values
+    spec = load_spec("output: E.swift\ngroup:\ncollection:\nexperiments:\n  exp: {variants: [A], group: }\n")
+
+    assert_equal ["Experiments", "A/B Tests"], [spec.collection, spec.experiments.first.group]
   end
 
   def test_rejects_an_empty_file
@@ -78,7 +86,7 @@ class SpecTest < Minitest::Test
   end
 
   def test_rejects_variants_that_the_variant_type_already_uses
-    %w[_ Type Protocol RawValue AllCases].each do |variant|
+    %w[Type Protocol RawValue AllCases].each do |variant|
       assert_spec_error("output: E.swift\nexperiments:\n  exp: [A, #{variant}]\n", "rename the variant #{variant}")
     end
   end

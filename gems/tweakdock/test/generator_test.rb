@@ -79,7 +79,10 @@ class GeneratorTest < Minitest::Test
     assert_includes swift, "case `precedencegroup`"
   end
 
-  def test_escapes_self_as_a_variant
-    assert_includes generate("output: E.swift\nexperiments:\n  exp: [Self, B]\n"), "case `Self`, B"
+  def test_escapes_self_and_underscore_as_variants
+    swift = generate("output: E.swift\nexperiments:\n  exp: [Self, _]\n")
+
+    assert_includes swift, "case `Self`, `_`"
+    assert_includes swift, "defaultValue: Exp.`Self`"
   end
 end

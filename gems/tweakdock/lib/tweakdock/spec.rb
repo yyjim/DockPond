@@ -27,9 +27,9 @@ module TweakDock
       TweakStore TweakValue TweakValueProvider Tweaks
     ].freeze
     RESERVED_PROPERTY_NAMES = %w[allTweaks tweakStore].freeze
-    # Members that each variant type already has, the metatype names Type and Protocol, which Swift reads
-    # differently after a dot, and _, which the generator does not escape.
-    RESERVED_VARIANTS = %w[allCases tweakControl AllCases RawValue Type Protocol _].freeze
+    # Members that each variant type already has, and the metatype names Type and Protocol, which Swift
+    # reads differently after a dot.
+    RESERVED_VARIANTS = %w[allCases tweakControl AllCases RawValue Type Protocol].freeze
 
     def self.load(path)
       document = Psych.parse_file(path)
@@ -61,7 +61,7 @@ module TweakDock
 
         output = data["output"]
         fail!("add output, the path of the Swift file.") unless output.is_a?(String) && !output.empty?
-        %w[type group collection].each { |setting| boolean!(setting, data[setting]) }
+        %w[output type store collection group access].each { |setting| boolean!(setting, data[setting]) }
         type_name = data.fetch("type", "Experiments").to_s
         unless Naming.identifier?(type_name) && !Naming::SWIFT_KEYWORDS.include?(type_name) &&
                !RESERVED_TYPE_NAMES.include?(type_name)
@@ -74,7 +74,7 @@ module TweakDock
         access = data["access"]
         fail!("access can only be public.") unless access.nil? || access == "public"
 
-        group = data.fetch("group", "A/B Tests").to_s
+        group = (data["group"] || "A/B Tests").to_s
         entries = data["experiments"]
         fail!("add experiments as a map from each key to its variants.") unless entries.is_a?(Hash) && !entries.empty?
 
@@ -84,7 +84,7 @@ module TweakDock
         end
         check_names(experiments)
         Spec.new(path: @path, output: output, type_name: type_name, store: store,
-                 collection: data.fetch("collection", "Experiments").to_s, access: access, experiments: experiments)
+                 collection: (data["collection"] || "Experiments").to_s, access: access, experiments: experiments)
       end
 
       private
@@ -99,11 +99,12 @@ module TweakDock
         variants = variants(key, entry["variants"])
         default = entry.fetch("default", variants.first)
         boolean!(key, default)
-        boolean!(key, entry["group"])
+        boolean!("#{key}.group", entry["group"])
+        boolean!("#{key}.devices", entry["devices"])
         fail!("#{key}: the default #{default} is not in variants.") unless variants.include?(default)
 
         Experiment.new(key: key, variants: variants, default: default,
-                       devices: devices(key, entry["devices"]), group: entry.fetch("group", group).to_s)
+                       devices: devices(key, entry["devices"]), group: (entry["group"] || group).to_s)
       end
 
       def variants(key, value)

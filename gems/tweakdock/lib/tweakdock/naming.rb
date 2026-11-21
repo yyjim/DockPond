@@ -27,7 +27,7 @@ module TweakDock
     end
 
     def escaped(identifier)
-      SWIFT_KEYWORDS.include?(identifier) ? "`#{identifier}`" : identifier
+      SWIFT_KEYWORDS.include?(identifier) || identifier == "_" ? "`#{identifier}`" : identifier
     end
   end
 end

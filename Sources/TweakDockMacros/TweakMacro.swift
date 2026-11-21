@@ -164,7 +164,7 @@ private struct TweakProperty {
 }
 
 private extension TokenSyntax {
-    /// `` `default` `` gives `defaultTweak`. A raw identifier such as `` `dark mode` `` keeps its backticks.
+    /// `` `default`Tweak `` is not valid Swift, so the backticks go. A raw identifier needs them.
     var peerName: String {
         let name = (identifier?.name ?? text) + "Tweak"
         let isPlain = name.first.map { $0.isLetter || $0 == "_" } == true
